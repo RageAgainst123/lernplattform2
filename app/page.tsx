@@ -1,4 +1,5 @@
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -23,7 +24,9 @@ export default function Home() {
           aufgebaut.
         </CardContent>
         <CardFooter>
-          <Button>Los geht&apos;s</Button>
+          <Link href="/login" className={buttonVariants()}>
+            Als Lehrkraft anmelden
+          </Link>
         </CardFooter>
       </Card>
     </main>

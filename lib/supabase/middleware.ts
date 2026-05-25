@@ -1,11 +1,19 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Refresht das Supabase-Auth-Token bei jedem Request und hält die Cookies
-// zwischen Request und Response synchron. Aufgerufen aus dem Root-middleware.ts.
-//
-// WICHTIG: Das zurückgegebene `supabaseResponse`-Objekt muss unverändert
-// weitergereicht werden, sonst bricht die Cookie-Synchronisation.
+// Leitet auf `path` um und überträgt die aktuellen Auth-Cookies, damit der
+// Token-Refresh über den Redirect hinweg erhalten bleibt.
+function redirectTo(request: NextRequest, path: string, base: NextResponse): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = path;
+  url.search = '';
+  const redirect = NextResponse.redirect(url);
+  base.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  return redirect;
+}
+
+// Refresht das Auth-Token bei jedem Request, hält die Cookies synchron und
+// erzwingt den Zugriffsschutz: /lehrer/* nur eingeloggt, /login nur ausgeloggt.
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -28,9 +36,18 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     }
   );
 
-  // Validiert die Session (JWT) und triggert ggf. den Token-Refresh.
-  // getUser() statt getSession() — prüft die Signatur server-seitig.
-  await supabase.auth.getUser();
+  // getUser() statt getSession() — validiert die JWT-Signatur server-seitig.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+  if (!user && path.startsWith('/lehrer')) {
+    return redirectTo(request, '/login', supabaseResponse);
+  }
+  if (user && path === '/login') {
+    return redirectTo(request, '/lehrer', supabaseResponse);
+  }
 
   return supabaseResponse;
 }

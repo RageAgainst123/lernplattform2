@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lernplattform für Digitale Grundbildung
 
-## Getting Started
+Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
+5.–8. Schulstufe). Hybrid aus zwei Säulen:
 
-First, run the development server:
+1. **Öffentliche Materialbibliothek** — frei zugängliche PDFs (Theorie,
+   Arbeitsblätter, Stundenbilder), ohne Login.
+2. **Interaktive Modulplattform** — modulbasiertes Lernen mit Block-Engine
+   (Quiz, Drag-Drop, Lückentext, Reflexion), Lehrer:innen-Login und
+   Klassencode-Login für Schüler:innen.
+
+**DSGVO-konform by design:** keine personenbezogenen Daten von Schüler:innen
+(Codenamen statt Namen), Hosting in Frankfurt (Supabase EU + Vercel).
+
+## Stack
+
+- **Next.js 16** (App Router, Server Components, Turbopack) · **React 19.2** · **TypeScript** strict
+- **Tailwind CSS v4** · **shadcn/ui** (Base UI)
+- **Supabase** (Frankfurt): Auth + PostgreSQL mit Row-Level Security + Storage, via `@supabase/ssr`
+- **react-hook-form + Zod**, **TanStack Query**, **@dnd-kit**, **framer-motion**
+- **Vitest** + **Testing Library** · **ESLint** (strict) + **Prettier** · **Husky** + **lint-staged** + **CommitLint**
+- Paketmanager: **pnpm** · Hosting: **Vercel**
+
+## Setup
+
+Voraussetzungen: Node ≥ 20, pnpm.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.local` anlegen (Vorlage: `.env.example`):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Datenbank-Schema einspielen: die SQL-Dateien aus `supabase/migrations/`
+(`0001_initial_schema.sql`, `0002_rls_policies.sql`) im Supabase SQL-Editor
+ausführen. Für E-Mail-Versand (Magic Link) ist ein SMTP-Provider (z. B. Resend)
+in den Supabase-Auth-Einstellungen zu hinterlegen.
 
-## Learn More
+## Befehle
 
-To learn more about Next.js, take a look at the following resources:
+| Befehl               | Zweck                            |
+| -------------------- | -------------------------------- |
+| `pnpm dev`           | Dev-Server (Port 3000)           |
+| `pnpm build`         | Produktions-Build                |
+| `pnpm start`         | Produktions-Server               |
+| `pnpm test`          | Unit-/Integrationstests (Vitest) |
+| `pnpm test:coverage` | Tests mit Coverage-Report        |
+| `pnpm lint`          | ESLint                           |
+| `pnpm typecheck`     | TypeScript (`tsc --noEmit`)      |
+| `pnpm format`        | Prettier (schreibend)            |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Projektstruktur
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+app/              Next.js Routes (App Router)
+  login/          Lehrer:innen-Login (Magic Link)
+  auth/confirm/   Auth-Callback (verifyOtp)
+  lehrer/         Geschützter Lehrer:innen-Bereich
+components/
+  ui/             shadcn/ui (via CLI verwaltet)
+  teacher/        Lehrer:innen-spezifische UI
+lib/
+  supabase/       client.ts, server.ts, middleware.ts
+  auth/           Auth-Helper + Server Actions
+  schemas/        Zod-Schemas (Blöcke, Entitäten)
+supabase/
+  migrations/     SQL-Migrationen (Schema + RLS)
+docs/
+  adr/            Architecture Decision Records
+proxy.ts          Auth-Token-Refresh + Routenschutz (Next-16-Konvention)
+```
 
-## Deploy on Vercel
+## Qualität
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pre-Commit-Hooks (Husky + lint-staged) führen ESLint, Prettier und betroffene
+Tests aus. CI (GitHub Actions) prüft bei jedem Push lint, format, typecheck,
+test und build. Architekturentscheidungen sind in `docs/adr/` dokumentiert.

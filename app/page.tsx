@@ -1,12 +1,31 @@
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        Lernplattform für Digitale Grundbildung
-      </h1>
-      <p className="max-w-md text-zinc-600 dark:text-zinc-400">
-        Projekt-Gerüst steht. Die Plattform wird Schritt für Schritt aufgebaut.
-      </p>
+    <main className="flex min-h-screen items-center justify-center p-8">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Lernplattform für Digitale Grundbildung</CardTitle>
+          <CardDescription>
+            Interaktive Module und Materialbibliothek für die österreichische Sekundarstufe I.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-muted-foreground text-sm">
+          Das Projekt-Gerüst und die UI-Basis stehen. Die Plattform wird Schritt für Schritt
+          aufgebaut.
+        </CardContent>
+        <CardFooter>
+          <Button>Los geht&apos;s</Button>
+        </CardFooter>
+      </Card>
     </main>
   );
 }

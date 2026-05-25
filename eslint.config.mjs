@@ -15,7 +15,9 @@ const eslintConfig = defineConfig([
       'lib/**/*.{ts,tsx}',
       'types/**/*.{ts,tsx}',
     ],
-    ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    // components/ui wird per shadcn-CLI verwaltet, nicht manuell — von den
+    // Projekt-Limits ausgenommen (PLATTFORM_MANIFEST: ui via CLI, nicht modifizieren).
+    ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', 'components/ui/**'],
     rules: {
       'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
       'max-lines-per-function': ['error', { max: 50, skipComments: true }],

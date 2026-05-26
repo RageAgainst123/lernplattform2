@@ -27,6 +27,12 @@ const eslintConfig = defineConfig([
       'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
+  // BlockView ist ein reiner Dispatcher (switch über alle Block-Typen) —
+  // die hohe Cyclomatic Complexity ist hier strukturell bedingt, kein Smell.
+  {
+    files: ['components/blocks/BlockView.tsx'],
+    rules: { complexity: 'off' },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

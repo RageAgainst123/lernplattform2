@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { requireStudentSession } from '@/lib/auth/student-auth';
 import { studentLogout } from '@/lib/auth/student-actions';
 import { getCodenameById } from '@/lib/db/student-login';
+import { getAssignedModules } from '@/lib/db/student-modules';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ModuleCard } from '@/components/student/ModuleCard';
 
 export const metadata: Metadata = {
   title: 'Mein Bereich',
@@ -11,7 +12,10 @@ export const metadata: Metadata = {
 
 export default async function StudentDashboard() {
   const session = await requireStudentSession();
-  const codename = await getCodenameById(session.studentCodeId);
+  const [codename, modules] = await Promise.all([
+    getCodenameById(session.studentCodeId),
+    getAssignedModules(session.classId, session.studentCodeId),
+  ]);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col gap-6 p-6">
@@ -24,14 +28,18 @@ export default async function StudentDashboard() {
         </form>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Deine Module</CardTitle>
-        </CardHeader>
-        <CardContent className="text-muted-foreground">
-          Hier erscheinen bald deine Aufgaben. Schau später wieder vorbei!
-        </CardContent>
-      </Card>
+      <h2 className="text-lg font-medium">Deine Module</h2>
+      {modules.length === 0 ? (
+        <p className="text-muted-foreground">
+          Im Moment hast du keine Aufgaben. Schau später wieder vorbei!
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {modules.map((module) => (
+            <ModuleCard key={module.id} module={module} />
+          ))}
+        </div>
+      )}
     </main>
   );
 }

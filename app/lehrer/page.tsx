@@ -1,8 +1,16 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { signOut } from '@/lib/auth/actions';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Dashboard — Lernplattform',
@@ -28,8 +36,13 @@ export default async function LehrerDashboard() {
           <CardDescription>Sie sind angemeldet als {user.email}.</CardDescription>
         </CardHeader>
         <CardContent className="text-muted-foreground text-sm">
-          Hier entstehen als Nächstes Ihre Klassen, zugewiesene Module und die Auswertungen.
+          Verwalten Sie hier Ihre Klassen. Module und Auswertungen folgen.
         </CardContent>
+        <CardFooter>
+          <Link href="/lehrer/klassen" className={buttonVariants()}>
+            Zu den Klassen
+          </Link>
+        </CardFooter>
       </Card>
     </main>
   );

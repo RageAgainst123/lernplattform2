@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { getClass } from '@/lib/db/classes';
+import { getStudentCodes } from '@/lib/db/student-codes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StudentCodesPanel } from '@/components/teacher/StudentCodesPanel';
 
 export const metadata: Metadata = {
   title: 'Klasse — Lernplattform',
@@ -17,6 +19,8 @@ export default async function KlasseDetailPage({ params }: { params: Promise<{ i
   if (!schoolClass) {
     notFound();
   }
+
+  const codes = await getStudentCodes(schoolClass.id);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
@@ -37,8 +41,8 @@ export default async function KlasseDetailPage({ params }: { params: Promise<{ i
           <CardTitle>Schüler:innen-Codes</CardTitle>
           <CardDescription>Anonyme Zugangscodes für diese Klasse.</CardDescription>
         </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          Hier können Sie demnächst Zugangscodes generieren und als Liste ausdrucken.
+        <CardContent>
+          <StudentCodesPanel classId={schoolClass.id} className={schoolClass.name} codes={codes} />
         </CardContent>
       </Card>
 

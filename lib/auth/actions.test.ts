@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const signOutMock = vi.fn();
 const revalidatePathMock = vi.fn();
-const redirectMock = vi.fn((_url: string) => undefined);
+const redirectMock = vi.fn<(url: string) => void>();
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({

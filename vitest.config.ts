@@ -14,7 +14,7 @@ export default defineConfig({
       // Sicherheits-kritische reine Auth-Logik (PLATTFORM_MANIFEST §10: lib/auth 90%).
       // Schemas werden über lib/schemas/*.test.ts geprüft; lib/supabase/** und
       // actions.ts sind dünne Wrapper um Framework-Aufrufe (Mocks/E2E).
-      include: ['lib/auth/teacher-auth.ts'],
+      include: ['lib/auth/teacher-auth.ts', 'lib/auth/pin.ts'],
       exclude: ['**/*.test.{ts,tsx}'],
       thresholds: {
         statements: 90,

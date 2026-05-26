@@ -37,7 +37,7 @@ export function StudentCodesPanel({ classId, className, codes }: Props) {
         error={error}
       />
 
-      <GeneratedPinsNotice codes={fresh} />
+      <GeneratedPinsNotice codes={fresh} className={className} />
 
       {codes.length > 0 && (
         <ul className="rounded-md border px-4">

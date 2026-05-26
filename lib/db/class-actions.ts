@@ -2,11 +2,30 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { classInsertSchema } from '@/lib/schemas/entities';
 import { requireUser } from '@/lib/auth/teacher-auth';
+import { generateJoinCode } from '@/lib/db/join-code';
 
 export type CreateClassState = { error: string | null };
+
+// Erzeugt einen freien Beitrittscode (Kollisionen bei 6 Zeichen sind selten,
+// werden aber abgefangen).
+async function freeJoinCode(supabase: SupabaseClient): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateJoinCode();
+    const { data } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('join_code', code)
+      .maybeSingle();
+    if (!data) {
+      return code;
+    }
+  }
+  return generateJoinCode();
+}
 
 // Server Action: legt eine neue Klasse für die eingeloggte Lehrer:in an.
 // teacher_id = auth.uid() (RLS-Policy classes_all_own erzwingt das zusätzlich).
@@ -31,6 +50,7 @@ export async function createClass(
     teacher_id: user.id,
     name: parsed.data.name,
     schulstufe: parsed.data.schulstufe ?? null,
+    join_code: await freeJoinCode(supabase),
   });
 
   if (error) {

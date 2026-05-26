@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { STUDENT_COOKIE, verifyStudentSession } from '@/lib/auth/student-session';
 
 // Leitet auf `path` um und überträgt die aktuellen Auth-Cookies, damit der
 // Token-Refresh über den Redirect hinweg erhalten bleibt.
@@ -10,6 +11,20 @@ function redirectTo(request: NextRequest, path: string, base: NextResponse): Nex
   const redirect = NextResponse.redirect(url);
   base.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
   return redirect;
+}
+
+// Schützt /s/* (Schüler:innen): nur mit gültigem Session-Cookie (jose). Sonst zur
+// Code-Eingabe /k. Gibt null zurück, wenn kein Eingriff nötig ist.
+async function guardStudentArea(
+  request: NextRequest,
+  base: NextResponse
+): Promise<NextResponse | null> {
+  if (!request.nextUrl.pathname.startsWith('/s')) {
+    return null;
+  }
+  const token = request.cookies.get(STUDENT_COOKIE)?.value;
+  const session = token ? await verifyStudentSession(token) : null;
+  return session ? null : redirectTo(request, '/k', base);
 }
 
 // Refresht das Auth-Token bei jedem Request, hält die Cookies synchron und
@@ -40,6 +55,11 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const studentRedirect = await guardStudentArea(request, supabaseResponse);
+  if (studentRedirect) {
+    return studentRedirect;
+  }
 
   const path = request.nextUrl.pathname;
   if (!user && path.startsWith('/lehrer')) {

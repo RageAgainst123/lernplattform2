@@ -9,6 +9,7 @@ type ClassRow = {
   teacher_id: string;
   name: string;
   schulstufe: number | null;
+  join_code: string;
   created_at: string;
   updated_at: string;
 };
@@ -19,6 +20,7 @@ function toClass(row: ClassRow): Class {
     teacherId: row.teacher_id,
     name: row.name,
     schulstufe: row.schulstufe ?? undefined,
+    joinCode: row.join_code,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

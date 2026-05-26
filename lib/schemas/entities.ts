@@ -25,6 +25,7 @@ export const classInsertSchema = z.object({
 export const classSchema = classInsertSchema.extend({
   id: z.uuid(),
   teacherId: z.uuid(),
+  joinCode: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

@@ -6,6 +6,7 @@ import { getClass } from '@/lib/db/classes';
 import { getStudentCodes } from '@/lib/db/student-codes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StudentCodesPanel } from '@/components/teacher/StudentCodesPanel';
+import { JoinCodeHint } from '@/components/teacher/JoinCodeHint';
 
 export const metadata: Metadata = {
   title: 'Klasse — Lernplattform',
@@ -35,6 +36,8 @@ export default async function KlasseDetailPage({ params }: { params: Promise<{ i
             : 'Keine Schulstufe angegeben'}
         </p>
       </div>
+
+      <JoinCodeHint joinCode={schoolClass.joinCode} />
 
       <Card>
         <CardHeader>

@@ -18,6 +18,7 @@ const row = {
   teacher_id: 'u-1',
   name: '5A 2026/27',
   schulstufe: 5,
+  join_code: 'K7M2X9',
   created_at: '2026-05-25T00:00:00Z',
   updated_at: '2026-05-25T00:00:00Z',
 };
@@ -36,6 +37,7 @@ describe('getClasses', () => {
         teacherId: 'u-1',
         name: '5A 2026/27',
         schulstufe: 5,
+        joinCode: 'K7M2X9',
         createdAt: '2026-05-25T00:00:00Z',
         updatedAt: '2026-05-25T00:00:00Z',
       },

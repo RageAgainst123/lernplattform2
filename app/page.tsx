@@ -1,34 +1,28 @@
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Lernplattform für Digitale Grundbildung</CardTitle>
-          <CardDescription>
-            Interaktive Module und Materialbibliothek für die österreichische Sekundarstufe I.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-muted-foreground text-sm">
-          Das Projekt-Gerüst und die UI-Basis stehen. Die Plattform wird Schritt für Schritt
-          aufgebaut.
-        </CardContent>
-        <CardFooter>
-          <Link href="/login" className={buttonVariants()}>
-            Als Lehrkraft anmelden
-          </Link>
-        </CardFooter>
-      </Card>
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-8 p-8 text-center">
+      <div className="space-y-4">
+        <h1 className="text-4xl font-semibold tracking-tight">Digitale Grundbildung</h1>
+        <p className="text-muted-foreground text-lg">
+          Materialien und interaktive Module für die österreichische Sekundarstufe I — frei
+          zugänglich, nach Schulstufe und Kompetenzbereich geordnet.
+        </p>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href="/dgb" className={cn(buttonVariants({ size: 'lg' }), 'text-base')}>
+          Materialien &amp; Module entdecken
+        </Link>
+        <Link
+          href="/login"
+          className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'text-base')}
+        >
+          Als Lehrkraft anmelden
+        </Link>
+      </div>
     </main>
   );
 }

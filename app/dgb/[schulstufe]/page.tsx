@@ -31,7 +31,7 @@ export default async function SchulstufePage({
         <h1 className="text-3xl font-semibold tracking-tight">{stufe}. Schulstufe</h1>
         <p className="text-muted-foreground mt-1">Wähle einen Kompetenzbereich.</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
         {KOMPETENZBEREICHE.map((bereich) => (
           <TileLink
             key={bereich}

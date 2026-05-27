@@ -15,7 +15,7 @@ export function TileLink({
     <Link href={href} className="block">
       <Card className="hover:border-primary h-full transition-colors">
         <CardHeader>
-          <CardTitle className="text-xl">{title}</CardTitle>
+          <CardTitle className="text-xl break-words hyphens-auto">{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
       </Card>

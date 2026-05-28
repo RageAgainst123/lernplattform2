@@ -125,7 +125,7 @@ export async function getPublicModules(
 
 // Eintrag im Group-Helper: Material + sein Thema-Zuordnung (ohne `topic` im
 // öffentlichen `PublicMaterial`-Type zu verankern — UI braucht's nicht).
-type MaterialWithTopic = { material: PublicMaterial; topic: string | null };
+export type MaterialWithTopic = { material: PublicMaterial; topic: string | null };
 
 // Pure Helper: gruppiert Materialien + Module nach Thema, sortiert.
 // Themen alphabetisch, innerhalb jedes Themas Materialien + Module je nach

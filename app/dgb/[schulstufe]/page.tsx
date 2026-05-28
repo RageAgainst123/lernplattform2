@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { KOMPETENZBEREICHE, KOMPETENZBEREICH_INFO, isSekundarstufe } from '@/lib/curriculum';
-import { TileLink } from '@/components/public/TileLink';
+import { isSekundarstufe } from '@/lib/curriculum';
+import { getStufeWithBereiche } from '@/lib/db/public-content-stufe';
+import { Breadcrumb } from '@/components/public/Breadcrumb';
+import { BereichAccordion } from '@/components/public/BereichAccordion';
 
 export const metadata: Metadata = {
-  title: 'Kompetenzbereiche — Digitale Grundbildung',
+  title: 'Schulstufe — Digitale Grundbildung',
 };
 
 export default async function SchulstufePage({
@@ -19,28 +20,22 @@ export default async function SchulstufePage({
     notFound();
   }
 
+  const bereiche = await getStufeWithBereiche(stufe);
+
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
-      <nav className="text-muted-foreground text-sm">
-        <Link href="/dgb" className="hover:underline">
-          Digitale Grundbildung
-        </Link>{' '}
-        / {stufe}. Schulstufe
-      </nav>
-      <div>
+      <Breadcrumb
+        parentHref="/dgb"
+        parentLabel="Digitale Grundbildung"
+        current={`${stufe}. Schulstufe`}
+      />
+      <header>
         <h1 className="text-3xl font-semibold tracking-tight">{stufe}. Schulstufe</h1>
-        <p className="text-muted-foreground mt-1">Wähle einen Kompetenzbereich.</p>
-      </div>
-      <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-        {KOMPETENZBEREICHE.map((bereich) => (
-          <TileLink
-            key={bereich}
-            href={`/dgb/${stufe}/${bereich}`}
-            title={KOMPETENZBEREICH_INFO[bereich].label}
-            description={KOMPETENZBEREICH_INFO[bereich].description}
-          />
-        ))}
-      </div>
+        <p className="text-muted-foreground mt-1">
+          Wähle einen Kompetenzbereich. Klicke auf ein Thema, um Arbeitsblätter und Module zu sehen.
+        </p>
+      </header>
+      <BereichAccordion bereiche={bereiche} />
     </main>
   );
 }

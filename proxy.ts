@@ -1,28 +1,46 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-// Alte Permalinks `/dgb/[stufe]/[bereich]/[slug]` → neue Hash-Permalinks
-// `/dgb/[stufe]/[bereich]#[slug]`. Die Themen-Detailseite gibt es nicht mehr
-// — Inhalt klappt auf der Bereich-Seite im Accordion auf.
-// Weniger als 6 Pfad-Segmente: kein Match. Slug darf [-a-z0-9]+ enthalten.
-const LEGACY_TOPIC_PATH = /^\/dgb\/([^/]+)\/([^/]+)\/([^/]+)\/?$/;
+// Legacy-Permalinks der vormals 3- und 4-Ebenen-Navigation auf das neue
+// 2-Ebenen-Schema mit Hash umleiten. Die Stufen-Seite (/dgb/[stufe]) hostet
+// jetzt alle Bereiche + Themen aufklappbar. Hash-Format: #bereich oder
+// #bereich/thema (siehe components/public/useNestedHashAccordion.ts).
 
-function legacyTopicRedirect(request: NextRequest): NextResponse | null {
-  const path = request.nextUrl.pathname;
-  const match = LEGACY_TOPIC_PATH.exec(path);
-  if (!match) return null;
-  const [, stufe, bereich, slug] = match;
+// /dgb/[stufe]/[bereich]/[slug] → /dgb/[stufe]#[bereich]/[slug]
+const LEGACY_TOPIC_PATH = /^\/dgb\/([^/]+)\/([^/]+)\/([^/]+)\/?$/;
+// /dgb/[stufe]/[bereich] → /dgb/[stufe]#[bereich]
+const LEGACY_BEREICH_PATH = /^\/dgb\/([^/]+)\/([^/]+)\/?$/;
+
+function redirectWithHash(request: NextRequest, pathname: string, hash: string): NextResponse {
   const url = request.nextUrl.clone();
-  url.pathname = `/dgb/${stufe}/${bereich}`;
-  url.hash = slug;
+  url.pathname = pathname;
+  url.search = '';
+  url.hash = hash;
   return NextResponse.redirect(url, 308);
 }
 
+function legacyTopicRedirect(request: NextRequest): NextResponse | null {
+  const match = LEGACY_TOPIC_PATH.exec(request.nextUrl.pathname);
+  if (!match) return null;
+  const [, stufe, bereich, slug] = match;
+  return redirectWithHash(request, `/dgb/${stufe}`, `${bereich}/${slug}`);
+}
+
+function legacyBereichRedirect(request: NextRequest): NextResponse | null {
+  const match = LEGACY_BEREICH_PATH.exec(request.nextUrl.pathname);
+  if (!match) return null;
+  const [, stufe, bereich] = match;
+  return redirectWithHash(request, `/dgb/${stufe}`, bereich);
+}
+
 // Next.js 16 File-Convention: "proxy" (ersetzt das deprecated "middleware").
-// Läuft vor dem Rendering — hier: Legacy-Permalink-Redirect + Supabase-Auth-Refresh.
+// Läuft vor dem Rendering — hier: Legacy-Permalink-Redirects + Supabase-Auth-Refresh.
+// Reihenfolge wichtig: erst der spezifischere 4-Segment-Match, dann der 3-Segment.
 export async function proxy(request: NextRequest) {
-  const redirect = legacyTopicRedirect(request);
-  if (redirect) return redirect;
+  const topicRedirect = legacyTopicRedirect(request);
+  if (topicRedirect) return topicRedirect;
+  const bereichRedirect = legacyBereichRedirect(request);
+  if (bereichRedirect) return bereichRedirect;
   return updateSession(request);
 }
 

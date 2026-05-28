@@ -45,8 +45,25 @@ function TopicPanel({ topic }: { topic: TopicWithContent }) {
   );
 }
 
-export function ThemaAccordion({ topics }: { topics: TopicWithContent[] }) {
-  const { value, onValueChange } = useHashAccordion(topics.map((t) => t.slug));
+type ThemaAccordionProps = {
+  topics: TopicWithContent[];
+  // Controlled-Modus (z.B. wenn Eltern den Hash übergreifend verwaltet).
+  // Beide Props müssen gesetzt sein, sonst greift der uncontrolled-Default
+  // mit eigenem useHashAccordion (siehe ThemaAccordionStandalone).
+  value?: string[];
+  onValueChange?: (next: string[]) => void;
+};
+
+// Reine Render-Schicht — KEIN Hash-Hook, KEIN State. Eltern reichen value+onChange.
+function ThemaAccordionView({
+  topics,
+  value,
+  onValueChange,
+}: {
+  topics: TopicWithContent[];
+  value: string[];
+  onValueChange: (next: string[]) => void;
+}) {
   return (
     <Accordion multiple value={value} onValueChange={onValueChange} className="rounded-xl border">
       {topics.map((topic) => (
@@ -72,4 +89,19 @@ export function ThemaAccordion({ topics }: { topics: TopicWithContent[] }) {
       ))}
     </Accordion>
   );
+}
+
+// Uncontrolled-Wrapper: nutzt useHashAccordion intern. Nur dann gemountet,
+// wenn der Eltern KEIN value/onChange reicht — Hooks-Reihenfolge bleibt
+// stabil, weil das eine eigene Komponente ist.
+function ThemaAccordionStandalone({ topics }: { topics: TopicWithContent[] }) {
+  const { value, onValueChange } = useHashAccordion(topics.map((t) => t.slug));
+  return <ThemaAccordionView topics={topics} value={value} onValueChange={onValueChange} />;
+}
+
+export function ThemaAccordion({ topics, value, onValueChange }: ThemaAccordionProps) {
+  if (value !== undefined && onValueChange !== undefined) {
+    return <ThemaAccordionView topics={topics} value={value} onValueChange={onValueChange} />;
+  }
+  return <ThemaAccordionStandalone topics={topics} />;
 }

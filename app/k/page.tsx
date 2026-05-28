@@ -19,7 +19,7 @@ async function goToClass(formData: FormData) {
 
 export default function JoinCodePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
+    <div className="flex min-h-[calc(100vh-16rem)] items-center justify-center p-6">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Klassencode</CardTitle>
@@ -42,6 +42,6 @@ export default function JoinCodePage() {
           </form>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

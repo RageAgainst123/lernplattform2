@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
+    <div className="flex min-h-[calc(100vh-16rem)] items-center justify-center p-8">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Anmeldung für Lehrkräfte</CardTitle>
@@ -20,6 +20,6 @@ export default function LoginPage() {
           <LoginForm />
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

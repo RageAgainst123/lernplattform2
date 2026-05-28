@@ -23,7 +23,7 @@ export default async function SchulstufePage({
   const bereiche = await getStufeWithBereiche(stufe);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
       <Breadcrumb
         parentHref="/dgb"
         parentLabel="Digitale Grundbildung"
@@ -36,6 +36,6 @@ export default async function SchulstufePage({
         </p>
       </header>
       <BereichAccordion bereiche={bereiche} />
-    </main>
+    </div>
   );
 }

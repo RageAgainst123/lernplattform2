@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-8 p-8 text-center">
+    <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-8 px-6 py-20 text-center sm:py-28">
       <div className="space-y-4">
         <h1 className="text-4xl font-semibold tracking-tight">Digitale Grundbildung</h1>
         <p className="text-muted-foreground text-lg">
@@ -23,6 +23,6 @@ export default function Home() {
           Als Lehrkraft anmelden
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

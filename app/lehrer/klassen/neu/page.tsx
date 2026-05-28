@@ -12,7 +12,7 @@ export default async function NeueKlassePage() {
   await requireUser();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-md flex-col gap-6 px-6 py-10">
       <Link href="/lehrer/klassen" className="text-muted-foreground text-sm hover:underline">
         ← Zurück zu den Klassen
       </Link>
@@ -27,6 +27,6 @@ export default async function NeueKlassePage() {
           <NewClassForm />
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

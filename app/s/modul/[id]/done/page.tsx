@@ -16,7 +16,7 @@ export default async function ModuleDonePage({ params }: { params: Promise<{ id:
   const progress = await getProgress(session.studentCodeId, id);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-6 p-6 text-center">
+    <div className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-md flex-col items-center justify-center gap-6 p-6 text-center">
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-2xl">Geschafft!</CardTitle>
@@ -34,6 +34,6 @@ export default async function ModuleDonePage({ params }: { params: Promise<{ id:
           </Link>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

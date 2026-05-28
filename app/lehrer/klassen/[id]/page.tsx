@@ -24,7 +24,7 @@ export default async function KlasseDetailPage({ params }: { params: Promise<{ i
   const codes = await getStudentCodes(schoolClass.id);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
       <Link href="/lehrer/klassen" className="text-muted-foreground text-sm hover:underline">
         ← Zurück zu den Klassen
       </Link>
@@ -58,6 +58,6 @@ export default async function KlasseDetailPage({ params }: { params: Promise<{ i
           Modul-Zuweisung folgt in einem späteren Schritt.
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

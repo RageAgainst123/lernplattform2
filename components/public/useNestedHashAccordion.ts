@@ -70,13 +70,17 @@ function applyHash(
   }
 }
 
-export function useNestedHashAccordion(
+// Synchronisiert Hash-Lesen (Mount + hashchange-Event) mit den State-Settern.
+// Refs werden separat via useEffect aktualisiert, damit Effect-Identitäten
+// stabil bleiben.
+function useHashSync(
   bereichSlugs: readonly string[],
-  topicsByBereich: Readonly<Record<string, readonly string[]>>
-): NestedHashController {
-  const [bereichValue, setBereichValue] = useState<string[]>([]);
-  const [topicValueByBereich, setTopicValueByBereich] = useState<Record<string, string[]>>({});
-
+  topicsByBereich: Readonly<Record<string, readonly string[]>>,
+  setBereich: (next: string[] | ((prev: string[]) => string[])) => void,
+  setTopics: (
+    next: Record<string, string[]> | ((prev: Record<string, string[]>) => Record<string, string[]>)
+  ) => void
+): void {
   const bereichRef = useRef(bereichSlugs);
   const topicsRef = useRef(topicsByBereich);
   useEffect(() => {
@@ -86,42 +90,46 @@ export function useNestedHashAccordion(
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const parsed = parseNestedHash(window.location.hash);
     applyHash(
-      parsed,
+      parseNestedHash(window.location.hash),
       bereichRef.current,
       topicsRef.current,
-      setBereichValue,
-      setTopicValueByBereich
+      setBereich,
+      setTopics
     );
-  }, []);
-
-  useEffect(() => {
     const onHashChange = (): void => {
-      const parsed = parseNestedHash(window.location.hash);
       applyHash(
-        parsed,
+        parseNestedHash(window.location.hash),
         bereichRef.current,
         topicsRef.current,
-        setBereichValue,
-        setTopicValueByBereich
+        setBereich,
+        setTopics
       );
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
+  }, [setBereich, setTopics]);
+}
+
+export function useNestedHashAccordion(
+  bereichSlugs: readonly string[],
+  topicsByBereich: Readonly<Record<string, readonly string[]>>
+): NestedHashController {
+  const [bereichValue, setBereichValue] = useState<string[]>([]);
+  const [topicValueByBereich, setTopicValueByBereich] = useState<Record<string, string[]>>({});
+
+  useHashSync(bereichSlugs, topicsByBereich, setBereichValue, setTopicValueByBereich);
 
   const onBereichChange = useCallback((next: string[]) => {
     setBereichValue(next);
-    // Letzter offener Bereich bestimmt den Hash; ohne offenen Bereich → leeren
-    const lastBereich = next.length > 0 ? next[next.length - 1] : null;
-    writeHash(buildNestedHash(lastBereich));
+    const last = next.length > 0 ? next[next.length - 1] : null;
+    writeHash(buildNestedHash(last));
   }, []);
 
   const onTopicChange = useCallback((bereich: string, next: string[]) => {
     setTopicValueByBereich((prev) => ({ ...prev, [bereich]: next }));
-    const lastTopic = next.length > 0 ? next[next.length - 1] : null;
-    writeHash(buildNestedHash(bereich, lastTopic));
+    const last = next.length > 0 ? next[next.length - 1] : null;
+    writeHash(buildNestedHash(bereich, last));
   }, []);
 
   return { bereichValue, topicValueByBereich, onBereichChange, onTopicChange };

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function DgbPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
       <nav className="text-muted-foreground text-sm">
         <Link href="/" className="hover:underline">
           Start
@@ -32,6 +32,6 @@ export default function DgbPage() {
           />
         ))}
       </div>
-    </main>
+    </div>
   );
 }

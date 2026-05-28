@@ -20,7 +20,7 @@ export default async function LehrerDashboard() {
   const user = await requireUser();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <form action={signOut}>
@@ -44,6 +44,6 @@ export default async function LehrerDashboard() {
           </Link>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   );
 }

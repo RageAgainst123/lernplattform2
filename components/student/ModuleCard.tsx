@@ -1,12 +1,15 @@
 import Link from 'next/link';
-import { CheckIcon, PencilIcon } from 'lucide-react';
+import { CheckIcon, PencilIcon, ArrowRightIcon } from 'lucide-react';
 import type { AssignedModule } from '@/lib/db/student-modules';
 import type { ModuleStatus } from '@/lib/db/student-modules-status';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Zeigt ein Schüler:innen-Dashboard-Modul mit Status-Badge. 'open' rendert
-// kein Badge (sauberer Default), 'in_progress' = gelb-tönt „In Bearbeitung",
-// 'done' = primary-tönt „Erledigt".
+// Zeigt ein Schüler:innen-Dashboard-Modul mit Status-Badge + Karten-Style:
+//   - 'open': kein Badge, linker Akzentrand → „los geht's"
+//   - 'in_progress': gelbes Badge + linker Akzentrand + „Weitermachen"-Hinweis
+//   - 'done': Erledigt-Badge, leicht gedimmt → ans Ende sortiert
+//
+// Ziel: Schüler:innen sehen auf einen Blick was noch zu tun ist.
 
 function StatusBadge({ status }: { status: ModuleStatus }) {
   if (status === 'done') {
@@ -28,16 +31,39 @@ function StatusBadge({ status }: { status: ModuleStatus }) {
   return null;
 }
 
+function CardCta({ status }: { status: ModuleStatus }) {
+  if (status === 'done') return null;
+  const label = status === 'in_progress' ? 'Weitermachen' : 'Starten';
+  return (
+    <p className="text-primary mt-2 flex items-center gap-1 text-sm font-medium">
+      {label}
+      <ArrowRightIcon className="size-4" aria-hidden />
+    </p>
+  );
+}
+
+// Tailwind-Klassen je Status. Akzentrand links für aktive Module, gedimmt
+// für erledigte → Auge sieht: hier passiert was, hier ist fertig.
+function cardClassesFor(status: ModuleStatus): string {
+  const base = 'transition-colors';
+  if (status === 'done') {
+    return `${base} hover:bg-muted/50 opacity-70`;
+  }
+  // open + in_progress: linker Akzentbalken
+  return `${base} hover:bg-muted/50 border-l-4 border-l-primary`;
+}
+
 export function ModuleCard({ module }: { module: AssignedModule }) {
   return (
     <Link href={`/s/modul/${module.id}`} className="block">
-      <Card className="hover:bg-muted/50 transition-colors">
+      <Card className={cardClassesFor(module.status)}>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2 text-xl">
             <span>{module.title}</span>
             <StatusBadge status={module.status} />
           </CardTitle>
           {module.description && <CardDescription>{module.description}</CardDescription>}
+          <CardCta status={module.status} />
         </CardHeader>
       </Card>
     </Link>

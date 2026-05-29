@@ -45,7 +45,7 @@ describe('SiteHeader', () => {
     expect(logo).toHaveAttribute('href', '/');
   });
 
-  it('shows the main navigation links + Lehrer:innen-Login when logged out', async () => {
+  it('shows Materialien + Schüler:innen-Login + Lehrer:innen-Login when logged out', async () => {
     await renderHeaderWithInfo({ userLabel: null, userKind: null, isAdminUser: false });
     expect(screen.getByRole('link', { name: 'Materialien' })).toHaveAttribute('href', '/dgb');
     expect(screen.getByRole('link', { name: /Schüler:innen-Login/ })).toHaveAttribute('href', '/k');
@@ -55,7 +55,7 @@ describe('SiteHeader', () => {
     );
   });
 
-  it('shows the student codename + Abmelden when logged in as student', async () => {
+  it('shows „Mein Bereich" instead of Schüler:innen-Login when logged in as student', async () => {
     await renderHeaderWithInfo({
       userLabel: '5A-01',
       userKind: 'student',
@@ -63,16 +63,20 @@ describe('SiteHeader', () => {
     });
     expect(screen.getByText('5A-01')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Abmelden' }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('link', { name: /Schüler:innen-Login/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Lehrer:innen-Login/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mein Bereich' })).toHaveAttribute('href', '/s');
   });
 
-  it('shows the teacher email + Abmelden + Admin-Link when logged in as admin', async () => {
+  it('shows „Mein Dashboard" + Admin-Link when logged in as admin teacher', async () => {
     await renderHeaderWithInfo({
       userLabel: 'geoschlegel@gmail.com',
       userKind: 'teacher',
       isAdminUser: true,
     });
     expect(screen.getByText('geoschlegel@gmail.com')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mein Dashboard' })).toHaveAttribute('href', '/lehrer');
+    expect(screen.queryByRole('link', { name: /Schüler:innen-Login/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Admin' })[0]).toHaveAttribute('href', '/admin');
   });
 

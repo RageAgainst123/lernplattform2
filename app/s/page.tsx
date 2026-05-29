@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import { requireStudentSession } from '@/lib/auth/student-auth';
-import { studentLogout } from '@/lib/auth/student-actions';
 import { getCodenameById } from '@/lib/db/student-login';
 import { getAssignedModules } from '@/lib/db/student-modules';
-import { Button } from '@/components/ui/button';
+import { countByStatus, sortByStatus } from '@/lib/db/student-modules-status';
 import { ModuleCard } from '@/components/student/ModuleCard';
+import { StatusSummary } from '@/components/student/StatusSummary';
+
+// Schüler:innen-Dashboard: zugewiesene Module auf einen Blick. Reihenfolge
+// in_progress → open → done; Übersichts-Pille zeigt die Counts. Abmelden
+// lebt im Header (SiteHeader.HeaderAuthDesktop), nicht hier.
 
 export const metadata: Metadata = {
   title: 'Mein Bereich',
@@ -16,29 +20,27 @@ export default async function StudentDashboard() {
     getCodenameById(session.studentCodeId),
     getAssignedModules(session.classId, session.studentCodeId),
   ]);
+  const counts = countByStatus(modules);
+  const sorted = sortByStatus(modules);
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6 px-6 py-10">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Hallo {codename ?? ''}!</h1>
-        <form action={studentLogout}>
-          <Button type="submit" variant="outline">
-            Abmelden
-          </Button>
-        </form>
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight">Hallo {codename ?? ''}!</h1>
 
-      <h2 className="text-lg font-medium">Deine Module</h2>
       {modules.length === 0 ? (
         <p className="text-muted-foreground">
           Im Moment hast du keine Aufgaben. Schau später wieder vorbei!
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {modules.map((module) => (
-            <ModuleCard key={module.id} module={module} />
-          ))}
-        </div>
+        <>
+          <StatusSummary counts={counts} />
+          <h2 className="text-lg font-medium">Deine Module</h2>
+          <div className="flex flex-col gap-3">
+            {sorted.map((module) => (
+              <ModuleCard key={module.id} module={module} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

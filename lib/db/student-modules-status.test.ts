@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { progressStatusMap } from './student-modules-status';
+import { progressStatusMap, sortByStatus, countByStatus } from './student-modules-status';
 
 // Pure-Helper-Test: aus den 3 möglichen DB-Zuständen die korrekte
 // Status-Map ableiten. Module ohne progress-Row tauchen NICHT in der Map
@@ -38,5 +38,49 @@ describe('progressStatusMap', () => {
     // zurück und klassifiziert leeren String als nicht abgeschlossen.
     const map = progressStatusMap([{ module_id: 'm1', completed_at: '' }]);
     expect(map.get('m1')).toBe('in_progress');
+  });
+});
+
+describe('sortByStatus', () => {
+  it('orders items as in_progress, then open, then done', () => {
+    const input = [
+      { id: 'a', status: 'done' as const },
+      { id: 'b', status: 'open' as const },
+      { id: 'c', status: 'in_progress' as const },
+      { id: 'd', status: 'done' as const },
+      { id: 'e', status: 'open' as const },
+    ];
+    expect(sortByStatus(input).map((i) => i.id)).toEqual(['c', 'b', 'e', 'a', 'd']);
+  });
+
+  it('preserves the original order within the same status (stable sort)', () => {
+    const input = [
+      { id: 'a', status: 'in_progress' as const },
+      { id: 'b', status: 'in_progress' as const },
+      { id: 'c', status: 'in_progress' as const },
+    ];
+    expect(sortByStatus(input).map((i) => i.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('returns an empty array unchanged', () => {
+    expect(sortByStatus([])).toEqual([]);
+  });
+});
+
+describe('countByStatus', () => {
+  it('returns zero counts for an empty list', () => {
+    expect(countByStatus([])).toEqual({ open: 0, in_progress: 0, done: 0 });
+  });
+
+  it('counts each status correctly', () => {
+    const input = [
+      { status: 'open' as const },
+      { status: 'open' as const },
+      { status: 'in_progress' as const },
+      { status: 'done' as const },
+      { status: 'done' as const },
+      { status: 'done' as const },
+    ];
+    expect(countByStatus(input)).toEqual({ open: 2, in_progress: 1, done: 3 });
   });
 });

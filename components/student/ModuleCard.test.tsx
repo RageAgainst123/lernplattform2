@@ -36,4 +36,20 @@ describe('ModuleCard', () => {
     render(<ModuleCard module={build('done')} />);
     expect(screen.getByText('Erledigt')).toBeInTheDocument();
   });
+
+  it('shows a „Starten" CTA on open modules', () => {
+    render(<ModuleCard module={build('open')} />);
+    expect(screen.getByText('Starten')).toBeInTheDocument();
+  });
+
+  it('shows a „Weitermachen" CTA on in-progress modules', () => {
+    render(<ModuleCard module={build('in_progress')} />);
+    expect(screen.getByText('Weitermachen')).toBeInTheDocument();
+  });
+
+  it('hides the CTA on done modules', () => {
+    render(<ModuleCard module={build('done')} />);
+    expect(screen.queryByText('Starten')).not.toBeInTheDocument();
+    expect(screen.queryByText('Weitermachen')).not.toBeInTheDocument();
+  });
 });

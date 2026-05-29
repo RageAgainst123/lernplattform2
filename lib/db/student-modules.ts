@@ -3,6 +3,11 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { moduleContentSchema, type ModuleContent } from '@/lib/schemas/blocks';
 import type { BlockAnswer } from '@/lib/blocks/evaluate';
 import type { DisplayMode } from '@/lib/schemas/entities';
+import { progressStatusMap, type ModuleStatus, type ProgressRow } from './student-modules-status';
+
+// Re-export der reinen Status-Helper, damit Aufrufer wie Komponenten nur eine
+// Datei importieren müssen.
+export { progressStatusMap, type ModuleStatus };
 
 export type StudentModule = {
   id: string;
@@ -60,12 +65,12 @@ export type AssignedModule = {
   id: string;
   title: string;
   description: string | null;
-  completed: boolean;
+  status: ModuleStatus;
 };
 
 type ModuleRef = { id: string; title: string; description: string | null; is_published: boolean };
 
-// Lädt die der Klasse zugewiesenen, veröffentlichten Module + Abschluss-Status
+// Lädt die der Klasse zugewiesenen, veröffentlichten Module + 3-Stufen-Status
 // der Schüler:in (fürs Dashboard).
 export async function getAssignedModules(
   classId: string,
@@ -84,9 +89,7 @@ export async function getAssignedModules(
     .from('student_progress')
     .select('module_id, completed_at')
     .eq('student_code_id', studentCodeId);
-  const completedIds = new Set(
-    (progressRows ?? []).filter((p) => p.completed_at).map((p) => p.module_id)
-  );
+  const statusByModule = progressStatusMap((progressRows ?? []) as ProgressRow[]);
 
   return assignments
     .map((a) => a.modules as unknown as ModuleRef)
@@ -95,7 +98,7 @@ export async function getAssignedModules(
       id: m.id,
       title: m.title,
       description: m.description,
-      completed: completedIds.has(m.id),
+      status: statusByModule.get(m.id) ?? 'open',
     }));
 }
 

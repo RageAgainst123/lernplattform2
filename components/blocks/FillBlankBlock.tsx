@@ -2,9 +2,10 @@
 
 import { useMemo } from 'react';
 import type { FillBlankBlock as FillBlankType } from '@/lib/schemas/blocks';
-import { parseFillText, shuffle } from '@/lib/blocks/fill-blank';
+import { parseFillText } from '@/lib/blocks/fill-blank';
 import { cn } from '@/lib/utils';
 import { FillBlankText } from '@/components/blocks/FillBlankText';
+import { useShuffled } from '@/components/blocks/useShuffled';
 
 type Props = {
   block: FillBlankType;
@@ -16,10 +17,13 @@ type Props = {
 
 export function FillBlankBlock({ block, filled, checked, readOnly = false, onFill }: Props) {
   const segments = useMemo(() => parseFillText(block.text), [block.text]);
-  const pool = useMemo(
-    () => shuffle([...block.solutions, ...block.distractors]),
+  // Pool stable referenzieren (useMemo), damit useShuffled nur einmal pro
+  // Block-Wechsel neu mischt und nicht bei jedem Re-Render.
+  const baseItems = useMemo(
+    () => [...block.solutions, ...block.distractors],
     [block.solutions, block.distractors]
   );
+  const pool = useShuffled(baseItems);
   const used = new Set(filled.filter(Boolean));
   const locked = checked || readOnly;
 

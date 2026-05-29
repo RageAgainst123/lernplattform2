@@ -20,6 +20,19 @@ const BLOCKS: Block[] = [
   },
 ];
 
+const MIXED_BLOCKS: Block[] = [
+  { id: 't1', type: 'text', content: 'Lies dir zuerst das EVA-Prinzip durch.' },
+  { id: 'b1', type: 'reflection', prompt: 'Eingabe?', placeholder: 'Antwort' },
+  { id: 'i1', type: 'infobox', title: 'Tipp', content: 'Denke an die Tastatur.' },
+  {
+    id: 'b2',
+    type: 'fill_blank',
+    text: 'Eingabe → {0} → Ausgabe.',
+    solutions: ['Verarbeitung'],
+    distractors: ['Speicher'],
+  },
+];
+
 describe('WorksheetRunner', () => {
   it('renders all blocks on one page with task numbers', () => {
     render(
@@ -104,5 +117,65 @@ describe('WorksheetRunner', () => {
     expect(screen.getByText(/Abgegeben am/)).toBeInTheDocument();
     const textarea = screen.getByPlaceholderText('Deine Antwort');
     expect(textarea).toBeDisabled();
+  });
+
+  it('only labels interactive blocks as Aufgaben (theory blocks get „Lesen")', () => {
+    render(
+      <WorksheetRunner
+        blocks={MIXED_BLOCKS}
+        initialAnswers={{}}
+        initialSubmittedAt={null}
+        onSaveDraft={async () => {}}
+        onSubmit={async () => {}}
+      />
+    );
+    // Reflektion = Aufgabe 1, Fill-Blank = Aufgabe 2
+    expect(screen.getByText('Aufgabe 1')).toBeInTheDocument();
+    expect(screen.getByText('Aufgabe 2')).toBeInTheDocument();
+    // Es darf KEINE Aufgabe 3 (oder 4) geben — Theorie wird nicht gezählt
+    expect(screen.queryByText('Aufgabe 3')).not.toBeInTheDocument();
+    // Theorie-Blöcke haben das „Lesen"-Label (zwei Mal: text + infobox)
+    expect(screen.getAllByText('Lesen').length).toBe(2);
+  });
+
+  it('shows save indicator transitions during draft autosave', async () => {
+    const user = userEvent.setup();
+    const onSaveDraft = vi.fn().mockResolvedValue(undefined);
+    render(
+      <WorksheetRunner
+        blocks={BLOCKS}
+        initialAnswers={{}}
+        initialSubmittedAt={null}
+        onSaveDraft={onSaveDraft}
+        onSubmit={async () => {}}
+      />
+    );
+    // Initial: Idle-Banner ist sichtbar
+    expect(screen.getByText(/automatisch gespeichert/)).toBeInTheDocument();
+    const textarea = screen.getByPlaceholderText('Deine Antwort');
+    await user.type(textarea, 'Test');
+    // Nach erfolgreichem Save: Bestätigung mit Uhrzeit
+    await waitFor(() => expect(screen.getByText(/Gespeichert um/)).toBeInTheDocument(), {
+      timeout: 1500,
+    });
+  });
+
+  it('shows an error banner when saveDraft rejects', async () => {
+    const user = userEvent.setup();
+    const onSaveDraft = vi.fn().mockRejectedValue(new Error('Netz weg'));
+    render(
+      <WorksheetRunner
+        blocks={BLOCKS}
+        initialAnswers={{}}
+        initialSubmittedAt={null}
+        onSaveDraft={onSaveDraft}
+        onSubmit={async () => {}}
+      />
+    );
+    const textarea = screen.getByPlaceholderText('Deine Antwort');
+    await user.type(textarea, 'X');
+    await waitFor(() => expect(screen.getByText(/Speichern fehlgeschlagen/)).toBeInTheDocument(), {
+      timeout: 1500,
+    });
   });
 });

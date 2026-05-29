@@ -33,10 +33,13 @@ Was kostet/bringt die Entscheidung? Welche Folge-Entscheidungen hängen daran?
 
 ## Liste
 
-| Nr                                              | Titel                                      | Datum      |
-| ----------------------------------------------- | ------------------------------------------ | ---------- |
-| [0001](0001-supabase-ssr-statt-auth-helpers.md) | @supabase/ssr statt @supabase/auth-helpers | 2026-05-25 |
-| [0002](0002-proxy-statt-middleware.md)          | proxy.ts statt middleware.ts (Next.js 16)  | 2026-05-25 |
-| [0003](0003-shadcn-base-ui.md)                  | shadcn/ui mit Base UI (base-nova-Preset)   | 2026-05-25 |
-| [0004](0004-system-fonts-statt-google.md)       | System-Fonts statt next/font/google        | 2026-05-25 |
-| [0005](0005-keine-src-verzeichnis.md)           | Keine src/-Verzeichnisebene                | 2026-05-25 |
+| Nr                                              | Titel                                        | Datum      |
+| ----------------------------------------------- | -------------------------------------------- | ---------- |
+| [0001](0001-supabase-ssr-statt-auth-helpers.md) | @supabase/ssr statt @supabase/auth-helpers   | 2026-05-25 |
+| [0002](0002-proxy-statt-middleware.md)          | proxy.ts statt middleware.ts (Next.js 16)    | 2026-05-25 |
+| [0003](0003-shadcn-base-ui.md)                  | shadcn/ui mit Base UI (base-nova-Preset)     | 2026-05-25 |
+| [0004](0004-system-fonts-statt-google.md)       | System-Fonts statt next/font/google          | 2026-05-25 |
+| [0005](0005-keine-src-verzeichnis.md)           | Keine src/-Verzeichnisebene                  | 2026-05-25 |
+| [0006](0006-display-modes-quiz-vs-worksheet.md) | Display-Modes — Quiz vs. Worksheet pro Modul | 2026-05-28 |
+| [0007](0007-modul-status-drei-stufen.md)        | Modul-Status als 3-Stufen-Klassifizierung    | 2026-05-29 |
+| [0008](0008-rollenabhaengiger-header-link.md)   | Rollenabhängiger Header-Nav-Link             | 2026-05-29 |

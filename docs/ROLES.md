@@ -81,6 +81,29 @@ Admin-spezifische Aktionen (Modul-CRUD) laufen über den **Service-Role-Client**
 (`lib/supabase/admin.ts`) — RLS wird dabei bewusst umgangen. Das ist sicher, weil
 zuerst `requireAdmin()` läuft.
 
+## 3a. Header-Verhalten je Rolle
+
+Der globale Header (`components/site/SiteHeader.tsx`) zeigt **einen einzigen
+kontextabhängigen Nav-Link** in der Mitte — je nach Rolle. Der rechte Slot
+zeigt Login-Status oder Login-CTA. Quelle der Wahrheit ist
+`fetchAuthSlot()` aus `HeaderAuth.tsx` (paralleler `getUser` +
+`getStudentSession`, ein Request, kein doppelter DB-Roundtrip).
+
+| Rolle          | Mittlerer Nav-Link           | Rechter Slot                                                   |
+| -------------- | ---------------------------- | -------------------------------------------------------------- |
+| **Öffentlich** | „Schüler:innen-Login" → `/k` | Button „Lehrer:innen-Login" → `/login`                         |
+| **Schüler:in** | „Mein Bereich" → `/s`        | „Angemeldet als 5A-01" + Abmelden-Form (`studentLogout`)       |
+| **Lehrer:in**  | „Mein Dashboard" → `/lehrer` | E-Mail (max 24 Zeichen, sonst „…") + Abmelden-Form (`signOut`) |
+| **Admin**      | „Mein Dashboard" → `/lehrer` | Zusätzlich „Admin"-Link → `/admin`, sonst wie Lehrer:in        |
+
+**Materialien** (`/dgb`) ist für alle Rollen sichtbar — als zweiter Link
+links neben dem rollenabhängigen Nav-Link.
+
+**Mobile-Menü** (`MobileMenu.tsx`) zeigt dieselben Links plus den
+Abmelden-Button als eigene Sektion unten im aufgeklappten Menü.
+
+Siehe ADR-0008 für die Architektur-Entscheidung.
+
 ## 4. Wie wird Admin erkannt?
 
 ```typescript
@@ -143,3 +166,9 @@ Vorteile:
 
 - **2026-05-28** — Datei angelegt; Admin-Rolle als E-Mail-Allowlist eingeführt,
   damit Geo nicht mehr „als Lehrer:in mit Spezialwissen" arbeiten muss.
+- **2026-05-29** — Schüler:innen-UX-Polish (Phase 13): Login-Status wird im
+  Header sichtbar (Codename + Abmelden); siehe §3a.
+- **2026-05-29** — Rollenabhängiger Header (Phase 14, ADR-0008): mittlerer
+  Nav-Link wechselt je nach Rolle (Schüler:in → Mein Bereich, Lehrer:in →
+  Mein Dashboard, Anonym → Schüler:innen-Login). „Mein Bereich" `/s` zeigt
+  Übersichts-Pille + 3-stufige Modul-Status-Badges.

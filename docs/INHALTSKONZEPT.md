@@ -2,7 +2,7 @@
 
 > Diese Datei klärt das **Was** der Inhalte — Begriffe, Ebenen, wer was sieht.
 > Sie ist die verbindliche Referenz, bevor Inhalts-Features gebaut werden.
-> Stand: 2026-05-26.
+> Stand: 2026-05-29.
 
 ## 1. Grundprinzip: Inhalte erstellt nur der Autor (Geo)
 
@@ -19,10 +19,10 @@ vermischt. Tatsächlich gibt es **zwei verschiedene Dinge**:
 |                  | **Material**                                          | **Modul**                                                           |
 | ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------- |
 | **Was**          | PDF (Theorie, Arbeitsblatt, Lösung, Stundenbild)      | Interaktive Block-Aufgabe (Quiz, Lückentext, Zuordnen, Reflexion …) |
-| **Format**       | Datei zum Ansehen/Drucken                             | Block-für-Block am Bildschirm                                       |
+| **Format**       | Datei zum Ansehen/Drucken                             | 7 Block-Typen am Bildschirm, zwei Anzeige-Modi (s. u.)              |
 | **Sichtbarkeit** | **Öffentlich**, ohne Login                            | Schüler:innen **nach Zuweisung** durch Lehrer:in                    |
-| **Interaktion**  | herunterladen, ausdrucken                             | durchklicken, Antworten, Fortschritt wird gespeichert               |
-| **Tabelle**      | `materials` (existiert, noch leer)                    | `modules` (existiert, EVA-Demo drin)                                |
+| **Interaktion**  | herunterladen, ausdrucken                             | bearbeiten, Antworten, Fortschritt wird gespeichert                 |
+| **Tabelle**      | `materials` (existiert, noch leer)                    | `modules` (mit `display_mode`-Spalte; EVA-Demo drin)                |
 | **Lösungen**     | `is_teacher_only`-Flag (nur eingeloggte Lehrer:innen) | —                                                                   |
 
 **Sprachregelung (verbindlich):**
@@ -32,6 +32,44 @@ vermischt. Tatsächlich gibt es **zwei verschiedene Dinge**:
 - „Aufgabe" / „Aktivität" verwenden wir **nicht** als Fachbegriffe (mehrdeutig).
   In Schüler:innen-Texten ist „Aufgabe" als Alltagswort ok, aber im
   Code/Datenmodell/Lehrer:innen-UI heißt es **Modul**.
+
+## 2a. Modul-Anzeige-Modi (Quiz vs. Worksheet)
+
+Jedes Modul hat **einen** Anzeige-Modus (Spalte `modules.display_mode`,
+`text` mit Default `'quiz'` und Check `IN ('quiz', 'worksheet')` —
+Migration 0006, ADR-0006).
+
+| Modus       | Verhalten                                                                                                                                             | Renderer              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `quiz`      | Block-für-Block. „Prüfen" → Sofort-Feedback grün/rot → „Weiter".                                                                                      | `ModuleRunner.tsx`    |
+| `worksheet` | Alle Aufgaben auf einer scrollbaren Seite. Auto-Save (debounced, 800 ms). „Abgeben" als definitive Abgabe → danach Read-only. Keine Sofort-Bewertung. | `WorksheetRunner.tsx` |
+
+**Block-Typen sind identisch in beiden Modi.** Worksheet rendert die
+interaktiven Block-Renderer mit `readOnly`-Prop nach Abgabe.
+
+**Theorie-Blöcke (`text`, `infobox`) werden in beiden Modi sichtbar** —
+im Worksheet-Modus mit „📖 Lesen"-Label und gedämpftem Hintergrund
+(`bg-muted/30`), nicht als „Aufgabe N" gezählt.
+
+## 2b. Modul-Bearbeitungs-Status (3 Stufen, pro Schüler:in)
+
+Pro Schüler:in und Modul existieren drei Zustände, abgeleitet aus
+`student_progress` (KEIN neues DB-Feld; siehe ADR-0007 und
+`lib/db/student-modules-status.ts`):
+
+| Status        | Wann                                                 | Dashboard-Anzeige                                 |
+| ------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| `open`        | keine `student_progress`-Row für (Modul, Schüler:in) | kein Badge, Akzentrand links, CTA „Starten"       |
+| `in_progress` | Row existiert, `completed_at IS NULL`                | Gelbes „📝 In Bearbeitung"-Badge + „Weitermachen" |
+| `done`        | Row existiert, `completed_at` gesetzt (abgegeben)    | Primary-Badge „✓ Erledigt", Karte gedimmt         |
+
+Im Schüler:innen-Dashboard `/s`:
+
+- **Übersichts-Pille** oben: „N in Bearbeitung · N offen · N erledigt"
+  (Status mit 0 Modulen werden ausgeblendet).
+- **Sortierung:** `in_progress` zuerst (gerade dran), dann `open`, zuletzt
+  `done` (erledigt). Stabile Sortierung — innerhalb derselben Stufe bleibt
+  die ursprüngliche Reihenfolge erhalten.
 
 ## 3. Navigations-Hierarchie (verbindlich)
 
@@ -74,12 +112,12 @@ Feld `fach` (enum: dgb | informatik) auf beide Tabellen ergänzen (eigene Migrat
 
 ## 4. Wer sieht/macht was — Nutzer-Rollen
 
-| Rolle                       | Material                                        | Modul                                                           |
-| --------------------------- | ----------------------------------------------- | --------------------------------------------------------------- |
-| **Öffentlich (ohne Login)** | sehen + herunterladen (außer `is_teacher_only`) | — (sieht nur, dass es Module gibt; bearbeiten nur eingeloggt)   |
-| **Lehrer:in (eingeloggt)**  | sehen + auch Lösungen                           | Module der Klasse **zuweisen**, Fortschritt der Klasse sehen    |
-| **Schüler:in (Code+PIN)**   | — (kommt über öffentlichen Bereich dran)        | **zugewiesene** Module bearbeiten, Fortschritt wird gespeichert |
-| **Autor (Geo)**             | erstellt Materialien                            | erstellt Module                                                 |
+| Rolle                       | Material                                        | Modul                                                                                                    |
+| --------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Öffentlich (ohne Login)** | sehen + herunterladen (außer `is_teacher_only`) | — (sieht nur, dass es Module gibt; bearbeiten nur eingeloggt)                                            |
+| **Lehrer:in (eingeloggt)**  | sehen + auch Lösungen                           | Module der Klasse **zuweisen**, Fortschritt der Klasse sehen                                             |
+| **Schüler:in (Code+PIN)**   | — (kommt über öffentlichen Bereich dran)        | **zugewiesene** Module bearbeiten (3 Stufen: offen / in Bearbeitung / erledigt), Fortschritt gespeichert |
+| **Autor (Geo)**             | erstellt Materialien                            | erstellt Module                                                                                          |
 
 ## 5. Offene Design-Frage: „Lernpfad"?
 

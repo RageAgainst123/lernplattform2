@@ -94,13 +94,25 @@ PDF-Download UND „Online ausfüllen"-Button.
 4. Auf der Detail-Seite das **Modul-Dropdown** öffnen und das eben
    erstellte Modul auswählen. Speichern.
 
-### Schritt 7 — Modul veröffentlichen + smoketesten
+### Schritt 7 — Modul veröffentlichen + einer Klasse zuweisen
 
 1. Zurück auf `/admin/module/<id>` → Checkbox „Veröffentlicht" → Speichern.
-2. **Anonyme Vorschau:** `/dgb/<stufe>/<bereich>#<topic-slug>` öffnen.
+2. **Modul der Klasse zuweisen** (Lehrer:innen-Sicht): auf
+   `/lehrer/klassen/<id>` runter zur Modul-Sektion → Dropdown → Modul
+   wählen → ggf. Fälligkeitsdatum → **Zuweisen**.
+   - Damit erscheint das Modul im Schüler:innen-Dashboard `/s`.
+   - Per Link „Klassen-Fortschritt ansehen →" gehst du jederzeit zur
+     Matrix-Ansicht.
+
+### Schritt 8 — Smoketesten
+
+1. **Anonyme Vorschau:** `/dgb/<stufe>/<bereich>#<topic-slug>` öffnen.
    PDF-Download muss sichtbar sein.
-3. **Schüler:innen-Test:** `/k` → `TEST00` → `5T-01` → PIN `0000` →
+2. **Schüler:innen-Test:** `/k` → `TEST00` → `5T-01` → PIN `0000` →
    Dashboard zeigt das Modul → öffnen → durchklicken → Abgeben.
+3. **Lehrer:innen-Sicht prüfen:** `/lehrer/klassen/<id>/fortschritt` →
+   die Status-Zelle der Schüler:in × Modul sollte jetzt „Fertig"
+   (oder „Begonnen") zeigen.
 4. Sobald alles passt: fertig. Im Repo: `git add arbeitsblaetter/gen_*.py
 arbeitsblaetter/*.pdf supabase/seeds/*.sql && git commit`.
 

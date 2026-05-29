@@ -283,7 +283,11 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   Header, Save-Indikator, Theorie-Trennung, 3-Status-Module-Badge (ADR-0007)
 - ✅ **Phase 14:** Rollenabhängiger Header-Link + Dashboard-Übersicht
   (Status-Pille + Sortierung + Akzent-Karten + CTA) (ADR-0008)
-- 🔜 **Phase 15:** Lehrer:innen-Auswertung (Klassen-Fortschritt sehen),
-  Lehrer:innen-Modul-Zuweisung im UI, Lernpfad-Entscheidung
+- ✅ **Phase 15:** Lehrer:innen-Modul-Zuweisung im UI
+  (`/lehrer/klassen/[id]` Modul-Sektion mit Dropdown + Liste) +
+  Klassen-Fortschritts-Matrix (`/lehrer/klassen/[id]/fortschritt`):
+  Schüler:innen × Module mit Status-Badges + Score
+- 🔜 **Phase 16:** Lernpfad-Entscheidung, Lösch-Funktion für Klassen/Codes,
+  Phase-2-Block-Typen, PWA/Offline
 
 (Detaillierter Phasen-Verlauf siehe `CHANGELOG.md`.)

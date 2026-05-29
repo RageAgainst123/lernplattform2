@@ -8,6 +8,44 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase 15 — Lehrer:innen-Modul-Zuweisung + Klassen-Fortschritt-Matrix
+
+**2026-05-29** · Commit-Hash wird nach Commit eingefügt
+
+### Hinzugefügt
+
+- DB-Layer `lib/db/class-modules.ts` mit `getAssignedModulesForClass`
+  (RLS-geschützt durch `class_modules_all_own`).
+- Server-Actions `lib/db/class-module-actions.ts`: `assignModuleToClass`
+  - `unassignModuleFromClass`. Beide hinter `requireUser()`.
+- DB-Layer `lib/db/class-progress.ts` mit `getClassProgress` (Matrix-
+  Build aus `student_codes` + `class_modules` + `student_progress`),
+  plus pure Helper `cellKey` / `getCellOrOpen` / `countMatrixStatuses`.
+- `getPublishedModulesAll` in `lib/db/modules.ts` (stufen-übergreifend,
+  für das Klassen-Zuweisungs-Dropdown).
+- UI: `components/teacher/ModuleAssignmentPanel.tsx` + ausgelagerte
+  `AssignedModulesList.tsx` (Liste + Entfernen-Aktion).
+- UI: `components/teacher/ClassProgressMatrix.tsx` + sticky-Spalten
+  Tabelle, `ClassProgressCell.tsx` mit Status-Badge + optionalem Score.
+- Neue Route `/lehrer/klassen/[id]/fortschritt` — read-only Matrix-
+  Ansicht, robots=noindex.
+- Klassen-Detail-Seite `/lehrer/klassen/[id]` ersetzt den bisherigen
+  Placeholder durch das Modul-Panel; Page-Funktion in Sub-Komponenten
+  (`ClassHeader`, `StudentCodesCard`, `ModulesCard`) zerlegt.
+
+### Geändert
+
+- `docs/AUTOR-WORKFLOW.md` Schritt 7+8: Modul-Zuweisung jetzt über UI
+  statt SQL.
+
+### Tests
+
+- 213 grün (+21): `class-modules` (6), `class-progress` (6 für pure
+  Helper), `ClassProgressCell` (5), `ModuleAssignmentPanel` (5 incl.
+  Filter-Logik).
+
+---
+
 ## Phase 14 — Rollenabhängiger Header + Dashboard-Übersicht
 
 **2026-05-29** · Commit [`4ae4988`](https://github.com/RageAgainst123/lernplattform2/commit/4ae49889ef3fe88be329178697200319d24e248b)

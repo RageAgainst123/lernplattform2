@@ -90,3 +90,24 @@ export async function getModulesForLink(
   if (error) throw new Error(`Modul-Liste konnte nicht geladen werden: ${error.message}`);
   return (data as ModuleOption[]) ?? [];
 }
+
+export type PublishedModuleOption = {
+  id: string;
+  title: string;
+  schulstufe: number | null;
+};
+
+// Für das Klassen-Modul-Zuweisungs-Dropdown (Lehrer:innen-Sicht): alle
+// veröffentlichten Module über alle Stufen + Bereiche. Sortiert nach
+// Schulstufe + Titel — Lehrer:in sieht die für ihre Klasse passenden zuerst.
+export async function getPublishedModulesAll(): Promise<PublishedModuleOption[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('modules')
+    .select('id, title, schulstufe')
+    .eq('is_published', true)
+    .order('schulstufe', { ascending: true, nullsFirst: false })
+    .order('title', { ascending: true });
+  if (error) throw new Error(`Modul-Liste konnte nicht geladen werden: ${error.message}`);
+  return (data as PublishedModuleOption[]) ?? [];
+}

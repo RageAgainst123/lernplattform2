@@ -177,3 +177,9 @@ Vorteile:
   Richtungen symmetrisch (siehe `lib/auth/session-cleanup.ts`): wenn man
   sich neu einloggt oder ausloggt, wird die jeweils andere Rolle-Session
   beendet. Damit gibt es nie zwei aktive Rollen-Cookies gleichzeitig.
+- **2026-05-29** — Phase 15: Lehrer:innen können im UI Module zu eigenen
+  Klassen zuweisen (`/lehrer/klassen/[id]` Modul-Sektion) und den
+  Klassen-Fortschritt als Matrix sehen (`/lehrer/klassen/[id]/fortschritt`).
+  RLS-Policies `class_modules_all_own` und `student_progress_select_own_classes`
+  erzwingen die Sicht auf eigene Klassen. Codenamen sind anonym — Lehrer:in
+  sieht nur Status + Score, keine PII (DSGVO §6).

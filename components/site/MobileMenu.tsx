@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { MenuIcon, XIcon } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
@@ -124,9 +124,19 @@ export function MobileMenu({
   isAdminUser: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  // Focus-Return: nach dem Schließen geht der Tastatur-Fokus zurück auf den
+  // Menü-Trigger — sonst landen Keyboard-Nutzer:innen am Seitenanfang.
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  function handleClose() {
+    setOpen(false);
+    // requestAnimationFrame statt direkter focus(): der Button rendert grade
+    // neu (Icon wechselt), ohne den Tick wäre der Fokus weg.
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }
   return (
     <div className="md:hidden">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
@@ -142,7 +152,7 @@ export function MobileMenu({
           userLabel={userLabel}
           userKind={userKind}
           isAdminUser={isAdminUser}
-          onClose={() => setOpen(false)}
+          onClose={handleClose}
         />
       )}
     </div>

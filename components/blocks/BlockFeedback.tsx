@@ -18,6 +18,8 @@ export function BlockFeedback({ block, correct }: { block: Block; correct: boole
           : 'border-red-600 bg-red-50 text-red-800'
       )}
       role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
       <p className="font-medium">{correct ? 'Richtig!' : 'Noch nicht richtig.'}</p>
       {explanation && <p className="mt-1">{explanation}</p>}

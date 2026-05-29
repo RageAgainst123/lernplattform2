@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/admin';
 import type { Module, Kompetenzbereich, DisplayMode } from '@/lib/schemas/entities';
 
 // Read-Funktionen für Module. Admin-Lese-Funktionen umgehen RLS NICHT —
@@ -41,6 +42,18 @@ function toModule(row: ModuleRow): Module {
 
 export async function getModuleById(id: string): Promise<Module | null> {
   const supabase = await createClient();
+  const { data, error } = await supabase.from('modules').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error(`Modul konnte nicht geladen werden: ${error.message}`);
+  return data ? toModule(data as ModuleRow) : null;
+}
+
+// Admin-Variante von getModuleById — umgeht RLS via Service-Role, damit der
+// Autor:in-Editor JEDES Modul sehen + bearbeiten kann (auch Module die
+// `is_published = false` sind UND von anderen Autor:innen erstellt wurden,
+// falls später Co-Autoren dazukommen). Symmetrisch zu getModulesForAdmin.
+// MUSS hinter requireAdmin() aufgerufen werden — sonst RLS-Bypass.
+export async function getModuleByIdForAdmin(id: string): Promise<Module | null> {
+  const supabase = createServiceClient();
   const { data, error } = await supabase.from('modules').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error(`Modul konnte nicht geladen werden: ${error.message}`);
   return data ? toModule(data as ModuleRow) : null;

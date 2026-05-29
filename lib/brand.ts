@@ -18,3 +18,9 @@ export const BRAND = {
   // (zusätzlich zum Lehrer:innen-Login). Siehe docs/ROLES.md.
   adminEmails: ['geoschlegel@gmail.com'] as readonly string[],
 } as const;
+
+// Copyright-Jahr für den Footer. Wird zur Modul-Lade-Zeit (also einmal pro
+// Server-Start / Build) berechnet — NICHT in jedem Render. Vermeidet
+// Hydration-Mismatch-Risiko (CLAUDE.md: kein `new Date()` im Render).
+// Bei Jahreswechsel reicht ein neuer Deploy.
+export const COPYRIGHT_YEAR = new Date().getFullYear();

@@ -19,9 +19,10 @@ function SubmitButton() {
 
 function PinField() {
   return (
-    <label className="flex flex-col gap-2 text-lg">
-      Deine PIN
+    <div className="flex flex-col gap-2 text-lg">
+      <label htmlFor="student-pin">Deine PIN</label>
       <Input
+        id="student-pin"
         name="pin"
         inputMode="numeric"
         pattern="[0-9]*"
@@ -30,7 +31,7 @@ function PinField() {
         placeholder="••••"
         className="h-12 text-center text-2xl tracking-[0.5em]"
       />
-    </label>
+    </div>
   );
 }
 
@@ -46,9 +47,10 @@ export function StudentLoginForm({
   return (
     <form action={formAction} className="flex flex-col gap-5">
       <input type="hidden" name="joinCode" value={joinCode} />
-      <label className="flex flex-col gap-2 text-lg">
-        Dein Name
+      <div className="flex flex-col gap-2 text-lg">
+        <label htmlFor="student-codename">Dein Name</label>
         <select
+          id="student-codename"
           name="codename"
           required
           defaultValue=""
@@ -63,7 +65,7 @@ export function StudentLoginForm({
             </option>
           ))}
         </select>
-      </label>
+      </div>
       <PinField />
       {state.error && (
         <p className="text-destructive text-base" role="alert">

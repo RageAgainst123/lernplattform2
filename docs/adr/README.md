@@ -43,3 +43,4 @@ Was kostet/bringt die Entscheidung? Welche Folge-Entscheidungen hängen daran?
 | [0006](0006-display-modes-quiz-vs-worksheet.md) | Display-Modes — Quiz vs. Worksheet pro Modul | 2026-05-28 |
 | [0007](0007-modul-status-drei-stufen.md)        | Modul-Status als 3-Stufen-Klassifizierung    | 2026-05-29 |
 | [0008](0008-rollenabhaengiger-header-link.md)   | Rollenabhängiger Header-Nav-Link             | 2026-05-29 |
+| [0009](0009-open-redirect-schutz.md)            | Open-Redirect-Schutz im Magic-Link-Callback  | 2026-05-29 |

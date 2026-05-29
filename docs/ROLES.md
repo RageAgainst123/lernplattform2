@@ -172,3 +172,8 @@ Vorteile:
   Nav-Link wechselt je nach Rolle (Schüler:in → Mein Bereich, Lehrer:in →
   Mein Dashboard, Anonym → Schüler:innen-Login). „Mein Bereich" `/s` zeigt
   Übersichts-Pille + 3-stufige Modul-Status-Badges.
+- **2026-05-29** — Sicherheits-Sprint: Open-Redirect im Magic-Link-Callback
+  geschlossen (ADR-0009 — `safeNext()`-Helper), Login + Logout in beide
+  Richtungen symmetrisch (siehe `lib/auth/session-cleanup.ts`): wenn man
+  sich neu einloggt oder ausloggt, wird die jeweils andere Rolle-Session
+  beendet. Damit gibt es nie zwei aktive Rollen-Cookies gleichzeitig.

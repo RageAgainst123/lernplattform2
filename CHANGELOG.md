@@ -10,7 +10,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 14 — Rollenabhängiger Header + Dashboard-Übersicht
 
-**2026-05-29** · Commit [`4ae4988`](#)
+**2026-05-29** · Commit [`4ae4988`](https://github.com/RageAgainst123/lernplattform2/commit/4ae49889ef3fe88be329178697200319d24e248b)
 
 ### Hinzugefügt
 
@@ -39,7 +39,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 13 — Schüler:innen-UX-Polish
 
-**2026-05-29** · Commit [`44b0f68`](#)
+**2026-05-29** · Commit [`44b0f68`](https://github.com/RageAgainst123/lernplattform2/commit/44b0f6873d38302f553d02dda7145c063abd58da)
 
 ### Geändert
 
@@ -75,7 +75,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 12 — Arbeitsblatt-Modus für Module
 
-**2026-05-28** · Commit [`c2531c1`](#)
+**2026-05-28** · Commit [`c2531c1`](https://github.com/RageAgainst123/lernplattform2/commit/c2531c15d7c137f93b2f561f38a773411fcb0386)
 
 ### Hinzugefügt
 
@@ -107,7 +107,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 11 — Admin-Bereich + Modul-/Material-Verwaltung
 
-**2026-05-28** · Commit [`cd92dec`](#)
+**2026-05-28** · Commit [`cd92dec`](https://github.com/RageAgainst123/lernplattform2/commit/cd92dec6f155df2964ce78eec6fcbff305a6f01e)
 
 ### Hinzugefügt
 
@@ -131,7 +131,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 10 — Branding
 
-**2026-05-28** · Commit [`30318fd`](#)
+**2026-05-28** · Commit [`30318fd`](https://github.com/RageAgainst123/lernplattform2/commit/30318fda9afd3d80ab61073162f46af59fbf3a80)
 
 ### Hinzugefügt
 
@@ -146,7 +146,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 9 — Öffentliche Materialbibliothek
 
-**2026-05-28** · Commits [`bdb5f8e`](#), [`ba54c2c`](#)
+**2026-05-28** · Commits [`bdb5f8e`](https://github.com/RageAgainst123/lernplattform2/commit/bdb5f8ed8f88ac8733b1a4b0a853ce146fcc76b2), [`ba54c2c`](https://github.com/RageAgainst123/lernplattform2/commit/ba54c2cf93883b223b8cf80ffd33dda81d3fca9f)
 
 ### Hinzugefügt
 
@@ -167,7 +167,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 8 — Block-Engine + EVA-Demo-Modul
 
-**2026-05-26** · Commits [`0d01302`](#), [`aecdbdb`](#)
+**2026-05-26** · Commits [`0d01302`](https://github.com/RageAgainst123/lernplattform2/commit/0d01302baa4d119367179065db6183d7f002288e), [`aecdbdb`](https://github.com/RageAgainst123/lernplattform2/commit/aecdbdb8ef94b0291027570e6e72a0c202839703)
 
 ### Hinzugefügt
 
@@ -192,7 +192,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 7 — Schüler:innen-Login
 
-**2026-05-26** · Commit [`408267c`](#)
+**2026-05-26** · Commit [`408267c`](https://github.com/RageAgainst123/lernplattform2/commit/408267c18385a14525fd88cf310f84e074290ecb)
 
 ### Hinzugefügt
 
@@ -211,7 +211,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 6 — PDF-Export der Code-Liste
 
-**2026-05-26** · Commit [`2aff303`](#)
+**2026-05-26** · Commit [`2aff303`](https://github.com/RageAgainst123/lernplattform2/commit/2aff303a1a89ba44c5f7a2711d41e816117f3fa4)
 
 ### Hinzugefügt
 
@@ -224,7 +224,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 5 — Klassen-Verwaltung + Schüler:innen-Codes
 
-**2026-05-26** · Commits [`9e0b5c9`](#), [`a6821c1`](#)
+**2026-05-26** · Commits [`9e0b5c9`](https://github.com/RageAgainst123/lernplattform2/commit/9e0b5c946f1bd9c16ead4a144507ae94bb9a0008), [`a6821c1`](https://github.com/RageAgainst123/lernplattform2/commit/a6821c1da9fe0f356fe3fc57c65a77aed7ff5575)
 
 ### Hinzugefügt
 
@@ -241,7 +241,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 4 — Lehrer:innen-Login (Magic Link)
 
-**2026-05-25** · Commit [`5822cd3`](#)
+**2026-05-25** · Commit [`5822cd3`](https://github.com/RageAgainst123/lernplattform2/commit/5822cd3a01a243660f6e152eab2b8dd27d08cc9e)
 
 ### Hinzugefügt
 
@@ -257,7 +257,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 3 — Supabase-Schema + RLS
 
-**2026-05-25** · Commit [`5a1e4bb`](#)
+**2026-05-25** · Commit [`5a1e4bb`](https://github.com/RageAgainst123/lernplattform2/commit/5a1e4bbd9b6c622f1b8dbb8deb6a29d8c97f37fa)
 
 ### Hinzugefügt
 
@@ -276,7 +276,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 2 — shadcn/ui-Setup
 
-**2026-05-25** · Commit [`35ee830`](#)
+**2026-05-25** · Commit [`35ee830`](https://github.com/RageAgainst123/lernplattform2/commit/35ee83086dad5a03673f8ac7f630c677db4254a3)
 
 ### Hinzugefügt
 
@@ -288,7 +288,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 1 — Scaffold
 
-**2026-05-25** · Commit [`1c1b6cb`](#)
+**2026-05-25** · Commit [`1c1b6cb`](https://github.com/RageAgainst123/lernplattform2/commit/1c1b6cba50a363b993b884937155e290060c84e0)
 
 ### Hinzugefügt
 
@@ -308,6 +308,6 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Vor Phase 1
 
-**2026-05-25** · Commit [`35f9805`](#)
+**2026-05-25** · Commit [`35f9805`](https://github.com/RageAgainst123/lernplattform2/commit/35f9805d62494a7d9b2813e8e15690b3ab969914)
 
 - Initial commit from `create-next-app`.

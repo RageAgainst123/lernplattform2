@@ -2,6 +2,7 @@ import { type EmailOtpType } from '@supabase/supabase-js';
 import { type NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ensureTeacherProfile } from '@/lib/auth/teacher-auth';
+import { clearStudentSession } from '@/lib/auth/session-cleanup';
 
 // Verarbeitet den Magic-Link-Klick aus der E-Mail (token_hash + type).
 // Bei Erfolg: Session gesetzt, teachers-Profil angelegt, Weiterleitung ins Dashboard.
@@ -22,6 +23,10 @@ export async function GET(request: NextRequest) {
       if (user) {
         await ensureTeacherProfile(user);
       }
+      // Falls parallel eine Schüler:innen-Session existiert: beenden, damit
+      // es nie zwei aktive Rollen-Cookies gleichzeitig gibt (siehe
+      // session-cleanup.ts).
+      await clearStudentSession();
       return NextResponse.redirect(new URL(next, request.url));
     }
   }

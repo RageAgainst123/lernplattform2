@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyPin } from '@/lib/auth/pin';
 import { createStudentSession, STUDENT_COOKIE } from '@/lib/auth/student-session';
+import { clearTeacherSession } from '@/lib/auth/session-cleanup';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { getClassByJoinCode, getStudentCodeForLogin } from '@/lib/db/student-login';
 
@@ -28,6 +29,10 @@ export async function studentLogin(
   if (!code || !(await verifyPin(pin, code.pinHash))) {
     return { error: 'Anmeldung nicht möglich. Bitte Code, Name und PIN prüfen.' };
   }
+
+  // Falls parallel eine Lehrer:in-Session existiert: beenden, damit es nie
+  // zwei aktive Rollen-Cookies gleichzeitig gibt (siehe session-cleanup.ts).
+  await clearTeacherSession();
 
   const token = await createStudentSession({ studentCodeId: code.id, classId: schoolClass.id });
   const cookieStore = await cookies();

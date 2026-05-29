@@ -10,7 +10,7 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ## Phase 15 — Lehrer:innen-Modul-Zuweisung + Klassen-Fortschritt-Matrix
 
-**2026-05-29** · Commit-Hash wird nach Commit eingefügt
+**2026-05-29** · Commit [`f1e211e`](https://github.com/RageAgainst123/lernplattform2/commit/f1e211e)
 
 ### Hinzugefügt
 

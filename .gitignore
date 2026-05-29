@@ -45,3 +45,7 @@ next-env.d.ts
 
 # Generierte Arbeitsblatt-PDFs (liegen in Supabase Storage)
 arbeitsblaetter/*.pdf
+
+# Python-Cache der Arbeitsblatt-Generatoren
+__pycache__/
+*.pyc

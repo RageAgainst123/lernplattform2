@@ -78,7 +78,9 @@ export async function getStufeWithBereiche(schulstufe: number): Promise<BereichW
   const [matRes, modRes] = await Promise.all([
     supabase
       .from('materials')
-      .select('id, title, description, material_type, file_path, topic, kompetenzbereich')
+      .select(
+        'id, title, description, material_type, file_path, topic, kompetenzbereich, related_module_id'
+      )
       .eq('schulstufe', schulstufe),
     supabase
       .from('modules')
@@ -94,6 +96,7 @@ export async function getStufeWithBereiche(schulstufe: number): Promise<BereichW
       description: m.description,
       materialType: m.material_type as MaterialType,
       fileUrl: publicUrl(m.file_path as string),
+      relatedModuleId: (m.related_module_id as string | null) ?? null,
     },
     topic: (m.topic as string | null) ?? null,
     bereich: (m.kompetenzbereich as Kompetenzbereich | null) ?? null,

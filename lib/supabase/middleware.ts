@@ -1,6 +1,15 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { STUDENT_COOKIE, verifyStudentSession } from '@/lib/auth/student-session';
+import { BRAND } from '@/lib/brand';
+
+// Defense-in-depth: pure Allowlist-Prüfung (dieselbe Logik wie lib/auth/admin-auth.ts,
+// hier ohne 'server-only'-Marker damit Edge-Runtime den Import einbinden kann).
+function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  return BRAND.adminEmails.some((allowed) => allowed.toLowerCase() === normalized);
+}
 
 // Leitet auf `path` um und überträgt die aktuellen Auth-Cookies, damit der
 // Token-Refresh über den Redirect hinweg erhalten bleibt.
@@ -64,6 +73,10 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const path = request.nextUrl.pathname;
   if (!user && path.startsWith('/lehrer')) {
     return redirectTo(request, '/login', supabaseResponse);
+  }
+  if (path.startsWith('/admin')) {
+    if (!user) return redirectTo(request, '/login', supabaseResponse);
+    if (!isAdminEmail(user.email)) return redirectTo(request, '/lehrer', supabaseResponse);
   }
   if (user && path === '/login') {
     return redirectTo(request, '/lehrer', supabaseResponse);

@@ -12,6 +12,9 @@ export type PublicMaterial = {
   description: string | null;
   materialType: MaterialType;
   fileUrl: string;
+  // Wenn gesetzt: eingeloggte Schüler:innen können das Material online ausfüllen
+  // (verknüpftes Modul). Siehe components/public/MaterialItem.tsx.
+  relatedModuleId: string | null;
 };
 
 export type PublicModule = {
@@ -85,7 +88,7 @@ export async function getMaterials(
   const supabase = await createClient();
   const { data } = await supabase
     .from('materials')
-    .select('id, title, description, material_type, file_path')
+    .select('id, title, description, material_type, file_path, related_module_id')
     .eq('schulstufe', schulstufe)
     .eq('kompetenzbereich', bereich)
     .eq('topic', topic)
@@ -96,6 +99,7 @@ export async function getMaterials(
     description: m.description,
     materialType: m.material_type as MaterialType,
     fileUrl: publicUrl(m.file_path as string),
+    relatedModuleId: (m.related_module_id as string | null) ?? null,
   }));
 }
 
@@ -169,7 +173,7 @@ export async function getBereichWithTopics(
   const [matRes, modRes] = await Promise.all([
     supabase
       .from('materials')
-      .select('id, title, description, material_type, file_path, topic')
+      .select('id, title, description, material_type, file_path, topic, related_module_id')
       .eq('schulstufe', schulstufe)
       .eq('kompetenzbereich', bereich),
     supabase
@@ -187,6 +191,7 @@ export async function getBereichWithTopics(
       description: m.description,
       materialType: m.material_type as MaterialType,
       fileUrl: publicUrl(m.file_path as string),
+      relatedModuleId: (m.related_module_id as string | null) ?? null,
     },
     topic: (m.topic as string | null) ?? null,
   }));

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { isSekundarstufe } from '@/lib/curriculum';
 import { getStufeWithBereiche } from '@/lib/db/public-content-stufe';
+import { STUDENT_COOKIE, verifyStudentSession } from '@/lib/auth/student-session';
 import { Breadcrumb } from '@/components/public/Breadcrumb';
 import { BereichAccordion } from '@/components/public/BereichAccordion';
 
@@ -20,7 +22,10 @@ export default async function SchulstufePage({
     notFound();
   }
 
-  const bereiche = await getStufeWithBereiche(stufe);
+  const [bereiche, studentLoggedIn] = await Promise.all([
+    getStufeWithBereiche(stufe),
+    isStudentLoggedIn(),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
@@ -35,7 +40,15 @@ export default async function SchulstufePage({
           Wähle einen Kompetenzbereich. Klicke auf ein Thema, um Arbeitsblätter und Module zu sehen.
         </p>
       </header>
-      <BereichAccordion bereiche={bereiche} />
+      <BereichAccordion bereiche={bereiche} studentLoggedIn={studentLoggedIn} />
     </div>
   );
+}
+
+// Prüft, ob die Schüler:innen-Session gültig ist (für die „Online ausfüllen"-Buttons).
+async function isStudentLoggedIn(): Promise<boolean> {
+  const token = (await cookies()).get(STUDENT_COOKIE)?.value;
+  if (!token) return false;
+  const session = await verifyStudentSession(token);
+  return session !== null;
 }

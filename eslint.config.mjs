@@ -33,6 +33,14 @@ const eslintConfig = defineConfig([
     files: ['components/blocks/BlockView.tsx'],
     rules: { complexity: 'off' },
   },
+  // Admin-UI ist solo-genutzt (nur Geo), enthält viele Formularstrukturen mit
+  // langen JSX-Bäumen. Lockerung von max-lines-per-function — der Rest bleibt strikt.
+  {
+    files: ['components/admin/**/*.{ts,tsx}', 'app/admin/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 200, skipComments: true }],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

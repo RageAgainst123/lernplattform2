@@ -15,7 +15,13 @@ import { useHashAccordion } from '@/components/public/useHashAccordion';
 // Aufklappbare Themen-Liste für die Bereich-Seite. Multi-open (mehrere Themen
 // parallel offen), Hash-Permalink (#thema-slug), Materialien + Module inline.
 
-function TopicPanel({ topic }: { topic: TopicWithContent }) {
+function TopicPanel({
+  topic,
+  studentLoggedIn,
+}: {
+  topic: TopicWithContent;
+  studentLoggedIn: boolean;
+}) {
   return (
     <div className="space-y-6 pt-2">
       {topic.materials.length > 0 && (
@@ -23,7 +29,7 @@ function TopicPanel({ topic }: { topic: TopicWithContent }) {
           <h3 className="text-base font-medium">Materialien</h3>
           <div className="space-y-3">
             {topic.materials.map((m) => (
-              <MaterialItem key={m.id} material={m} />
+              <MaterialItem key={m.id} material={m} studentLoggedIn={studentLoggedIn} />
             ))}
           </div>
         </section>
@@ -47,6 +53,8 @@ function TopicPanel({ topic }: { topic: TopicWithContent }) {
 
 type ThemaAccordionProps = {
   topics: TopicWithContent[];
+  // Wenn true: MaterialItem zeigt „Online ausfüllen"-Button für verknüpfte Module.
+  studentLoggedIn?: boolean;
   // Controlled-Modus (z.B. wenn Eltern den Hash übergreifend verwaltet).
   // Beide Props müssen gesetzt sein, sonst greift der uncontrolled-Default
   // mit eigenem useHashAccordion (siehe ThemaAccordionStandalone).
@@ -57,10 +65,12 @@ type ThemaAccordionProps = {
 // Reine Render-Schicht — KEIN Hash-Hook, KEIN State. Eltern reichen value+onChange.
 function ThemaAccordionView({
   topics,
+  studentLoggedIn,
   value,
   onValueChange,
 }: {
   topics: TopicWithContent[];
+  studentLoggedIn: boolean;
   value: string[];
   onValueChange: (next: string[]) => void;
 }) {
@@ -83,7 +93,7 @@ function ThemaAccordionView({
             </span>
           </AccordionTrigger>
           <AccordionContent>
-            <TopicPanel topic={topic} />
+            <TopicPanel topic={topic} studentLoggedIn={studentLoggedIn} />
           </AccordionContent>
         </AccordionItem>
       ))}
@@ -94,14 +104,39 @@ function ThemaAccordionView({
 // Uncontrolled-Wrapper: nutzt useHashAccordion intern. Nur dann gemountet,
 // wenn der Eltern KEIN value/onChange reicht — Hooks-Reihenfolge bleibt
 // stabil, weil das eine eigene Komponente ist.
-function ThemaAccordionStandalone({ topics }: { topics: TopicWithContent[] }) {
+function ThemaAccordionStandalone({
+  topics,
+  studentLoggedIn,
+}: {
+  topics: TopicWithContent[];
+  studentLoggedIn: boolean;
+}) {
   const { value, onValueChange } = useHashAccordion(topics.map((t) => t.slug));
-  return <ThemaAccordionView topics={topics} value={value} onValueChange={onValueChange} />;
+  return (
+    <ThemaAccordionView
+      topics={topics}
+      studentLoggedIn={studentLoggedIn}
+      value={value}
+      onValueChange={onValueChange}
+    />
+  );
 }
 
-export function ThemaAccordion({ topics, value, onValueChange }: ThemaAccordionProps) {
+export function ThemaAccordion({
+  topics,
+  studentLoggedIn = false,
+  value,
+  onValueChange,
+}: ThemaAccordionProps) {
   if (value !== undefined && onValueChange !== undefined) {
-    return <ThemaAccordionView topics={topics} value={value} onValueChange={onValueChange} />;
+    return (
+      <ThemaAccordionView
+        topics={topics}
+        studentLoggedIn={studentLoggedIn}
+        value={value}
+        onValueChange={onValueChange}
+      />
+    );
   }
-  return <ThemaAccordionStandalone topics={topics} />;
+  return <ThemaAccordionStandalone topics={topics} studentLoggedIn={studentLoggedIn} />;
 }

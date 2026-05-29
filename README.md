@@ -71,7 +71,9 @@ lib/
 supabase/
   migrations/     SQL-Migrationen (Schema + RLS)
 docs/
-  adr/            Architecture Decision Records
+  INHALTSKONZEPT.md  Inhalts-Begriffe (Material vs. Modul, Navigations-Hierarchie)
+  ROLES.md           Rollen, Auth-Mechanismen, Zugriffsrechte
+  adr/               Architecture Decision Records
 proxy.ts          Auth-Token-Refresh + Routenschutz (Next-16-Konvention)
 ```
 

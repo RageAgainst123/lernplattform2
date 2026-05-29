@@ -11,6 +11,7 @@ function mat(id: string, title: string): PublicMaterial {
     description: null,
     materialType: 'arbeitsblatt',
     fileUrl: `https://example/storage/${id}.pdf`,
+    relatedModuleId: null,
   };
 }
 

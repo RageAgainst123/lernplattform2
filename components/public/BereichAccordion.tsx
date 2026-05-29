@@ -45,10 +45,12 @@ function BereichHeader({ bereich }: { bereich: BereichWithTopics }) {
 
 function BereichPanel({
   bereich,
+  studentLoggedIn,
   topicValue,
   onTopicChange,
 }: {
   bereich: BereichWithTopics;
+  studentLoggedIn: boolean;
   topicValue: string[];
   onTopicChange: (next: string[]) => void;
 }) {
@@ -61,12 +63,23 @@ function BereichPanel({
   }
   return (
     <div className="pt-2">
-      <ThemaAccordion topics={bereich.topics} value={topicValue} onValueChange={onTopicChange} />
+      <ThemaAccordion
+        topics={bereich.topics}
+        studentLoggedIn={studentLoggedIn}
+        value={topicValue}
+        onValueChange={onTopicChange}
+      />
     </div>
   );
 }
 
-export function BereichAccordion({ bereiche }: { bereiche: BereichWithTopics[] }) {
+export function BereichAccordion({
+  bereiche,
+  studentLoggedIn = false,
+}: {
+  bereiche: BereichWithTopics[];
+  studentLoggedIn?: boolean;
+}) {
   const bereichSlugs = useMemo(() => bereiche.map((b) => b.bereich), [bereiche]);
   const topicsByBereich = useMemo(() => {
     const out: Record<string, string[]> = {};
@@ -97,6 +110,7 @@ export function BereichAccordion({ bereiche }: { bereiche: BereichWithTopics[] }
           <AccordionContent>
             <BereichPanel
               bereich={b}
+              studentLoggedIn={studentLoggedIn}
               topicValue={topicValueByBereich[b.bereich] ?? []}
               onTopicChange={(next) => onTopicChange(b.bereich, next)}
             />

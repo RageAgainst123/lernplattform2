@@ -14,4 +14,7 @@ export const BRAND = {
   contactEmail: 'geoschlegel@gmail.com',
   github: 'https://github.com/RageAgainst123/lernplattform2',
   hostingRegion: 'Frankfurt (eu-central-1)',
+  // Admin-Allowlist: nur diese E-Mail-Adressen haben Zugriff auf /admin
+  // (zusätzlich zum Lehrer:innen-Login). Siehe docs/ROLES.md.
+  adminEmails: ['geoschlegel@gmail.com'] as readonly string[],
 } as const;

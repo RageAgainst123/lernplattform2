@@ -19,6 +19,7 @@ const bereiche: BereichWithTopics[] = [
             description: null,
             materialType: 'arbeitsblatt',
             fileUrl: 'https://example/m1.pdf',
+            relatedModuleId: null,
           },
         ],
         modules: [],

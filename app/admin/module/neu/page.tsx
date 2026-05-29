@@ -9,6 +9,7 @@ const EMPTY_META: ModuleMetadata = {
   topic: '',
   estimatedMinutes: null,
   isPublished: false,
+  displayMode: 'quiz',
 };
 
 export default async function NewModulePage() {

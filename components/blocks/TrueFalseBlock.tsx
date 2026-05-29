@@ -7,6 +7,7 @@ type Props = {
   block: TFBlockType;
   selected: boolean | null;
   checked: boolean;
+  readOnly?: boolean;
   onSelect: (value: boolean) => void;
 };
 
@@ -23,7 +24,8 @@ function choiceClass(value: boolean, props: Props): string {
 }
 
 export function TrueFalseBlock(props: Props) {
-  const { block, checked, onSelect } = props;
+  const { block, checked, readOnly = false, onSelect } = props;
+  const locked = checked || readOnly;
   return (
     <div className="space-y-3">
       <p className="text-lg font-medium">{block.question}</p>
@@ -32,7 +34,7 @@ export function TrueFalseBlock(props: Props) {
           <button
             key={String(value)}
             type="button"
-            disabled={checked}
+            disabled={locked}
             onClick={() => onSelect(value)}
             className={cn(
               'h-14 flex-1 rounded-md border text-lg font-medium',

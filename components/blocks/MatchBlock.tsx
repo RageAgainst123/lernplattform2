@@ -9,13 +9,15 @@ type Props = {
   block: MatchBlockType;
   assignment: Record<string, string>; // pairId → Kategorie
   checked: boolean;
+  readOnly?: boolean;
   onAssign: (next: Record<string, string>) => void;
 };
 
-export function MatchBlock({ block, assignment, checked, onAssign }: Props) {
+export function MatchBlock({ block, assignment, checked, readOnly = false, onAssign }: Props) {
   const [active, setActive] = useState<string | null>(null);
   const categories = useMemo(() => [...new Set(block.pairs.map((p) => p.category))], [block.pairs]);
   const unassigned = block.pairs.filter((p) => !assignment[p.id]);
+  const locked = checked || readOnly;
 
   function assignTo(category: string) {
     if (!active) return;
@@ -36,6 +38,7 @@ export function MatchBlock({ block, assignment, checked, onAssign }: Props) {
         pairs={unassigned}
         active={active}
         checked={checked}
+        readOnly={readOnly}
         onToggle={(id) => setActive(active === id ? null : id)}
       />
       <div className="grid gap-3 sm:grid-cols-2">
@@ -45,7 +48,8 @@ export function MatchBlock({ block, assignment, checked, onAssign }: Props) {
             category={cat}
             pairs={block.pairs.filter((p) => assignment[p.id] === cat)}
             checked={checked}
-            disabled={checked || !active}
+            readOnly={readOnly}
+            disabled={locked || !active}
             onAssign={() => assignTo(cat)}
             onUnassign={unassign}
           />

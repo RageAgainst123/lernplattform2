@@ -44,6 +44,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
       content: contentParsed.data,
       estimatedMinutes: meta.estimatedMinutes ?? undefined,
       isPublished: meta.isPublished,
+      displayMode: meta.displayMode,
     };
     startTransition(async () => {
       try {

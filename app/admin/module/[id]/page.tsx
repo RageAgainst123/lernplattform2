@@ -16,6 +16,7 @@ export default async function EditModulePage({ params }: { params: Promise<{ id:
     topic: mod.topic ?? '',
     estimatedMinutes: mod.estimatedMinutes ?? null,
     isPublished: mod.isPublished,
+    displayMode: mod.displayMode,
   };
   return <ModuleEditor moduleId={id} initialMeta={meta} initialBlocks={mod.content.blocks} />;
 }

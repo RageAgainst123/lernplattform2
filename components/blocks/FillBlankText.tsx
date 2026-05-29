@@ -8,18 +8,39 @@ type Props = {
   filled: (string | null)[];
   solutions: string[];
   checked: boolean;
+  readOnly?: boolean;
   onClear: (index: number) => void;
 };
 
-function slotClass(value: string | null, solution: string | undefined, checked: boolean): string {
-  if (!checked) {
-    return value ? 'border-primary' : 'border-dashed';
+// Klassen pro Lücke:
+// - checked && !readOnly: rote/grüne Bewertungs-Optik (Quiz)
+// - readOnly && !checked: ausgegraut, ohne Bewertung (Arbeitsblatt nach Abgabe)
+// - sonst: Standard (Tipp-Modus)
+function slotClass(
+  value: string | null,
+  solution: string | undefined,
+  checked: boolean,
+  readOnly: boolean
+): string {
+  if (checked) {
+    const right = value?.trim().toLowerCase() === solution?.trim().toLowerCase();
+    return right ? 'border-green-600 text-green-700' : 'border-red-600 text-red-700';
   }
-  const right = value?.trim().toLowerCase() === solution?.trim().toLowerCase();
-  return right ? 'border-green-600 text-green-700' : 'border-red-600 text-red-700';
+  if (readOnly) {
+    return value ? 'border-primary opacity-70' : 'border-dashed opacity-70';
+  }
+  return value ? 'border-primary' : 'border-dashed';
 }
 
-export function FillBlankText({ segments, filled, solutions, checked, onClear }: Props) {
+export function FillBlankText({
+  segments,
+  filled,
+  solutions,
+  checked,
+  readOnly = false,
+  onClear,
+}: Props) {
+  const locked = checked || readOnly;
   return (
     <p className="text-lg leading-relaxed">
       {segments.map((seg, i) =>
@@ -29,11 +50,11 @@ export function FillBlankText({ segments, filled, solutions, checked, onClear }:
           <button
             key={i}
             type="button"
-            disabled={checked}
+            disabled={locked}
             onClick={() => onClear(seg)}
             className={cn(
               'mx-1 inline-block min-w-20 rounded border-b-2 px-2 align-baseline',
-              slotClass(filled[seg], solutions[seg], checked)
+              slotClass(filled[seg], solutions[seg], checked, readOnly)
             )}
           >
             {filled[seg] ?? ' '}

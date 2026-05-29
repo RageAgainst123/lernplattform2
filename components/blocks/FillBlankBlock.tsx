@@ -10,16 +10,18 @@ type Props = {
   block: FillBlankType;
   filled: (string | null)[]; // Wort pro Lücke (null = leer)
   checked: boolean;
+  readOnly?: boolean;
   onFill: (next: (string | null)[]) => void;
 };
 
-export function FillBlankBlock({ block, filled, checked, onFill }: Props) {
+export function FillBlankBlock({ block, filled, checked, readOnly = false, onFill }: Props) {
   const segments = useMemo(() => parseFillText(block.text), [block.text]);
   const pool = useMemo(
     () => shuffle([...block.solutions, ...block.distractors]),
     [block.solutions, block.distractors]
   );
   const used = new Set(filled.filter(Boolean));
+  const locked = checked || readOnly;
 
   function placeWord(word: string) {
     const slot = filled.findIndex((f) => f === null);
@@ -42,6 +44,7 @@ export function FillBlankBlock({ block, filled, checked, onFill }: Props) {
         filled={filled}
         solutions={block.solutions}
         checked={checked}
+        readOnly={readOnly}
         onClear={clearSlot}
       />
       <div className="flex flex-wrap gap-2">
@@ -49,7 +52,7 @@ export function FillBlankBlock({ block, filled, checked, onFill }: Props) {
           <button
             key={`${word}-${i}`}
             type="button"
-            disabled={checked || used.has(word)}
+            disabled={locked || used.has(word)}
             onClick={() => placeWord(word)}
             className={cn('rounded-md border px-3 py-2 text-lg', used.has(word) && 'opacity-30')}
           >

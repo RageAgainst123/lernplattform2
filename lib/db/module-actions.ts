@@ -28,6 +28,7 @@ function rowFromInsert(input: z.infer<typeof moduleFormSchema>, createdBy: strin
     content: input.content,
     estimated_minutes: input.estimatedMinutes ?? null,
     is_published: input.isPublished,
+    display_mode: input.displayMode,
     created_by: createdBy,
   };
 }

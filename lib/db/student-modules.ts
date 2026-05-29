@@ -2,11 +2,13 @@ import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { moduleContentSchema, type ModuleContent } from '@/lib/schemas/blocks';
 import type { BlockAnswer } from '@/lib/blocks/evaluate';
+import type { DisplayMode } from '@/lib/schemas/entities';
 
 export type StudentModule = {
   id: string;
   title: string;
   content: ModuleContent;
+  displayMode: DisplayMode;
 };
 
 export type ModuleProgress = {
@@ -39,14 +41,19 @@ export async function getStudentModule(
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('modules')
-    .select('id, title, content, is_published')
+    .select('id, title, content, is_published, display_mode')
     .eq('id', moduleId)
     .maybeSingle();
   if (!data || !data.is_published) {
     return null;
   }
   const parsed = moduleContentSchema.safeParse(data.content);
-  return { id: data.id, title: data.title, content: parsed.success ? parsed.data : { blocks: [] } };
+  return {
+    id: data.id,
+    title: data.title,
+    content: parsed.success ? parsed.data : { blocks: [] },
+    displayMode: (data.display_mode as DisplayMode | null) ?? 'quiz',
+  };
 }
 
 export type AssignedModule = {

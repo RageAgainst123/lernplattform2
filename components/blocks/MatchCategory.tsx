@@ -9,12 +9,22 @@ type Props = {
   category: string;
   pairs: Pair[]; // dieser Kategorie zugeordnete Paare
   checked: boolean;
+  readOnly?: boolean;
   disabled: boolean;
   onAssign: () => void;
   onUnassign: (pairId: string) => void;
 };
 
-export function MatchCategory({ category, pairs, checked, disabled, onAssign, onUnassign }: Props) {
+export function MatchCategory({
+  category,
+  pairs,
+  checked,
+  readOnly = false,
+  disabled,
+  onAssign,
+  onUnassign,
+}: Props) {
+  const locked = checked || readOnly;
   return (
     <button
       type="button"
@@ -29,14 +39,15 @@ export function MatchCategory({ category, pairs, checked, disabled, onAssign, on
             key={p.id}
             onClick={(e) => {
               e.stopPropagation();
-              if (!checked) onUnassign(p.id);
+              if (!locked) onUnassign(p.id);
             }}
             className={cn(
               'rounded border px-2 py-1',
               checked &&
                 (p.category === category
                   ? 'border-green-600 text-green-700'
-                  : 'border-red-600 text-red-700')
+                  : 'border-red-600 text-red-700'),
+              readOnly && !checked && 'opacity-80'
             )}
           >
             {p.term}

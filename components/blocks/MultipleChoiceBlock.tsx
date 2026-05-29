@@ -6,11 +6,20 @@ import { cn } from '@/lib/utils';
 type Props = {
   block: MCBlockType;
   selected: string[];
+  // checked: Quiz-Bewertung sichtbar (grün/rot). readOnly: nur Sperrung, keine Bewertung.
   checked: boolean;
+  readOnly?: boolean;
   onToggle: (optionId: string) => void;
 };
 
-export function MultipleChoiceBlock({ block, selected, checked, onToggle }: Props) {
+export function MultipleChoiceBlock({
+  block,
+  selected,
+  checked,
+  readOnly = false,
+  onToggle,
+}: Props) {
+  const locked = checked || readOnly;
   return (
     <div className="space-y-3">
       <p className="text-lg font-medium">{block.question}</p>
@@ -23,7 +32,7 @@ export function MultipleChoiceBlock({ block, selected, checked, onToggle }: Prop
             <li key={opt.id}>
               <button
                 type="button"
-                disabled={checked}
+                disabled={locked}
                 onClick={() => onToggle(opt.id)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-md border p-3 text-left text-lg',

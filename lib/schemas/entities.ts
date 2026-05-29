@@ -44,6 +44,10 @@ export const studentCodeSchema = z.object({
 });
 
 // --- modules ---------------------------------------------------------------
+// Quiz: Block-für-Block mit Sofort-Feedback (klassischer Drill). Worksheet:
+// alle Aufgaben auf einer Seite, definitiv abgeben, ohne Sofort-Bewertung.
+export const displayModeSchema = z.enum(['quiz', 'worksheet']);
+
 export const moduleInsertSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().optional(),
@@ -53,6 +57,7 @@ export const moduleInsertSchema = z.object({
   content: moduleContentSchema,
   estimatedMinutes: z.number().int().positive().optional(),
   isPublished: z.boolean().default(false),
+  displayMode: displayModeSchema.default('quiz'),
 });
 
 export const moduleSchema = moduleInsertSchema.extend({
@@ -83,4 +88,5 @@ export type Class = z.infer<typeof classSchema>;
 export type StudentCode = z.infer<typeof studentCodeSchema>;
 export type ModuleInsert = z.infer<typeof moduleInsertSchema>;
 export type Module = z.infer<typeof moduleSchema>;
+export type DisplayMode = z.infer<typeof displayModeSchema>;
 export type Material = z.infer<typeof materialSchema>;

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Module, Kompetenzbereich } from '@/lib/schemas/entities';
+import type { Module, Kompetenzbereich, DisplayMode } from '@/lib/schemas/entities';
 
 // Read-Funktionen für Module. Admin-Lese-Funktionen umgehen RLS NICHT —
 // Geo ist auch Lehrer:in und kann seine eigenen Module sehen (created_by =
@@ -15,6 +15,7 @@ type ModuleRow = {
   content: unknown;
   estimated_minutes: number | null;
   is_published: boolean;
+  display_mode: DisplayMode | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,7 @@ function toModule(row: ModuleRow): Module {
     content: row.content as Module['content'],
     estimatedMinutes: row.estimated_minutes ?? undefined,
     isPublished: row.is_published,
+    displayMode: row.display_mode ?? 'quiz',
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

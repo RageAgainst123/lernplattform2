@@ -22,7 +22,7 @@ export default async function SubmissionPage({ params }: { params: Params }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
       <div>
         <Link
           href={`/lehrer/klassen/${id}/fortschritt`}

@@ -28,12 +28,21 @@ function formatDate(iso: string | null): string {
   }
 }
 
+// Score-Zusatz für den Tooltip: macht klar, dass N/M „richtig" bedeutet
+// (nicht „N von M erledigt"). Nur wenn es bewertbare Aufgaben gibt.
+function scoreHint(cell: ProgressCell): string {
+  if (cell.maxScore !== null && cell.maxScore > 0) {
+    return ` · ${cell.score}/${cell.maxScore} richtig`;
+  }
+  return '';
+}
+
 function buildTitle(cell: ProgressCell): string {
   if (cell.status === 'returned' && cell.returnedAt) {
     return `Zurückgegeben am ${formatDate(cell.returnedAt)}`;
   }
   if (cell.status === 'done' && cell.completedAt) {
-    return `Abgegeben am ${formatDate(cell.completedAt)}`;
+    return `Abgegeben am ${formatDate(cell.completedAt)}${scoreHint(cell)}`;
   }
   if (cell.status === 'in_progress' && cell.lastActivityAt) {
     return `Zuletzt aktiv: ${formatDate(cell.lastActivityAt)}`;

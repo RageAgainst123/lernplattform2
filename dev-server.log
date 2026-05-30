@@ -1,0 +1,71 @@
+
+> lernplattform2@0.1.0 dev C:\Users\Geo\Coding2026\lernplattform2
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.168:3000
+- Environments: .env.local
+✓ Ready in 771ms
+
+ GET / 200 in 2.7s (next.js: 2.1s, proxy.ts: 225ms, application-code: 372ms)
+ GET / 200 in 77ms (next.js: 5ms, proxy.ts: 8ms, application-code: 64ms)
+ GET / 200 in 1257ms (next.js: 5ms, proxy.ts: 760ms, application-code: 492ms)
+ GET /admin 200 in 1341ms (next.js: 342ms, proxy.ts: 242ms, application-code: 758ms)
+ GET / 200 in 113ms (next.js: 6ms, proxy.ts: 12ms, application-code: 96ms)
+ GET /icon?e3e63a44c591c4dc 200 in 502ms (next.js: 264ms, proxy.ts: 6ms, application-code: 232ms)
+ GET /k 200 in 783ms (next.js: 693ms, proxy.ts: 10ms, application-code: 80ms)
+ GET /icon?e3e63a44c591c4dc 200 in 22ms (next.js: 3ms, proxy.ts: 9ms, application-code: 10ms)
+ GET /k/TEST00 200 in 2.8s (next.js: 1411ms, proxy.ts: 6ms, application-code: 1391ms)
+ POST /k 303 in 2.8s (next.js: 5ms, proxy.ts: 8ms, application-code: 2.8s)
+  └─ ƒ <inline action>({}) in 1ms app/k/page.tsx
+ GET /icon?e3e63a44c591c4dc 200 in 34ms (next.js: 7ms, proxy.ts: 12ms, application-code: 14ms)
+ GET /s 200 in 3.0s (next.js: 2.2s, proxy.ts: 75ms, application-code: 740ms)
+ POST /k/TEST00 303 in 4.1s (next.js: 149ms, proxy.ts: 53ms, application-code: 3.9s)
+  └─ ƒ studentLogin({"error":null}, {}) in 825ms lib/db/student-login-action.ts
+ GET /icon?e3e63a44c591c4dc 200 in 64ms (next.js: 5ms, proxy.ts: 29ms, application-code: 30ms)
+ GET /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 3.6s (next.js: 2.8s, proxy.ts: 30ms, application-code: 836ms)
+ GET /icon?e3e63a44c591c4dc 200 in 81ms (next.js: 9ms, proxy.ts: 52ms, application-code: 19ms)
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 590ms (next.js: 28ms, proxy.ts: 27ms, application-code: 535ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"2oXDc255QUP5ulmUzCW852P/3zKgG5Ky4fL292ERY7YFuowg8qnO/eLYwseHzp1X2g0NaoTyRJPI+NfeCD0F+h6dIIcKlI3EIJgijViSuM8oI5Xg5mkYgN073YqK63hDJ2iGujvEreDvqFx8Tg2Vj8Axs0v6T/URFC43nrd+HbI+0PVC/mCjtX7A"}, {"b3":["o4"]}) in 505ms app/s/modul/[id]/page.tsx
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 332ms (next.js: 46ms, proxy.ts: 16ms, application-code: 270ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"2oXDc255QUP5ulmUzCW852P/3zKgG5Ky4fL292ERY7YFuowg8qnO/eLYwseHzp1X2g0NaoTyRJPI+NfeCD0F+h6dIIcKlI3EIJgijViSuM8oI5Xg5mkYgN073YqK63hDJ2iGujvEreDvqFx8Tg2Vj8Axs0v6T/URFC43nrd+HbI+0PVC/mCjtX7A"}, {"b3":["o4"],"b4":false}) in 256ms app/s/modul/[id]/page.tsx
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 285ms (next.js: 30ms, proxy.ts: 24ms, application-code: 231ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"2oXDc255QUP5ulmUzCW852P/3zKgG5Ky4fL292ERY7YFuowg8qnO/eLYwseHzp1X2g0NaoTyRJPI+NfeCD0F+h6dIIcKlI3EIJgijViSuM8oI5Xg5mkYgN073YqK63hDJ2iGujvEreDvqFx8Tg2Vj8Axs0v6T/URFC43nrd+HbI+0PVC/mCjtX7A"}, {"b3":["o4"],"b4":false,"b5":["Quelle","Verbindung"]}) in 214ms app/s/modul/[id]/page.tsx
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 293ms (next.js: 21ms, proxy.ts: 18ms, application-code: 254ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"2oXDc255QUP5ulmUzCW852P/3zKgG5Ky4fL292ERY7YFuowg8qnO/eLYwseHzp1X2g0NaoTyRJPI+NfeCD0F+h6dIIcKlI3EIJgijViSuM8oI5Xg5mkYgN073YqK63hDJ2iGujvEreDvqFx8Tg2Vj8Axs0v6T/URFC43nrd+HbI+0PVC/mCjtX7A"}, {"b3":["o4"],"b4":false,"b5":["Quelle","Verbindung"],"...":"1 item not stringified"}) in 236ms app/s/modul/[id]/page.tsx
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 263ms (next.js: 9ms, proxy.ts: 8ms, application-code: 246ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"2oXDc255QUP5ulmUzCW852P/3zKgG5Ky4fL292ERY7YFuowg8qnO/eLYwseHzp1X2g0NaoTyRJPI+NfeCD0F+h6dIIcKlI3EIJgijViSuM8oI5Xg5mkYgN073YqK63hDJ2iGujvEreDvqFx8Tg2Vj8Axs0v6T/URFC43nrd+HbI+0PVC/mCjtX7A"}, {"b3":["o4"],"b4":false,"b5":["Quelle","Verbindung"],"...":"1 item not stringified"}) in 235ms app/s/modul/[id]/page.tsx
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 351ms (next.js: 57ms, proxy.ts: 36ms, application-code: 258ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"2oXDc255QUP5ulmUzCW852P/3zKgG5Ky4fL292ERY7YFuowg8qnO/eLYwseHzp1X2g0NaoTyRJPI+NfeCD0F+h6dIIcKlI3EIJgijViSuM8oI5Xg5mkYgN073YqK63hDJ2iGujvEreDvqFx8Tg2Vj8Axs0v6T/URFC43nrd+HbI+0PVC/mCjtX7A"}, {"b3":["o4"],"b4":false,"b5":["Quelle","Verbindung"],"...":"1 item not stringified"}) in 229ms app/s/modul/[id]/page.tsx
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 412ms (next.js: 22ms, proxy.ts: 20ms, application-code: 369ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"+XOqPiPwuXlgIbWWcDx+Sm2/TobLYS57ER1WoYLrd2kySXZgOSacaRrGFICf01Lpa/sUffQ56s41ooxvXb+0LFb8CpsVO63o31cMiXftuy0bzrNLg0+1nia6qPt/CqWDIKMnWSqD6Dyc5mB1O3DyHFbWK1dgIkji7KEE8V+45O5T4unjeDjNAfCN"}, {"b3":["o4"],"b4":false,"b5":["Quelle","Verbindung"],"...":"2 items not stringified"}) in 349ms app/s/modul/[id]/page.tsx
+ POST /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 170ms (next.js: 18ms, proxy.ts: 10ms, application-code: 142ms)
+  └─ ƒ <inline action>({"reason":{"count":184,"fork":false},"status":"fulfilled","value":"2oXDc255QUP5ulmUzCW852P/3zKgG5Ky4fL292ERY7YFuowg8qnO/eLYwseHzp1X2g0NaoTyRJPI+NfeCD0F+h6dIIcKlI3EIJgijViSuM8oI5Xg5mkYgN073YqK63hDJ2iGujvEreDvqFx8Tg2Vj8Axs0v6T/URFC43nrd+HbI+0PVC/mCjtX7A"}, {"b3":["o4"],"b4":false,"b5":["Quelle","Verbindung"],"...":"2 items not stringified"}) in 116ms app/s/modul/[id]/page.tsx
+ GET /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 727ms (next.js: 24ms, proxy.ts: 25ms, application-code: 678ms)
+ GET /icon?e3e63a44c591c4dc 200 in 25ms (next.js: 4ms, proxy.ts: 8ms, application-code: 13ms)
+ GET /icon?e3e63a44c591c4dc 200 in 21ms (next.js: 3ms, proxy.ts: 9ms, application-code: 9ms)
+ GET /lehrer 200 in 1055ms (next.js: 567ms, proxy.ts: 313ms, application-code: 174ms)
+ GET /lehrer/klassen 200 in 787ms (next.js: 432ms, proxy.ts: 77ms, application-code: 278ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe 200 in 3.0s (next.js: 2.3s, proxy.ts: 76ms, application-code: 556ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe/fortschritt 200 in 2.2s (next.js: 1546ms, proxy.ts: 94ms, application-code: 558ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe/fortschritt/baefca1d-0722-4c5d-8bba-73e847c3bafa/00000000-0000-4000-8000-00000000ad5e 200 in 1779ms (next.js: 1262ms, proxy.ts: 71ms, application-code: 446ms)
+ GET /lehrer 200 in 386ms (next.js: 11ms, proxy.ts: 248ms, application-code: 127ms)
+ GET /lehrer/klassen 200 in 598ms (next.js: 6ms, proxy.ts: 234ms, application-code: 357ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe 200 in 583ms (next.js: 19ms, proxy.ts: 82ms, application-code: 482ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe/fortschritt 200 in 728ms (next.js: 16ms, proxy.ts: 193ms, application-code: 518ms)
+✓ Compiled in 153ms
+ GET /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 1042ms (next.js: 273ms, proxy.ts: 265ms, application-code: 503ms)
+ GET /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 183ms (next.js: 19ms, proxy.ts: 17ms, application-code: 148ms)
+ GET /icon?e3e63a44c591c4dc 200 in 107ms (next.js: 76ms, proxy.ts: 8ms, application-code: 23ms)
+ GET /icon?e3e63a44c591c4dc 200 in 34ms (next.js: 6ms, proxy.ts: 8ms, application-code: 20ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe/fortschritt 200 in 1619ms (next.js: 25ms, proxy.ts: 1324ms, application-code: 270ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe/fortschritt 200 in 312ms (next.js: 7ms, proxy.ts: 103ms, application-code: 202ms)
+✓ Compiled in 148ms
+ GET /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 876ms (next.js: 246ms, proxy.ts: 238ms, application-code: 392ms)
+ GET /s/modul/00000000-0000-4000-8000-00000000ad5e 200 in 107ms (next.js: 7ms, proxy.ts: 12ms, application-code: 89ms)
+ GET /icon?e3e63a44c591c4dc 200 in 82ms (next.js: 47ms, proxy.ts: 8ms, application-code: 27ms)
+ GET /icon?e3e63a44c591c4dc 200 in 22ms (next.js: 6ms, proxy.ts: 6ms, application-code: 10ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe/fortschritt 200 in 1521ms (next.js: 186ms, proxy.ts: 1123ms, application-code: 212ms)
+ GET /lehrer/klassen/9e43d8f4-3615-4d5c-9d17-22bcf9c6cdfe/fortschritt 200 in 241ms (next.js: 19ms, proxy.ts: 77ms, application-code: 145ms)
+ GET / 200 in 215ms (next.js: 15ms, proxy.ts: 7ms, application-code: 193ms)

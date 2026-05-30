@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from '@/lib/schemas/blocks';
-import { evaluateBlock, isGraded, maxScore, scoreModule } from '@/lib/blocks/evaluate';
+import {
+  blockResult,
+  evaluateBlock,
+  gradeBlock,
+  isGraded,
+  isPassed,
+  maxScore,
+  percentScore,
+  scoreModule,
+} from '@/lib/blocks/evaluate';
 
 const mc: Block = {
   id: 'mc',
@@ -93,5 +102,60 @@ describe('scoreModule / maxScore', () => {
 
   it('partial score when some are wrong', () => {
     expect(scoreModule(blocks, { mc: ['o1'], tf: false, fb: [], m: {} })).toBe(1);
+  });
+});
+
+describe('gradeBlock', () => {
+  it('returns 1 for a correct graded block, 0 for wrong', () => {
+    expect(gradeBlock(mc, ['o1', 'o3'])).toBe(1);
+    expect(gradeBlock(mc, ['o1'])).toBe(0);
+  });
+  it('treats an undefined answer as 0 (unanswered)', () => {
+    expect(gradeBlock(tf, undefined)).toBe(0);
+  });
+  it('returns 0 for non-graded blocks', () => {
+    expect(gradeBlock({ id: 'r', type: 'reflection', prompt: '?' }, 'irgendwas')).toBe(0);
+  });
+});
+
+describe('percentScore', () => {
+  it('computes rounded percent', () => {
+    expect(percentScore(4, 5)).toBe(80);
+    expect(percentScore(2, 3)).toBe(67);
+    expect(percentScore(5, 5)).toBe(100);
+    expect(percentScore(0, 5)).toBe(0);
+  });
+  it('returns null when there are no gradable blocks', () => {
+    expect(percentScore(0, 0)).toBeNull();
+  });
+});
+
+describe('isPassed', () => {
+  it('passes when percent >= threshold', () => {
+    expect(isPassed(4, 5, 80)).toBe(true); // 80% >= 80
+    expect(isPassed(5, 5, 80)).toBe(true);
+  });
+  it('fails when percent < threshold', () => {
+    expect(isPassed(3, 5, 80)).toBe(false); // 60% < 80
+  });
+  it('returns null when no threshold is set', () => {
+    expect(isPassed(4, 5, null)).toBeNull();
+  });
+  it('returns null when there are no gradable blocks (max 0)', () => {
+    expect(isPassed(0, 0, 80)).toBeNull();
+  });
+});
+
+describe('blockResult', () => {
+  it('returns correct/wrong for graded blocks', () => {
+    expect(blockResult(mc, ['o1', 'o3'])).toBe('correct');
+    expect(blockResult(mc, ['o1'])).toBe('wrong');
+  });
+  it('returns wrong for an unanswered graded block', () => {
+    expect(blockResult(tf, undefined)).toBe('wrong');
+  });
+  it('returns ungraded for text/infobox/reflection', () => {
+    expect(blockResult({ id: 't', type: 'text', content: 'x' }, undefined)).toBe('ungraded');
+    expect(blockResult({ id: 'r', type: 'reflection', prompt: '?' }, 'text')).toBe('ungraded');
   });
 });

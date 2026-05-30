@@ -19,6 +19,7 @@ const rowEva = {
   module_id: 'eva-id',
   due_date: null,
   assigned_at: '2026-05-29T10:00:00Z',
+  pass_threshold: null,
   modules: {
     title: 'Das EVA-Prinzip',
     description: null,
@@ -32,6 +33,7 @@ const rowSuchen = {
   module_id: 'suchen-id',
   due_date: '2026-06-15',
   assigned_at: '2026-05-29T11:00:00Z',
+  pass_threshold: 80,
   modules: {
     title: 'Suchen im Internet',
     description: 'desc',
@@ -55,6 +57,7 @@ describe('getAssignedModulesForClass', () => {
         displayMode: 'worksheet',
         dueDate: null,
         assignedAt: '2026-05-29T10:00:00Z',
+        passThreshold: null,
       },
     ]);
   });

@@ -36,7 +36,7 @@ export default async function ClassProgressPage({ params }: { params: Promise<{ 
         </p>
       </div>
 
-      <ClassProgressMatrix matrix={matrix} />
+      <ClassProgressMatrix matrix={matrix} classId={id} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getAssignedModulesForClass, type AssignedModuleForTeacher } from '@/lib/db/class-modules';
-import type { ModuleStatus } from '@/lib/db/student-modules-status';
+import { deriveStatus, type ModuleStatus } from '@/lib/db/student-modules-status';
+import { isPassed } from '@/lib/blocks/evaluate';
 
 // Lädt die komplette Fortschritts-Matrix einer Klasse: alle Schüler:innen
 // × alle zugewiesenen Module + Status pro Schnittpunkt. RLS-Policy
@@ -18,6 +19,12 @@ export type ProgressCell = {
   maxScore: number | null;
   lastActivityAt: string | null;
   completedAt: string | null;
+  returnedAt: string | null;
+  // Bestanden gemäß Schwelle der Zuweisung. null = keine Schwelle ODER keine
+  // bewertbaren Blöcke (Bestehen nicht anwendbar).
+  passed: boolean | null;
+  passThreshold: number | null;
+  hasFeedback: boolean;
 };
 
 export type StudentRef = {
@@ -43,10 +50,29 @@ type ProgressRow = {
   student_code_id: string;
   module_id: string;
   completed_at: string | null;
+  returned_at: string | null;
   last_activity_at: string;
   score: number;
   max_score: number | null;
+  teacher_feedback: string | null;
 };
+
+// Baut eine ProgressCell aus einer DB-Row + der Schwelle des Moduls.
+function buildCell(row: ProgressRow, threshold: number | null): ProgressCell {
+  return {
+    studentCodeId: row.student_code_id,
+    moduleId: row.module_id,
+    status: deriveStatus(row),
+    score: row.score,
+    maxScore: row.max_score,
+    lastActivityAt: row.last_activity_at,
+    completedAt: row.completed_at,
+    returnedAt: row.returned_at,
+    passed: isPassed(row.score, row.max_score ?? 0, threshold),
+    passThreshold: threshold,
+    hasFeedback: !!row.teacher_feedback,
+  };
+}
 
 export async function getClassProgress(classId: string): Promise<ClassProgressMatrix> {
   const supabase = await createClient();
@@ -65,9 +91,11 @@ export async function getClassProgress(classId: string): Promise<ClassProgressMa
   }
   const students = (studentsResult.data ?? []) as StudentCodeRow[];
 
-  // Nur Progress-Rows der relevanten Schüler:innen UND der relevanten Module
-  // laden — spart Datenmenge bei Klassen die Zugriff auf viele Codes haben
-  // könnten. RLS würde es sonst auch limitieren, aber Filter ist klarer.
+  // Schwelle pro Modul für die Bestanden-Berechnung.
+  const thresholdByModule = new Map(modules.map((m) => [m.moduleId, m.passThreshold]));
+
+  // Nur Progress-Rows der relevanten Schüler:innen UND Module laden — spart
+  // Datenmenge. RLS würde es auch limitieren, aber der Filter ist klarer.
   const studentIds = students.map((s) => s.id);
   const moduleIds = modules.map((m) => m.moduleId);
 
@@ -75,7 +103,9 @@ export async function getClassProgress(classId: string): Promise<ClassProgressMa
   if (studentIds.length > 0 && moduleIds.length > 0) {
     const { data, error } = await supabase
       .from('student_progress')
-      .select('student_code_id, module_id, completed_at, last_activity_at, score, max_score')
+      .select(
+        'student_code_id, module_id, completed_at, returned_at, last_activity_at, score, max_score, teacher_feedback'
+      )
       .in('student_code_id', studentIds)
       .in('module_id', moduleIds);
     if (error) {
@@ -86,16 +116,8 @@ export async function getClassProgress(classId: string): Promise<ClassProgressMa
 
   const cellMap = new Map<string, ProgressCell>();
   for (const row of progressRows) {
-    const status: ModuleStatus = row.completed_at ? 'done' : 'in_progress';
-    cellMap.set(cellKey(row.student_code_id, row.module_id), {
-      studentCodeId: row.student_code_id,
-      moduleId: row.module_id,
-      status,
-      score: row.score,
-      maxScore: row.max_score,
-      lastActivityAt: row.last_activity_at,
-      completedAt: row.completed_at,
-    });
+    const threshold = thresholdByModule.get(row.module_id) ?? null;
+    cellMap.set(cellKey(row.student_code_id, row.module_id), buildCell(row, threshold));
   }
 
   return { students: students.map((s) => ({ id: s.id, codename: s.codename })), modules, cellMap };
@@ -118,13 +140,17 @@ export function getCellOrOpen(
     maxScore: null,
     lastActivityAt: null,
     completedAt: null,
+    returnedAt: null,
+    passed: null,
+    passThreshold: null,
+    hasFeedback: false,
   };
 }
 
 // Pure Helper: Counts pro Status über die gesamte Matrix — für die
 // Übersichts-Pille oben.
 export function countMatrixStatuses(matrix: ClassProgressMatrix): Record<ModuleStatus, number> {
-  const counts: Record<ModuleStatus, number> = { open: 0, in_progress: 0, done: 0 };
+  const counts: Record<ModuleStatus, number> = { open: 0, in_progress: 0, returned: 0, done: 0 };
   for (const student of matrix.students) {
     for (const mod of matrix.modules) {
       const cell = getCellOrOpen(matrix, student.id, mod.moduleId);

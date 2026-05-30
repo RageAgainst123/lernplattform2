@@ -8,6 +8,55 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase 16 — Abgaben einsehen + Feedback/Rückgabe + Auto-Bewertung
+
+**2026-05-30** · Commits `43b3814`, `d74bf01`, `0088190` (Branch
+`phase-16-feedback-grading`)
+
+### Hinzugefügt
+
+- **Abgabe-Detailansicht für Lehrer:innen**
+  (`/lehrer/klassen/[id]/fortschritt/[studentCodeId]/[moduleId]`): komplettes
+  Modul read-only mit eingetragenen Antworten + grün/rot bei auto-bewertbaren
+  Aufgaben + Score-Header. Datenschicht `lib/db/teacher-submission.ts`, UI
+  `TeacherSubmissionBlocks` / `BlockResultBadge` / `SubmissionScoreHeader` /
+  `SubmissionReview`.
+- **Feedback + Rückgabe-Zyklus**: Lehrer:in schreibt Feedback + gibt „zur
+  Überarbeitung zurück" → entsperrt das Modul (Status `returned`). Schüler:in
+  sieht Feedback-Banner, überarbeitet, gibt neu ab (Score wird neu berechnet).
+  Server-Actions `lib/db/teacher-feedback-actions.ts` (User-Client + RLS).
+- **Auto-Bewertung mit Schwelle**: Worksheet-Score serverseitig
+  (`submitWorksheet` → `computeScore`); Bestehens-Schwelle **pro Zuweisung**
+  (`class_modules.pass_threshold`). Matrix färbt bestanden/nicht-bestanden.
+  Teilpunkt-fähiges `gradeBlock` (0.0–1.0) in `lib/blocks/evaluate.ts`.
+- **`docs/MODUL-SPEZIFIKATION.md`** + **`scripts/validate-module.mjs`**
+  (`pnpm validate:module`) — verbindliche Block-JSON-Spec + maschinelle
+  Validierung gegen das echte Schema vor dem Import.
+
+### Geändert
+
+- `student_progress` um `teacher_feedback`, `returned_at`, `manual_marks`;
+  `class_modules` um `pass_threshold` (Migration 0007 + RLS-UPDATE-Policy
+  `student_progress_update_own_classes`).
+- `ModuleStatus` von 3 auf 4 Stufen (`returned`).
+
+### Fixed
+
+- Lehrer:innen-Abgabe-Detailseite lief über die volle Viewport-Breite — jetzt
+  `mx-auto max-w-3xl` (konsistent mit übrigen Lehrer:innen-Seiten).
+- Matrix-Zell-Tooltip ergänzt „N/M richtig".
+
+### Tests
+
+- 231 grün (+18): `evaluate` (percentScore/isPassed/blockResult/gradeBlock),
+  `student-modules-status` (`returned`), `class-progress` (passed/returned).
+
+### Docs
+
+- ADR-0011 (Schwelle pro Zuweisung) + ADR-0012 (Feedback/Rückgabe, keine KI).
+
+---
+
 ## Phase 15 — Lehrer:innen-Modul-Zuweisung + Klassen-Fortschritt-Matrix
 
 **2026-05-29** · Commit [`f1e211e`](https://github.com/RageAgainst123/lernplattform2/commit/f1e211e)

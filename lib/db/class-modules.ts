@@ -15,12 +15,15 @@ export type AssignedModuleForTeacher = {
   displayMode: DisplayMode;
   dueDate: string | null;
   assignedAt: string;
+  // Bestehens-Schwelle in Prozent (0–100) für DIESE Zuweisung. null = keine.
+  passThreshold: number | null;
 };
 
 type AssignmentRow = {
   module_id: string;
   due_date: string | null;
   assigned_at: string;
+  pass_threshold: number | null;
   modules: {
     title: string;
     description: string | null;
@@ -39,7 +42,7 @@ export async function getAssignedModulesForClass(
   const { data, error } = await supabase
     .from('class_modules')
     .select(
-      'module_id, due_date, assigned_at, modules(title, description, schulstufe, topic, display_mode)'
+      'module_id, due_date, assigned_at, pass_threshold, modules(title, description, schulstufe, topic, display_mode)'
     )
     .eq('class_id', classId);
   if (error) {
@@ -57,6 +60,7 @@ export async function getAssignedModulesForClass(
       displayMode: r.modules!.display_mode ?? 'quiz',
       dueDate: r.due_date,
       assignedAt: r.assigned_at,
+      passThreshold: r.pass_threshold,
     }))
     .sort((a, b) => a.title.localeCompare(b.title, 'de'));
 }

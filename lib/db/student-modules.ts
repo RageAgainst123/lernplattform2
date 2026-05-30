@@ -20,6 +20,8 @@ export type ModuleProgress = {
   currentBlockIndex: number;
   answers: Record<string, BlockAnswer>;
   completedAt: string | null;
+  returnedAt: string | null;
+  teacherFeedback: string | null;
 };
 
 // Prüft, ob ein Modul der Klasse der Schüler:in zugewiesen ist (class_modules).
@@ -87,7 +89,7 @@ export async function getAssignedModules(
 
   const { data: progressRows } = await supabase
     .from('student_progress')
-    .select('module_id, completed_at')
+    .select('module_id, completed_at, returned_at')
     .eq('student_code_id', studentCodeId);
   const statusByModule = progressStatusMap((progressRows ?? []) as ProgressRow[]);
 
@@ -110,7 +112,7 @@ export async function getProgress(
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('student_progress')
-    .select('current_block_index, answers, completed_at')
+    .select('current_block_index, answers, completed_at, returned_at, teacher_feedback')
     .eq('student_code_id', studentCodeId)
     .eq('module_id', moduleId)
     .maybeSingle();
@@ -121,5 +123,7 @@ export async function getProgress(
     currentBlockIndex: data.current_block_index ?? 0,
     answers: (data.answers as Record<string, BlockAnswer>) ?? {},
     completedAt: data.completed_at,
+    returnedAt: data.returned_at,
+    teacherFeedback: data.teacher_feedback,
   };
 }

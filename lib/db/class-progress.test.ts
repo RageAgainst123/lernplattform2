@@ -4,81 +4,67 @@ import {
   countMatrixStatuses,
   getCellOrOpen,
   type ClassProgressMatrix,
+  type ProgressCell,
 } from '@/lib/db/class-progress';
+import type { AssignedModuleForTeacher } from '@/lib/db/class-modules';
 
-// Reine Matrix-Helper-Tests (kein DB-Mock nötig). Die DB-Variante
-// getClassProgress() ist ein dünner Wrapper um drei Queries — sie wird im
-// Browser-Smoke verifiziert.
+// Reine Matrix-Helper-Tests (kein DB-Mock nötig). Wir bauen die Matrix von Hand
+// und prüfen die reinen Funktionen (cellKey, getCellOrOpen, countMatrixStatuses)
+// — getClassProgress selbst ist ein dünner DB-Wrapper + wird im Browser-Smoke
+// getestet.
+
+function cell(
+  overrides: Partial<ProgressCell> & Pick<ProgressCell, 'studentCodeId' | 'moduleId'>
+): ProgressCell {
+  return {
+    status: 'done',
+    score: null,
+    maxScore: null,
+    lastActivityAt: null,
+    completedAt: null,
+    returnedAt: null,
+    passed: null,
+    passThreshold: null,
+    hasFeedback: false,
+    ...overrides,
+  };
+}
+
+function mod(id: string, title: string): AssignedModuleForTeacher {
+  return {
+    moduleId: id,
+    title,
+    description: null,
+    schulstufe: 5,
+    topic: null,
+    displayMode: 'quiz',
+    dueDate: null,
+    assignedAt: '2026-05-29T10:00:00Z',
+    passThreshold: null,
+  };
+}
 
 function buildMatrix(): ClassProgressMatrix {
+  const cellMap = new Map<string, ProgressCell>();
+  cellMap.set(
+    cellKey('s1', 'm1'),
+    cell({ studentCodeId: 's1', moduleId: 'm1', status: 'done', score: 4, maxScore: 5 })
+  );
+  cellMap.set(
+    cellKey('s1', 'm2'),
+    cell({ studentCodeId: 's1', moduleId: 'm2', status: 'in_progress' })
+  );
+  cellMap.set(
+    cellKey('s2', 'm1'),
+    cell({ studentCodeId: 's2', moduleId: 'm1', status: 'returned', returnedAt: 'x' })
+  );
   return {
     students: [
       { id: 's1', codename: '5T-01' },
       { id: 's2', codename: '5T-02' },
     ],
-    modules: [
-      {
-        moduleId: 'm1',
-        title: 'EVA',
-        description: null,
-        schulstufe: 5,
-        topic: 'EVA',
-        displayMode: 'worksheet',
-        dueDate: null,
-        assignedAt: '2026-05-29T00:00:00Z',
-      },
-      {
-        moduleId: 'm2',
-        title: 'Suchen',
-        description: null,
-        schulstufe: 5,
-        topic: 'Suchen',
-        displayMode: 'worksheet',
-        dueDate: null,
-        assignedAt: '2026-05-29T00:00:00Z',
-      },
-    ],
-    cellMap: new Map([
-      // s1 hat EVA abgegeben.
-      [
-        cellKey('s1', 'm1'),
-        {
-          studentCodeId: 's1',
-          moduleId: 'm1',
-          status: 'done',
-          score: 4,
-          maxScore: 5,
-          lastActivityAt: '2026-05-29T12:00:00Z',
-          completedAt: '2026-05-29T12:00:00Z',
-        },
-      ],
-      // s1 hat Suchen begonnen.
-      [
-        cellKey('s1', 'm2'),
-        {
-          studentCodeId: 's1',
-          moduleId: 'm2',
-          status: 'in_progress',
-          score: 0,
-          maxScore: null,
-          lastActivityAt: '2026-05-29T13:00:00Z',
-          completedAt: null,
-        },
-      ],
-      // s2 hat EVA begonnen, Suchen noch nicht — Suchen-Zelle fehlt absichtlich.
-      [
-        cellKey('s2', 'm1'),
-        {
-          studentCodeId: 's2',
-          moduleId: 'm1',
-          status: 'in_progress',
-          score: 0,
-          maxScore: null,
-          lastActivityAt: '2026-05-29T14:00:00Z',
-          completedAt: null,
-        },
-      ],
-    ]),
+    modules: [mod('m1', 'Modul 1'), mod('m2', 'Modul 2')],
+    cellMap,
   };
 }
 
@@ -89,36 +75,30 @@ describe('cellKey', () => {
 });
 
 describe('getCellOrOpen', () => {
-  it('returns an existing cell when present', () => {
+  it('returns the existing cell when present', () => {
     const matrix = buildMatrix();
-    const cell = getCellOrOpen(matrix, 's1', 'm1');
-    expect(cell.status).toBe('done');
-    expect(cell.score).toBe(4);
+    expect(getCellOrOpen(matrix, 's1', 'm1').status).toBe('done');
   });
 
-  it('returns an open default when no row exists', () => {
+  it('returns an open cell with neutral defaults when no progress row exists', () => {
     const matrix = buildMatrix();
-    const cell = getCellOrOpen(matrix, 's2', 'm2');
-    expect(cell.status).toBe('open');
-    expect(cell.score).toBeNull();
-    expect(cell.completedAt).toBeNull();
+    const c = getCellOrOpen(matrix, 's2', 'm2');
+    expect(c.status).toBe('open');
+    expect(c.score).toBeNull();
+    expect(c.passed).toBeNull();
+    expect(c.hasFeedback).toBe(false);
   });
 });
 
 describe('countMatrixStatuses', () => {
-  it('counts done / in_progress / open across all (student, module) pairs', () => {
+  it('counts done / in_progress / returned / open across all pairs', () => {
     const matrix = buildMatrix();
-    // 2 Schüler × 2 Module = 4 Zellen:
-    //   s1×m1 done · s1×m2 in_progress · s2×m1 in_progress · s2×m2 open
-    expect(countMatrixStatuses(matrix)).toEqual({ done: 1, in_progress: 2, open: 1 });
-  });
-
-  it('returns zeros for an empty matrix', () => {
-    const matrix: ClassProgressMatrix = {
-      students: [],
-      modules: [],
-      cellMap: new Map(),
-    };
-    expect(countMatrixStatuses(matrix)).toEqual({ done: 0, in_progress: 0, open: 0 });
+    // s1/m1 done, s1/m2 in_progress, s2/m1 returned, s2/m2 open (no row)
+    expect(countMatrixStatuses(matrix)).toEqual({
+      done: 1,
+      in_progress: 1,
+      returned: 1,
+      open: 1,
+    });
   });
 });

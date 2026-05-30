@@ -19,7 +19,7 @@ export type BlockAnswer =
   | MatchAnswer
   | string;
 
-// Block-Typen ohne Bewertung (reiner Inhalt bzw. freie Antwort).
+// Block-Typen ohne automatische Bewertung (reiner Inhalt bzw. freie Antwort).
 const NON_GRADED = new Set(['text', 'infobox', 'reflection']);
 
 export function isGraded(block: Block): boolean {
@@ -47,29 +47,90 @@ function evalMatch(block: MatchBlock, answer: MatchAnswer): boolean {
   return block.pairs.every((pair) => answer[pair.id] === pair.category);
 }
 
-// Wertet die Antwort eines Blocks aus. Nicht-bewertbare Blöcke gelten als korrekt
-// (z. B. Reflexion ohne richtige/falsche Antwort).
-export function evaluateBlock(block: Block, answer: BlockAnswer): boolean {
-  switch (block.type) {
-    case 'multiple_choice':
-      return evalMultipleChoice(block, (answer as MultipleChoiceAnswer) ?? []);
-    case 'true_false':
-      return answer === (block as TrueFalseBlock).answer;
-    case 'fill_blank':
-      return evalFillBlank(block, (answer as FillBlankAnswer) ?? []);
-    case 'match':
-      return evalMatch(block, (answer as MatchAnswer) ?? {});
-    default:
-      return true;
+// ─────────────────────────────────────────────────────────────────────────
+// Erweiterbarkeit — einen NEUEN Block-Typ ins Scoring aufnehmen:
+//   1. lib/schemas/blocks.ts  → Block-Typ + Antwort-Format (Zod) definieren
+//   2. HIER in gradeBlock()   → einen `case` mit der Korrektheits-Prüfung
+//   3. components/blocks/      → Renderer (Anzeige + Eingabe)
+// Die gesamte Bewertungs-Pipeline (scoreModule / maxScore / percentScore /
+// isPassed / Lehrer:innen-Matrix) läuft danach OHNE Änderung weiter, weil sie
+// ausschließlich über gradeBlock() + isGraded() geht — nie typ-spezifisch.
+//
+// gradeBlock liefert ein TEILERGEBNIS 0.0–1.0. Heute ist jeder Block binär
+// (0 oder 1). Für künftige TEILPUNKTE (z. B. 3 von 4 Zuordnungen = 0.75) nur
+// hier den jeweiligen `case` auf einen Bruchwert umstellen — sonst nichts.
+// ─────────────────────────────────────────────────────────────────────────
+// Korrektheits-Prüfer pro auswertbarem Block-Typ, gibt boolean zurück. Ein neuer
+// auto-bewertbarer Block-Typ braucht hier genau einen Eintrag (+ Schema + Renderer).
+const CHECKERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => boolean> = {
+  multiple_choice: (b, a) =>
+    evalMultipleChoice(b as MultipleChoiceBlock, (a as MultipleChoiceAnswer) ?? []),
+  true_false: (b, a) => a === (b as TrueFalseBlock).answer,
+  fill_blank: (b, a) => evalFillBlank(b as FillBlankBlock, (a as FillBlankAnswer) ?? []),
+  match: (b, a) => evalMatch(b as MatchBlock, (a as MatchAnswer) ?? {}),
+};
+
+export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {
+  const checker = CHECKERS[block.type];
+  if (!checker) {
+    // Nicht-bewertbare Blöcke (text/infobox/reflection) tragen nichts bei.
+    return 0;
   }
+  return checker(block, answer) ? 1 : 0;
 }
 
-// Punkte = Anzahl korrekt beantworteter bewertbarer Blöcke.
+// Boolesche Auswertung eines Blocks. Nicht-bewertbare Blöcke gelten als korrekt
+// (z. B. Reflexion ohne richtige/falsche Antwort). Dünner Wrapper um gradeBlock,
+// damit der Quiz-Flow (Sofort-Feedback) weiter mit boolean arbeiten kann.
+export function evaluateBlock(block: Block, answer: BlockAnswer): boolean {
+  if (!isGraded(block)) {
+    return true;
+  }
+  return gradeBlock(block, answer) === 1;
+}
+
+// Punkte = Summe der Teilergebnisse über alle bewertbaren Blöcke. Solange
+// gradeBlock binär ist, ist das ganzzahlig (smallint-kompatibel).
 export function scoreModule(blocks: Block[], answers: Record<string, BlockAnswer>): number {
-  return blocks.filter(isGraded).filter((block) => evaluateBlock(block, answers[block.id])).length;
+  return blocks
+    .filter(isGraded)
+    .reduce((sum, block) => sum + gradeBlock(block, answers[block.id]), 0);
 }
 
 // Maximalpunktzahl = Anzahl bewertbarer Blöcke.
 export function maxScore(blocks: Block[]): number {
   return blocks.filter(isGraded).length;
+}
+
+// Prozent-Score über die bewertbaren Blöcke. null, wenn es keine bewertbaren
+// Blöcke gibt (max <= 0) — dann ist eine %-Bewertung fachlich nicht anwendbar
+// (z. B. ein Modul nur mit Reflexion/Text).
+export function percentScore(score: number, max: number): number | null {
+  if (max <= 0) {
+    return null;
+  }
+  return Math.round((score / max) * 100);
+}
+
+// Bestanden = erreichte Prozent >= Schwelle. null, wenn keine Schwelle gesetzt
+// ODER keine bewertbaren Blöcke vorhanden sind (Bestehen nicht anwendbar).
+export function isPassed(score: number, max: number, threshold: number | null): boolean | null {
+  if (threshold === null) {
+    return null;
+  }
+  const pct = percentScore(score, max);
+  if (pct === null) {
+    return null;
+  }
+  return pct >= threshold;
+}
+
+// Ergebnis eines einzelnen Blocks für die Lehrer:innen-Detailansicht.
+export type BlockResult = 'correct' | 'wrong' | 'ungraded';
+
+export function blockResult(block: Block, answer: BlockAnswer | undefined): BlockResult {
+  if (!isGraded(block)) {
+    return 'ungraded';
+  }
+  return gradeBlock(block, answer) === 1 ? 'correct' : 'wrong';
 }

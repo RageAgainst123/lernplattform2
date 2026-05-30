@@ -23,21 +23,33 @@ für den Autor unter `/admin`).
 
 ## Befehle
 
-| Befehl               | Was es tut                                      |
-| -------------------- | ----------------------------------------------- |
-| `pnpm dev`           | Dev-Server (Port 3000, Turbopack)               |
-| `pnpm build`         | Production-Build → `.next/`                     |
-| `pnpm start`         | Production-Server (PORT=3001 für lokales Smoke) |
-| `pnpm test`          | vitest run (alle Tests einmalig)                |
-| `pnpm test:watch`    | vitest watch                                    |
-| `pnpm test:coverage` | Coverage-Report (HTML + Konsole)                |
-| `pnpm lint`          | ESLint (strict-Regeln, ohne `--fix`)            |
-| `pnpm typecheck`     | `tsc --noEmit`                                  |
-| `pnpm format`        | Prettier (schreibend)                           |
+| Befehl                              | Was es tut                                                 |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `pnpm dev`                          | Dev-Server (Port 3000, Turbopack)                          |
+| `pnpm build`                        | Production-Build → `.next/`                                |
+| `pnpm start`                        | Production-Server (PORT=3001 für lokales Smoke)            |
+| `pnpm test`                         | vitest run (alle Tests einmalig)                           |
+| `pnpm test:watch`                   | vitest watch                                               |
+| `pnpm test:coverage`                | Coverage-Report (HTML + Konsole)                           |
+| `pnpm lint`                         | ESLint (strict-Regeln, ohne `--fix`)                       |
+| `pnpm typecheck`                    | `tsc --noEmit`                                             |
+| `pnpm format`                       | Prettier (schreibend)                                      |
+| `pnpm validate:module <datei.json>` | Modul-JSON gegen das echte Schema prüfen (vor Import/Seed) |
 
 **Vor jedem Commit:** `pnpm lint && pnpm typecheck && pnpm test -- --run && pnpm build`.
 Pre-Commit-Hook (Husky + lint-staged) führt eslint + prettier + betroffene
 Tests automatisch aus.
+
+## Module bauen (Block-JSON mit Lösungen)
+
+Neue Lernmodule erstellt man nach `docs/AUTOR-WORKFLOW.md`. Die **verbindliche
+Block-Spezifikation** — jedes Feld, wo die Lösung steht, Bewertungsregel pro Typ,
+geprüftes Referenz-Modul — steht in `docs/MODUL-SPEZIFIKATION.md`. Jedes
+Modul-JSON **vor dem Import** mit `pnpm validate:module <datei.json>` prüfen
+(fängt Schema- + Logik-Fehler ab). Quelle der Wahrheit: `lib/schemas/blocks.ts`
+(Struktur) + `lib/blocks/evaluate.ts` (Bewertung). Ein **neuer Block-Typ** berührt
+genau diese beiden Dateien + einen Renderer in `components/blocks/` — dann läuft
+die ganze Bewertungs-Pipeline (Score, %, Schwelle, Matrix) automatisch weiter.
 
 ## Stack-Kurz
 

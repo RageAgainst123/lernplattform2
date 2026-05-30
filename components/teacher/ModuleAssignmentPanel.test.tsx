@@ -24,6 +24,7 @@ const EVA: AssignedModuleForTeacher = {
   displayMode: 'worksheet',
   dueDate: null,
   assignedAt: '2026-05-29T00:00:00Z',
+  passThreshold: null,
 };
 
 const SUCHEN: PublishedModuleOption = { id: 'suchen', title: 'Suchen im Internet', schulstufe: 5 };

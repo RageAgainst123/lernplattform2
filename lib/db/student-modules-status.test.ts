@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { progressStatusMap, sortByStatus, countByStatus } from './student-modules-status';
+import {
+  deriveStatus,
+  progressStatusMap,
+  sortByStatus,
+  countByStatus,
+} from './student-modules-status';
 
 // Pure-Helper-Test: aus den 3 möglichen DB-Zuständen die korrekte
 // Status-Map ableiten. Module ohne progress-Row tauchen NICHT in der Map
@@ -39,18 +44,49 @@ describe('progressStatusMap', () => {
     const map = progressStatusMap([{ module_id: 'm1', completed_at: '' }]);
     expect(map.get('m1')).toBe('in_progress');
   });
+
+  it('maps a returned row (returned_at set, completed_at null) to returned', () => {
+    const map = progressStatusMap([
+      { module_id: 'm1', completed_at: null, returned_at: '2026-05-30T08:00:00Z' },
+    ]);
+    expect(map.get('m1')).toBe('returned');
+  });
+
+  it('maps a re-submitted row (both timestamps set) to done', () => {
+    const map = progressStatusMap([
+      {
+        module_id: 'm1',
+        completed_at: '2026-05-30T10:00:00Z',
+        returned_at: '2026-05-30T08:00:00Z',
+      },
+    ]);
+    expect(map.get('m1')).toBe('done');
+  });
+});
+
+describe('deriveStatus', () => {
+  it('returned beats done when only returned_at is set', () => {
+    expect(deriveStatus({ module_id: 'm', completed_at: null, returned_at: 'x' })).toBe('returned');
+  });
+  it('done when completed_at is set and no pending return', () => {
+    expect(deriveStatus({ module_id: 'm', completed_at: 'x' })).toBe('done');
+  });
+  it('in_progress when a row exists but nothing is completed/returned', () => {
+    expect(deriveStatus({ module_id: 'm', completed_at: null })).toBe('in_progress');
+  });
 });
 
 describe('sortByStatus', () => {
-  it('orders items as in_progress, then open, then done', () => {
+  it('orders items as returned, in_progress, open, then done', () => {
     const input = [
       { id: 'a', status: 'done' as const },
       { id: 'b', status: 'open' as const },
       { id: 'c', status: 'in_progress' as const },
       { id: 'd', status: 'done' as const },
       { id: 'e', status: 'open' as const },
+      { id: 'f', status: 'returned' as const },
     ];
-    expect(sortByStatus(input).map((i) => i.id)).toEqual(['c', 'b', 'e', 'a', 'd']);
+    expect(sortByStatus(input).map((i) => i.id)).toEqual(['f', 'c', 'b', 'e', 'a', 'd']);
   });
 
   it('preserves the original order within the same status (stable sort)', () => {
@@ -69,7 +105,7 @@ describe('sortByStatus', () => {
 
 describe('countByStatus', () => {
   it('returns zero counts for an empty list', () => {
-    expect(countByStatus([])).toEqual({ open: 0, in_progress: 0, done: 0 });
+    expect(countByStatus([])).toEqual({ open: 0, in_progress: 0, returned: 0, done: 0 });
   });
 
   it('counts each status correctly', () => {
@@ -77,10 +113,11 @@ describe('countByStatus', () => {
       { status: 'open' as const },
       { status: 'open' as const },
       { status: 'in_progress' as const },
+      { status: 'returned' as const },
       { status: 'done' as const },
       { status: 'done' as const },
       { status: 'done' as const },
     ];
-    expect(countByStatus(input)).toEqual({ open: 2, in_progress: 1, done: 3 });
+    expect(countByStatus(input)).toEqual({ open: 2, in_progress: 1, returned: 1, done: 3 });
   });
 });

@@ -1,4 +1,4 @@
-import { CheckIcon, CircleIcon, PencilIcon } from 'lucide-react';
+import { CheckIcon, CircleIcon, PencilIcon, RotateCcwIcon } from 'lucide-react';
 import { ClassProgressCell } from '@/components/teacher/ClassProgressCell';
 import {
   countMatrixStatuses,
@@ -12,7 +12,7 @@ import {
 
 function StatusSummary({ matrix }: { matrix: Matrix }) {
   const counts = countMatrixStatuses(matrix);
-  const total = counts.done + counts.in_progress + counts.open;
+  const total = counts.done + counts.in_progress + counts.returned + counts.open;
   if (total === 0) return null;
   return (
     <div className="bg-muted/50 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md p-3 text-sm">
@@ -24,6 +24,12 @@ function StatusSummary({ matrix }: { matrix: Matrix }) {
         <PencilIcon className="size-4" aria-hidden />
         <strong>{counts.in_progress}</strong> in Bearbeitung
       </span>
+      {counts.returned > 0 && (
+        <span className="flex items-center gap-1.5 text-amber-700">
+          <RotateCcwIcon className="size-4" aria-hidden />
+          <strong>{counts.returned}</strong> zurückgegeben
+        </span>
+      )}
       <span className="text-muted-foreground flex items-center gap-1.5">
         <CircleIcon className="size-4" aria-hidden />
         <strong>{counts.open}</strong> offen
@@ -67,7 +73,7 @@ function ModuleHeaderCell({
   );
 }
 
-function MatrixTable({ matrix }: { matrix: Matrix }) {
+function MatrixTable({ matrix, classId }: { matrix: Matrix; classId: string }) {
   return (
     <div className="overflow-x-auto rounded-md border">
       <table className="w-full border-collapse text-sm">
@@ -100,7 +106,10 @@ function MatrixTable({ matrix }: { matrix: Matrix }) {
               </th>
               {matrix.modules.map((m) => (
                 <td key={m.moduleId} className="border-r p-3 last:border-r-0">
-                  <ClassProgressCell cell={getCellOrOpen(matrix, student.id, m.moduleId)} />
+                  <ClassProgressCell
+                    cell={getCellOrOpen(matrix, student.id, m.moduleId)}
+                    classId={classId}
+                  />
                 </td>
               ))}
             </tr>
@@ -111,7 +120,7 @@ function MatrixTable({ matrix }: { matrix: Matrix }) {
   );
 }
 
-export function ClassProgressMatrix({ matrix }: { matrix: Matrix }) {
+export function ClassProgressMatrix({ matrix, classId }: { matrix: Matrix; classId: string }) {
   if (matrix.modules.length === 0) {
     return (
       <EmptyState message="Dieser Klasse ist noch kein Modul zugewiesen. Gehe zur Klassen-Übersicht und füge eines hinzu." />
@@ -125,7 +134,7 @@ export function ClassProgressMatrix({ matrix }: { matrix: Matrix }) {
   return (
     <div className="flex flex-col gap-4">
       <StatusSummary matrix={matrix} />
-      <MatrixTable matrix={matrix} />
+      <MatrixTable matrix={matrix} classId={classId} />
     </div>
   );
 }

@@ -49,3 +49,6 @@ arbeitsblaetter/*.pdf
 # Python-Cache der Arbeitsblatt-Generatoren
 __pycache__/
 *.pyc
+
+# Dev-Server-Log (lokal)
+dev-server.log

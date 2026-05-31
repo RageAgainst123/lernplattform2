@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRightIcon, TrashIcon } from 'lucide-react';
+import { ArrowRightIcon, PlayIcon, TrashIcon } from 'lucide-react';
 import type { AssignedModuleForTeacher } from '@/lib/db/class-modules';
 
 // Read-only-Liste der zugewiesenen Module. Sub-Bausteine von
@@ -40,6 +40,15 @@ function AssignedRow({
           {m.dueDate && ` · fällig: ${formatDate(m.dueDate)}`}
         </p>
       </div>
+      {m.displayMode === 'presentation' && (
+        <Link
+          href={`/lehrer/klassen/${classId}/praesentation/${m.moduleId}`}
+          className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
+        >
+          <PlayIcon className="size-3.5" aria-hidden />
+          Präsentieren
+        </Link>
+      )}
       <Link
         href={`/lehrer/klassen/${classId}/fortschritt#${m.moduleId}`}
         className="text-primary inline-flex items-center gap-1 text-sm hover:underline"

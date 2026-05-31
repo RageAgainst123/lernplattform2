@@ -1,22 +1,16 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { getModuleByIdForAdmin } from '@/lib/db/modules';
-import { ModuleEditor, type ModuleMetadata } from '@/components/admin/ModuleEditor';
+import { ACTIVITY_INFO } from '@/lib/activities';
 
-export default async function EditModulePage({ params }: { params: Promise<{ id: string }> }) {
+// Phase E: alte Edit-URL leitet dynamisch auf die richtige Aktivitäts-Route.
+// Bookmark-Schutz: existierende Module bleiben über ihre alte URL erreichbar.
+
+export default async function EditModuleRedirect({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
   const mod = await getModuleByIdForAdmin(id);
   if (!mod) notFound();
-  const meta: ModuleMetadata = {
-    title: mod.title,
-    description: mod.description ?? '',
-    schulstufe: mod.schulstufe ?? null,
-    kompetenzbereich: mod.kompetenzbereich ?? null,
-    topic: mod.topic ?? '',
-    estimatedMinutes: mod.estimatedMinutes ?? null,
-    isPublished: mod.isPublished,
-    displayMode: mod.displayMode,
-  };
-  return <ModuleEditor moduleId={id} initialMeta={meta} initialBlocks={mod.content.blocks} />;
+  const segment = ACTIVITY_INFO[mod.activityKind].urlSegment;
+  redirect(`/admin/${segment}/${id}`);
 }

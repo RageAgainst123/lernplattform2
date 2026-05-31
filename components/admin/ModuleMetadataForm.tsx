@@ -1,6 +1,6 @@
 'use client';
 
-import type { Kompetenzbereich, DisplayMode } from '@/lib/schemas/entities';
+import type { ActivityKind, DisplayMode, Kompetenzbereich } from '@/lib/schemas/entities';
 import { KOMPETENZBEREICHE, KOMPETENZBEREICH_INFO, SEKUNDARSTUFE } from '@/lib/curriculum';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ export type ModuleMetadata = {
   topic: string;
   estimatedMinutes: number | null;
   isPublished: boolean;
+  activityKind: ActivityKind;
   displayMode: DisplayMode;
 };
 
@@ -99,18 +100,23 @@ export function ModuleMetadataForm({ value, onChange }: Props) {
           onChange={(e) => set('estimatedMinutes', NumberOrNull(e.target.value))}
         />
       </div>
-      <div className="space-y-1">
-        <Label htmlFor="m-mode">Anzeige-Modus</Label>
-        <select
-          id="m-mode"
-          value={value.displayMode}
-          onChange={(e) => set('displayMode', e.target.value as DisplayMode)}
-          className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-        >
-          <option value="quiz">Quiz — Block-für-Block mit Sofort-Feedback</option>
-          <option value="worksheet">Arbeitsblatt — alle Aufgaben, Abgabe an Lehrer:in</option>
-        </select>
-      </div>
+      {/* Anzeige-Modus ist NUR für Lernmodule eine sinnvolle Auswahl —
+          Präsentationen werden immer am Beamer mit dem PresentationRunner
+          gezeigt, da gibt es keine Quiz-vs-Arbeitsblatt-Wahl. */}
+      {value.activityKind === 'lernmodul' && (
+        <div className="space-y-1">
+          <Label htmlFor="m-mode">Anzeige-Modus</Label>
+          <select
+            id="m-mode"
+            value={value.displayMode}
+            onChange={(e) => set('displayMode', e.target.value as DisplayMode)}
+            className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+          >
+            <option value="quiz">Quiz — Block-für-Block mit Sofort-Feedback</option>
+            <option value="worksheet">Arbeitsblatt — alle Aufgaben, Abgabe an Lehrer:in</option>
+          </select>
+        </div>
+      )}
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"

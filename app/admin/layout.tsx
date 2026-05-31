@@ -8,10 +8,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Drei Aktivitäten + Übersicht (Phase E). Sprache und URL-Segmente kommen aus
+// lib/activities.ts — wenn sich da was ändert, hier ebenfalls anpassen.
 const NAV = [
   { href: '/admin', label: 'Übersicht' },
-  { href: '/admin/module', label: 'Module' },
-  { href: '/admin/material', label: 'Materialien' },
+  { href: '/admin/lernmodule', label: 'Lernmodule' },
+  { href: '/admin/praesentationen', label: 'Präsentationen' },
+  { href: '/admin/material', label: 'Arbeitsblätter' },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

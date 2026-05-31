@@ -1,18 +1,9 @@
-import { requireAdmin } from '@/lib/auth/admin-auth';
-import { ModuleEditor, type ModuleMetadata } from '@/components/admin/ModuleEditor';
+import { redirect } from 'next/navigation';
 
-const EMPTY_META: ModuleMetadata = {
-  title: '',
-  description: '',
-  schulstufe: null,
-  kompetenzbereich: null,
-  topic: '',
-  estimatedMinutes: null,
-  isPublished: false,
-  displayMode: 'quiz',
-};
+// Phase E: alte „Neues Modul"-Route umgeleitet auf Lernmodul-Erstellung.
+// Wer eine Präsentation anlegen will, sieht „+ Neue Präsentation" im
+// Admin-Dashboard oder unter /admin/praesentationen.
 
-export default async function NewModulePage() {
-  await requireAdmin();
-  return <ModuleEditor initialMeta={EMPTY_META} initialBlocks={[]} />;
+export default function NewModuleRedirect() {
+  redirect('/admin/lernmodule/neu');
 }

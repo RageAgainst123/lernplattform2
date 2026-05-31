@@ -28,6 +28,7 @@ function rowFromInsert(input: z.infer<typeof moduleFormSchema>, createdBy: strin
     content: input.content,
     estimated_minutes: input.estimatedMinutes ?? null,
     is_published: input.isPublished,
+    activity_kind: input.activityKind,
     display_mode: input.displayMode,
     created_by: createdBy,
   };
@@ -47,6 +48,8 @@ export async function createModule(input: unknown): Promise<{ id: string }> {
     .single();
   if (error) throw new Error('Modul konnte nicht angelegt werden: ' + error.message);
   revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
   return { id: data.id as string };
 }
 
@@ -63,6 +66,8 @@ export async function updateModule(id: string, input: unknown): Promise<void> {
     .eq('id', id);
   if (error) throw new Error('Modul konnte nicht aktualisiert werden: ' + error.message);
   revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
   revalidatePath(`/admin/module/${id}`);
 }
 
@@ -74,6 +79,8 @@ export async function deleteModule(id: string): Promise<void> {
   const { error } = await svc.from('modules').delete().eq('id', id);
   if (error) throw new Error('Modul konnte nicht gelöscht werden: ' + error.message);
   revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
   revalidatePath('/admin/material');
   redirect('/admin/module');
 }

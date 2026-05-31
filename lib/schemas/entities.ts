@@ -44,9 +44,17 @@ export const studentCodeSchema = z.object({
 });
 
 // --- modules ---------------------------------------------------------------
-// Quiz: Block-für-Block mit Sofort-Feedback (klassischer Drill). Worksheet:
-// alle Aufgaben auf einer Seite, definitiv abgeben, ohne Sofort-Bewertung.
-// Presentation: geführte Folien am Beamer (Stundeneinstieg, slide-Blöcke).
+// activityKind ist der primäre Diskriminator (seit Migration 0012, Phase E):
+// 'lernmodul' = online für eingeloggte Schüler:innen (display_mode wird genutzt:
+// quiz mit Sofort-Feedback oder worksheet mit Abgabe-am-Ende);
+// 'praesentation' = live am Beamer mit Schüler:innen-Geräten (display_mode
+// irrelevant). Siehe lib/activities.ts für UI-Labels und Block-Filter.
+export const activityKindSchema = z.enum(['lernmodul', 'praesentation']);
+
+// Display-Sub-Variante NUR für Lernmodule. Quiz: Block-für-Block mit Sofort-
+// Feedback. Worksheet: alle Aufgaben auf einer Seite, Abgabe am Ende.
+// 'presentation' bleibt in der Union nur aus Rückwärtskompatibilität — neue
+// Module sollten ihn nicht mehr setzen (activityKind='praesentation' reicht).
 export const displayModeSchema = z.enum(['quiz', 'worksheet', 'presentation']);
 
 export const moduleInsertSchema = z.object({
@@ -58,6 +66,7 @@ export const moduleInsertSchema = z.object({
   content: moduleContentSchema,
   estimatedMinutes: z.number().int().positive().optional(),
   isPublished: z.boolean().default(false),
+  activityKind: activityKindSchema.default('lernmodul'),
   displayMode: displayModeSchema.default('quiz'),
 });
 
@@ -89,5 +98,6 @@ export type Class = z.infer<typeof classSchema>;
 export type StudentCode = z.infer<typeof studentCodeSchema>;
 export type ModuleInsert = z.infer<typeof moduleInsertSchema>;
 export type Module = z.infer<typeof moduleSchema>;
+export type ActivityKind = z.infer<typeof activityKindSchema>;
 export type DisplayMode = z.infer<typeof displayModeSchema>;
 export type Material = z.infer<typeof materialSchema>;

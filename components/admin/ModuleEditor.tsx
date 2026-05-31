@@ -5,14 +5,22 @@ import { useRouter } from 'next/navigation';
 import { moduleContentSchema, type Block } from '@/lib/schemas/blocks';
 import { Button } from '@/components/ui/button';
 import { createModule, updateModule } from '@/lib/db/module-actions';
+import { ACTIVITY_INFO } from '@/lib/activities';
 import { ModuleMetadataForm, type ModuleMetadata } from './ModuleMetadataForm';
 import { BlockList } from './BlockList';
 import { ImportJsonDialog } from './ImportJsonDialog';
 import { AddBlockDialog } from './AddBlockDialog';
 import { LivePreview } from './LivePreview';
 
-// Modul-Editor mit drei Spalten auf Desktop: Metadaten | Blöcke (+Import) | Vorschau.
-// Auf Mobile gestapelt. Keine eigene State-Library — useState + Server-Actions reichen.
+// Aktivitäts-bewusster Editor — der gleiche Code dient Lernmodulen UND
+// Präsentationen (kommt aus initialMeta.activityKind). Unterschiede:
+//   - Header-Titel + Subtitel
+//   - AddBlockDialog filtert auf passende Block-Typen (siehe lib/activities.ts)
+//   - Routing nach „Speichern": zur passenden Aktivitäts-Liste
+//   - ModuleMetadataForm zeigt das Display-Mode-Select nur für Lernmodule
+//
+// Drei Spalten auf Desktop: Metadaten | Blöcke (+Import) | Vorschau. Auf Mobile
+// gestapelt. Keine eigene State-Library — useState + Server-Actions reichen.
 
 type Props = {
   moduleId?: string;
@@ -26,6 +34,8 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const info = ACTIVITY_INFO[meta.activityKind];
 
   function handleSave() {
     setError(null);
@@ -45,6 +55,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
       content: contentParsed.data,
       estimatedMinutes: meta.estimatedMinutes ?? undefined,
       isPublished: meta.isPublished,
+      activityKind: meta.activityKind,
       displayMode: meta.displayMode,
     };
     startTransition(async () => {
@@ -53,7 +64,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
           await updateModule(moduleId, payload);
         } else {
           const { id } = await createModule(payload);
-          router.push(`/admin/module/${id}`);
+          router.push(`/admin/${info.urlSegment}/${id}`);
           return;
         }
         router.refresh();
@@ -68,7 +79,9 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
       <header className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {moduleId ? 'Modul bearbeiten' : 'Neues Modul'}
+            {moduleId
+              ? `${info.label} bearbeiten`
+              : `Neue${info.label.endsWith('e') ? '' : 's'} ${info.label}`}
           </h1>
           <p className="text-muted-foreground text-sm">
             Tippe Metadaten und Blöcke. Live-Vorschau zeigt, wie Schüler:innen es sehen.
@@ -101,6 +114,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
             <div className="flex items-center gap-2">
               <AddBlockDialog
                 existingIds={blocks.map((b) => b.id)}
+                allowedKind={meta.activityKind}
                 onAdd={(block) => setBlocks((prev) => [...prev, block])}
               />
               <ImportJsonDialog

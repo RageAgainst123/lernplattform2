@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import type { Module, Kompetenzbereich, DisplayMode } from '@/lib/schemas/entities';
+import type { ActivityKind, DisplayMode, Kompetenzbereich, Module } from '@/lib/schemas/entities';
 
 // Read-Funktionen für Module. Admin-Lese-Funktionen umgehen RLS NICHT —
 // Geo ist auch Lehrer:in und kann seine eigenen Module sehen (created_by =
@@ -16,6 +16,7 @@ type ModuleRow = {
   content: unknown;
   estimated_minutes: number | null;
   is_published: boolean;
+  activity_kind: ActivityKind;
   display_mode: DisplayMode | null;
   created_by: string | null;
   created_at: string;
@@ -33,6 +34,7 @@ function toModule(row: ModuleRow): Module {
     content: row.content as Module['content'],
     estimatedMinutes: row.estimated_minutes ?? undefined,
     isPublished: row.is_published,
+    activityKind: row.activity_kind,
     displayMode: row.display_mode ?? 'quiz',
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -60,11 +62,28 @@ export async function getModuleByIdForAdmin(id: string): Promise<Module | null> 
 }
 
 // Alle Module für die Admin-Übersicht. Sortiert nach Update-Zeit (neueste zuerst).
+// Hinweis: nach Phase E sollten Admin-Listen besser nach activity_kind filtern —
+// siehe getModulesForAdminByKind() unten. Diese ungefilterte Variante bleibt für
+// die Übersichts-Seite und Tests bestehen.
 export async function getModulesForAdmin(): Promise<Module[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('modules')
     .select('*')
+    .order('updated_at', { ascending: false });
+  if (error) throw new Error(`Module konnten nicht geladen werden: ${error.message}`);
+  return (data as ModuleRow[]).map(toModule);
+}
+
+// Admin-Liste gefiltert nach Aktivität (Phase E). Wird von den neuen Routen
+// /admin/lernmodule und /admin/praesentationen genutzt — so erscheinen
+// Präsentationen nicht in der Lernmodul-Liste und umgekehrt.
+export async function getModulesForAdminByKind(kind: ActivityKind): Promise<Module[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('modules')
+    .select('*')
+    .eq('activity_kind', kind)
     .order('updated_at', { ascending: false });
   if (error) throw new Error(`Module konnten nicht geladen werden: ${error.message}`);
   return (data as ModuleRow[]).map(toModule);

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Block } from '@/lib/schemas/blocks';
+import { type ActivityKind, isBlockAllowedFor } from '@/lib/activities';
 import { Button } from '@/components/ui/button';
 import {
   BLOCK_CATALOG,
@@ -14,13 +15,19 @@ import {
 // Typ — Geo muss nicht mehr die MODUL-SPEZIFIKATION daneben offen haben um zu
 // wissen welcher Block was tut. Klick legt einen Default-Stub an (alle
 // Pflichtfelder ausgefüllt, Zod-konform), den Geo dann im JSON-Editor füllt.
+//
+// allowedKind filtert die Galerie auf die für die Aktivität passenden Block-Typen
+// (siehe lib/activities.ts). Lernmodul: Theorie ohne Slide + Worksheet-Aufgaben.
+// Präsentation: Theorie mit Slide + Live-Interaktionen.
 
 export function AddBlockDialog({
   onAdd,
   existingIds,
+  allowedKind,
 }: {
   onAdd: (block: Block) => void;
   existingIds: string[];
+  allowedKind: ActivityKind;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -29,6 +36,12 @@ export function AddBlockDialog({
     onAdd(block);
     setOpen(false);
   }
+
+  // Pro Gruppe nur Einträge zeigen, die für die Aktivität erlaubt sind.
+  // Gruppen die nach Filter leer sind, werden komplett ausgeblendet.
+  const theory = BLOCK_CATALOG.theory.filter((e) => isBlockAllowedFor(e.type, allowedKind));
+  const worksheet = BLOCK_CATALOG.worksheet.filter((e) => isBlockAllowedFor(e.type, allowedKind));
+  const live = BLOCK_CATALOG.live.filter((e) => isBlockAllowedFor(e.type, allowedKind));
 
   if (!open) {
     return (
@@ -59,13 +72,15 @@ export function AddBlockDialog({
           </Button>
         </div>
         <div className="max-h-[70vh] space-y-5 overflow-y-auto">
-          <Group title="Theorie & Folien" entries={BLOCK_CATALOG.theory} onPick={handlePick} />
-          <Group title="Worksheet-Aufgaben" entries={BLOCK_CATALOG.worksheet} onPick={handlePick} />
-          <Group
-            title="Live-Interaktionen (Beamer)"
-            entries={BLOCK_CATALOG.live}
-            onPick={handlePick}
-          />
+          {theory.length > 0 && (
+            <Group title="Theorie & Folien" entries={theory} onPick={handlePick} />
+          )}
+          {worksheet.length > 0 && (
+            <Group title="Worksheet-Aufgaben" entries={worksheet} onPick={handlePick} />
+          )}
+          {live.length > 0 && (
+            <Group title="Live-Interaktionen (Beamer)" entries={live} onPick={handlePick} />
+          )}
         </div>
       </div>
     </div>

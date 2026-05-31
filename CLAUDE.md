@@ -42,7 +42,10 @@ Tests automatisch aus.
 
 ## Module bauen (Block-JSON mit Lösungen)
 
-Neue Lernmodule erstellt man nach `docs/AUTOR-WORKFLOW.md`. Die **verbindliche
+Ein ganzes **Thema** (didaktisches Standard-Stundenbild: Hook → Theorie → Übung
+→ Reflexion → optional Arbeitsblatt) folgt `docs/THEMA-WORKFLOW.md` (Ebene über
+dem technischen Erstellungs-Prozess). Neue Lernmodule erstellt man nach
+`docs/AUTOR-WORKFLOW.md`. Die **verbindliche
 Block-Spezifikation** — jedes Feld, wo die Lösung steht, Bewertungsregel pro Typ,
 geprüftes Referenz-Modul — steht in `docs/MODUL-SPEZIFIKATION.md`. Jedes
 Modul-JSON **vor dem Import** mit `pnpm validate:module <datei.json>` prüfen

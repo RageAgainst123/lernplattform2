@@ -297,6 +297,8 @@ ersten Module dafür entstehen.
 
 ## 8. Querverweise
 
+- [`docs/THEMA-WORKFLOW.md`](THEMA-WORKFLOW.md) — didaktisches Standard-Stundenbild
+  eines Themas (die Ebene ÜBER diesem technischen Workflow)
 - [`docs/INHALTSKONZEPT.md`](INHALTSKONZEPT.md) — Material vs. Modul,
   Display-Modes, Status-Logik
 - [`docs/DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) — Farben/Spacing/Typografie

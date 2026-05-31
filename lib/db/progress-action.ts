@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { getStudentSession } from '@/lib/auth/student-auth';
 import { moduleContentSchema } from '@/lib/schemas/blocks';
 import { maxScore, scoreModule, type BlockAnswer } from '@/lib/blocks/evaluate';
+import { ModuleContentError } from '@/lib/blocks/errors';
 
 type SaveArgs = {
   moduleId: string;
@@ -15,12 +16,14 @@ type SaveArgs = {
 
 // Lädt den Modul-Inhalt und berechnet Score + Maximalpunktzahl serverseitig
 // aus den gegebenen Antworten. Single Source of Truth für die Bewertung —
-// der Client wird nicht für den Score vertraut. null-max bei kaputtem Modul.
+// der Client wird nicht für den Score vertraut. Wirft ModuleContentError
+// (lib/blocks/errors.ts), wenn der Inhalt nicht parsebar ist — statt still
+// 0/null zurückzugeben, was eine echte Abgabe als „0 Punkte" verewigen würde.
 async function computeScore(
   supabase: ReturnType<typeof createServiceClient>,
   moduleId: string,
   answers: Record<string, BlockAnswer>
-): Promise<{ score: number; max: number | null }> {
+): Promise<{ score: number; max: number }> {
   const { data: moduleRow } = await supabase
     .from('modules')
     .select('content')
@@ -28,9 +31,25 @@ async function computeScore(
     .maybeSingle();
   const parsed = moduleRow ? moduleContentSchema.safeParse(moduleRow.content) : null;
   if (!parsed?.success) {
-    return { score: 0, max: null };
+    throw new ModuleContentError();
   }
   return { score: scoreModule(parsed.data.blocks, answers), max: maxScore(parsed.data.blocks) };
+}
+
+// Toleranter max_score für Auto-Save/Draft-Pfade: bei kaputtem Modul NICHT
+// abbrechen (sonst ginge der gerade getippte Zwischenstand verloren), sondern
+// max_score = null schreiben. Der Score wird bei der definitiven Abgabe ohnehin
+// frisch + streng (mit throw) berechnet.
+async function safeMax(
+  supabase: ReturnType<typeof createServiceClient>,
+  moduleId: string,
+  answers: Record<string, BlockAnswer>
+): Promise<number | null> {
+  try {
+    return (await computeScore(supabase, moduleId, answers)).max;
+  } catch {
+    return null;
+  }
 }
 
 // Speichert den Lern-Fortschritt. studentCodeId kommt aus der Session (nicht aus
@@ -42,7 +61,7 @@ export async function saveProgress(args: SaveArgs): Promise<void> {
   }
 
   const supabase = createServiceClient();
-  const { max } = await computeScore(supabase, args.moduleId, args.answers);
+  const max = await safeMax(supabase, args.moduleId, args.answers);
 
   await supabase.from('student_progress').upsert(
     {

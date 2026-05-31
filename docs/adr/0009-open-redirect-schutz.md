@@ -1,7 +1,17 @@
 # ADR-0009: Open-Redirect-Schutz im Magic-Link-Callback
 
-**Status:** accepted
+**Status:** accepted (am 2026-05-30 gehärtet — reiner String-Check war umgehbar)
 **Datum:** 2026-05-29
+
+> **Nachtrag 2026-05-30:** Der ursprüngliche reine String-Check (`startsWith('/')`
+>
+> - `!startsWith('//')`) war **umgehbar**: `/\evil.com` beginnt mit einem einzelnen
+>   `/`, wird aber von Browsern/WHATWG-URL zu `//evil.com` normalisiert und löst zu
+>   `https://evil.com` auf (auch `/<tab>/evil.com` u. ä.). `safeNext()` verbietet jetzt
+>   zusätzlich Backslashes + Control-Chars und führt die unten als „Overkill"
+>   verworfene **URL-Origin-Prüfung** doch aus (Auflösen gegen Dummy-Origin, Host-
+>   Wechsel = Fallback). 5 neue Test-Vektoren. Lehre: bei Redirect-Validierung
+>   nie auf String-Heuristik allein verlassen — immer gegen den echten URL-Parser.
 
 ## Kontext
 

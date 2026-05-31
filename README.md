@@ -17,7 +17,7 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 - **Next.js 16** (App Router, Server Components, Turbopack) · **React 19.2** · **TypeScript** strict
 - **Tailwind CSS v4** (`@theme` in CSS) · **shadcn/ui** (Base UI, **nicht** Radix)
 - **Supabase** (Frankfurt): Auth + PostgreSQL mit Row-Level Security + Storage, via `@supabase/ssr`
-- **jose** (Schüler:innen-JWT, HS256, 8 h, HTTP-Only-Cookie) ·
+- **jose** (Schüler:innen-JWT, HS256, 1 Jahr, HTTP-Only-Cookie) ·
   **bcryptjs** (PIN-Hash, SALT_ROUNDS=10)
 - **@react-pdf/renderer** (Lehrer:innen-PDF-Export, dynamischer Import)
 - **lucide-react** (Icons) · **react-hook-form + Zod** (Formulare/Validierung)

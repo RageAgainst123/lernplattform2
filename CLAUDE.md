@@ -163,8 +163,10 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   `lib/supabase/server.ts`. Wenn du dort etwas anfasst, prüfe die Cookie-
   Refresh-Logik in `proxy.ts` mit.
 - **Schüler:innen-Session ist jose-JWT in HTTP-Only-Cookie** (Name siehe
-  `STUDENT_COOKIE` in `lib/auth/student-session.ts`, HS256, 8 h). Hat
-  NICHTS mit Supabase Auth zu tun.
+  `STUDENT_COOKIE` in `lib/auth/student-session.ts`, HS256,
+  `SESSION_DURATION_SECONDS` = 1 Jahr — feste/eigene Geräte, kein tägliches
+  Neu-Einloggen; Cookie-maxAge nutzt dieselbe Konstante). Hat NICHTS mit
+  Supabase Auth zu tun.
 - **DSGVO:** keine PII von Schüler:innen — Codenamen wie `5A-01`, keine echten
   Namen. Hosting auf Supabase Frankfurt-Region ist verbindlich.
 

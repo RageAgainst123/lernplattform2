@@ -3,7 +3,11 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyPin } from '@/lib/auth/pin';
-import { createStudentSession, STUDENT_COOKIE } from '@/lib/auth/student-session';
+import {
+  createStudentSession,
+  STUDENT_COOKIE,
+  SESSION_DURATION_SECONDS,
+} from '@/lib/auth/student-session';
 import { clearTeacherSession } from '@/lib/auth/session-cleanup';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { getClassByJoinCode, getStudentCodeForLogin } from '@/lib/db/student-login';
@@ -41,7 +45,7 @@ export async function studentLogin(
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 8 * 60 * 60,
+    maxAge: SESSION_DURATION_SECONDS,
   });
 
   await createServiceClient()

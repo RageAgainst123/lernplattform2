@@ -150,7 +150,7 @@ function CookiesSection() {
       <p>
         {BRAND.name} verwendet ausschließlich <strong>technisch notwendige</strong> Cookies: ein
         Auth-Cookie von Supabase (Lehrer:innen-Session) bzw. ein HTTP-Only-Cookie mit signierter
-        JWT-Session (Schüler:innen-Session, 8 Stunden Gültigkeit). Keine Tracker, keine
+        JWT-Session (Schüler:innen-Session, bis zu 1 Jahr Gültigkeit). Keine Tracker, keine
         Marketing-Cookies, keine externen Analyse-Dienste. Daher kein Cookie-Banner notwendig.
       </p>
     </Section>

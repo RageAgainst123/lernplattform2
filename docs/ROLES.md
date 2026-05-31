@@ -10,7 +10,7 @@
 | Rolle             | Wer                      | Auth-Mechanismus                                    | Session                           |
 | ----------------- | ------------------------ | --------------------------------------------------- | --------------------------------- |
 | **Öffentlich**    | jede:r ohne Login        | kein Auth                                           | keine                             |
-| **Schüler:in**    | Kinder im Klassenverband | Klassencode + 4-stellige PIN                        | jose-JWT, HTTP-Only Cookie (8 h)  |
+| **Schüler:in**    | Kinder im Klassenverband | Klassencode + 4-stellige PIN                        | jose-JWT, HTTP-Only Cookie (1 J.) |
 | **Lehrer:in**     | Lehrkräfte               | Magic-Link via Supabase Auth                        | Supabase Session-Cookie (Refresh) |
 | **Admin (Autor)** | aktuell nur Geo          | Lehrer:in-Login **+** E-Mail in `BRAND.adminEmails` | wie Lehrer:in                     |
 

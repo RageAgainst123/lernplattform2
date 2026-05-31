@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { QuizPollBlock } from '@/lib/schemas/blocks';
 import { getQuizCorrectOptionsAction } from '@/lib/db/live-results-action';
-import { revealResults, setBlockLocked } from '@/lib/db/live-session-actions';
+import { lockAndReveal, revealResults, setBlockLocked } from '@/lib/db/live-session-actions';
 import { useLiveResults } from '@/components/blocks/beamer/useLiveResults';
 import { Button } from '@/components/ui/button';
 
@@ -81,26 +81,65 @@ function QuizControls({
 }) {
   const [pending, setPending] = useState(false);
   if (revealed) return null;
-  async function toggleLock() {
+  const run = (fn: () => Promise<unknown>) => {
     setPending(true);
-    await setBlockLocked(classId, !locked);
-    setPending(false);
-  }
-  async function reveal() {
-    setPending(true);
-    await revealResults(classId);
-    setPending(false);
-  }
+    void fn().finally(() => setPending(false));
+  };
+  return locked ? (
+    <QuizLocked classId={classId} pending={pending} run={run} />
+  ) : (
+    <QuizOpen classId={classId} pending={pending} run={run} />
+  );
+}
+
+type QuizSubProps = {
+  classId: string;
+  pending: boolean;
+  run: (fn: () => Promise<unknown>) => void;
+};
+
+// Quiz: gleicher Workflow wie LivePollBeamer, Label „Auflösen“ statt „Ergebnis
+// zeigen“ — bei Quiz erwartet die Klasse die richtige Antwort, nicht ein Diagramm.
+function QuizOpen({ classId, pending, run }: QuizSubProps) {
   return (
     <div className="flex gap-3">
-      <Button variant="outline" onClick={toggleLock} disabled={pending} className="h-10">
-        {locked ? 'Abstimmung öffnen' : 'Abstimmung schließen'}
+      <Button
+        onClick={() => void run(() => lockAndReveal(classId))}
+        disabled={pending}
+        className="h-10"
+      >
+        Abschließen &amp; Auflösen
       </Button>
-      {locked && (
-        <Button onClick={reveal} disabled={pending} className="h-10">
-          Auflösen
-        </Button>
-      )}
+      <Button
+        variant="outline"
+        onClick={() => void run(() => setBlockLocked(classId, true))}
+        disabled={pending}
+        className="h-10"
+      >
+        Nur schließen
+      </Button>
+    </div>
+  );
+}
+
+function QuizLocked({ classId, pending, run }: QuizSubProps) {
+  return (
+    <div className="flex gap-3">
+      <Button
+        variant="outline"
+        onClick={() => void run(() => setBlockLocked(classId, false))}
+        disabled={pending}
+        className="h-10"
+      >
+        Abstimmung öffnen
+      </Button>
+      <Button
+        onClick={() => void run(() => revealResults(classId))}
+        disabled={pending}
+        className="h-10"
+      >
+        Auflösen
+      </Button>
     </div>
   );
 }
@@ -127,6 +166,11 @@ export function QuizPollBeamer({ block, classId }: { block: QuizPollBlock; class
           />
         ))}
       </ul>
+      {!revealed && (
+        <p className="text-muted-foreground text-center text-sm">
+          Antworten sind verborgen — klicke „Abschließen &amp; Auflösen“ wenn alle abgestimmt haben.
+        </p>
+      )}
       <div className="text-muted-foreground flex items-center gap-4 text-sm">
         <span>🟢 {present} verbunden</span>
         <span>·</span>

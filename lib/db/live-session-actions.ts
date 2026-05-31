@@ -73,6 +73,24 @@ export async function revealResults(classId: string): Promise<LiveActionState> {
   return { error: null };
 }
 
+// Schließt die Abstimmung UND zeigt das Ergebnis in einem Atom-Update. Der
+// häufigste Workflow für eine Lehrer:in ist „so, das war's, hier ist das
+// Ergebnis" — zwei Klicks (Schließen → Auflösen) sind dafür zu viel. Die
+// getrennten Buttons bleiben für den bewussten Pausen-Workflow erhalten.
+export async function lockAndReveal(classId: string): Promise<LiveActionState> {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('live_sessions')
+    .update({ current_block_locked: true, current_block_revealed: true })
+    .eq('class_id', classId)
+    .eq('status', 'active');
+  if (error) {
+    return { error: 'Abstimmung konnte nicht abgeschlossen werden.' };
+  }
+  return { error: null };
+}
+
 // Sperrt (locked=true) oder öffnet (locked=false) die Abstimmung für die
 // Schüler:innen. Bei locked=true können keine neuen Stimmen mehr abgegeben
 // werden (Client disabled + Server-Guard in submitPollVote).

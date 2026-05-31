@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { LivePollBlock as LivePollBlockType } from '@/lib/schemas/blocks';
-import { revealResults, setBlockLocked } from '@/lib/db/live-session-actions';
+import { lockAndReveal, revealResults, setBlockLocked } from '@/lib/db/live-session-actions';
 import { useLiveResults } from '@/components/blocks/beamer/useLiveResults';
 import { Button } from '@/components/ui/button';
 
@@ -49,6 +49,59 @@ function PollBar({
   );
 }
 
+// Hauptworkflow: Abstimmung offen → ein Klick schließt UND zeigt Ergebnis.
+// Sekundär „Nur schließen“ für den Pausen-Workflow (kurz sperren, später zeigen).
+function OpenControls({ classId, pending, run }: ControlSubProps) {
+  return (
+    <div className="flex gap-3">
+      <Button
+        onClick={() => void run(() => lockAndReveal(classId))}
+        disabled={pending}
+        className="h-10"
+      >
+        Abschließen &amp; Ergebnis zeigen
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => void run(() => setBlockLocked(classId, true))}
+        disabled={pending}
+        className="h-10"
+      >
+        Nur schließen
+      </Button>
+    </div>
+  );
+}
+
+// Lock-Phase (gesperrt, noch nicht enthüllt): zurück öffnen oder jetzt zeigen.
+function LockedControls({ classId, pending, run }: ControlSubProps) {
+  return (
+    <div className="flex gap-3">
+      <Button
+        variant="outline"
+        onClick={() => void run(() => setBlockLocked(classId, false))}
+        disabled={pending}
+        className="h-10"
+      >
+        Abstimmung öffnen
+      </Button>
+      <Button
+        onClick={() => void run(() => revealResults(classId))}
+        disabled={pending}
+        className="h-10"
+      >
+        Ergebnis zeigen
+      </Button>
+    </div>
+  );
+}
+
+type ControlSubProps = {
+  classId: string;
+  pending: boolean;
+  run: (fn: () => Promise<unknown>) => void;
+};
+
 function BeamerControls({
   classId,
   locked,
@@ -60,30 +113,14 @@ function BeamerControls({
 }) {
   const [pending, setPending] = useState(false);
   if (revealed) return null;
-
-  async function toggleLock() {
+  const run = (fn: () => Promise<unknown>) => {
     setPending(true);
-    await setBlockLocked(classId, !locked);
-    setPending(false);
-  }
-
-  async function reveal() {
-    setPending(true);
-    await revealResults(classId);
-    setPending(false);
-  }
-
-  return (
-    <div className="flex gap-3">
-      <Button variant="outline" onClick={toggleLock} disabled={pending} className="h-10">
-        {locked ? 'Abstimmung öffnen' : 'Abstimmung schließen'}
-      </Button>
-      {locked && (
-        <Button onClick={reveal} disabled={pending} className="h-10">
-          Ergebnis zeigen
-        </Button>
-      )}
-    </div>
+    void fn().finally(() => setPending(false));
+  };
+  return locked ? (
+    <LockedControls classId={classId} pending={pending} run={run} />
+  ) : (
+    <OpenControls classId={classId} pending={pending} run={run} />
   );
 }
 
@@ -110,7 +147,8 @@ export function LivePollBeamer({ block, classId }: { block: LivePollBlockType; c
       </ul>
       {!revealed && (
         <p className="text-muted-foreground text-center text-sm">
-          Ergebnisse sind verborgen — Klicke „Ergebnis zeigen“ wenn alle abgestimmt haben.
+          Ergebnisse sind verborgen — klicke „Abschließen &amp; Ergebnis zeigen“ wenn alle
+          abgestimmt haben.
         </p>
       )}
       <div className="text-muted-foreground flex items-center gap-4 text-sm">

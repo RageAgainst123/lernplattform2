@@ -52,3 +52,4 @@ __pycache__/
 
 # Dev-Server-Log (lokal)
 dev-server.log
+vt.ts

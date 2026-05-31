@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { getClass } from '@/lib/db/classes';
 import { getStudentCodes } from '@/lib/db/student-codes';
+import { isPresentationLiveForTeacher } from '@/lib/db/live-sessions';
 import { getAssignedModulesForClass } from '@/lib/db/class-modules';
 import { getPublishedModulesAll, type PublishedModuleOption } from '@/lib/db/modules';
 import type { AssignedModuleForTeacher } from '@/lib/db/class-modules';
@@ -12,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { StudentCodesPanel } from '@/components/teacher/StudentCodesPanel';
 import { JoinCodeHint } from '@/components/teacher/JoinCodeHint';
 import { ModuleAssignmentPanel } from '@/components/teacher/ModuleAssignmentPanel';
+import { LiveSessionBanner } from '@/components/teacher/LiveSessionBanner';
 
 export const metadata: Metadata = {
   title: 'Klasse — Lernplattform',
@@ -87,15 +89,17 @@ export default async function KlasseDetailPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const schoolClass = await getClass(id);
   if (!schoolClass) notFound();
-  const [codes, assignedModules, availableModules] = await Promise.all([
+  const [codes, assignedModules, availableModules, isLive] = await Promise.all([
     getStudentCodes(schoolClass.id),
     getAssignedModulesForClass(schoolClass.id),
     getPublishedModulesAll(),
+    isPresentationLiveForTeacher(schoolClass.id),
   ]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
       <ClassHeader schoolClass={schoolClass} />
+      {isLive && <LiveSessionBanner classId={schoolClass.id} />}
       <StudentCodesCard classId={schoolClass.id} className={schoolClass.name} codes={codes} />
       <ModulesCard
         classId={schoolClass.id}

@@ -1,5 +1,6 @@
 import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { moduleContentSchema } from '@/lib/schemas/blocks';
 
 // Service-Role-Lesepfad für die Live-Präsentation (Schüler:innen-Seite hat kein
@@ -12,29 +13,39 @@ export type ActiveLiveSession = {
   currentBlockIndex: number;
 };
 
-// Maximales Alter einer aktiven Session. Präsentationen die länger als 4 Stunden
-// laufen, sind fast sicher hängen geblieben (Browser-Absturz, Tab geschlossen).
-// Wir behandeln sie als beendet, ohne die DB zu mutieren — der nächste Start-Aufruf
-// überschreibt sie via RPC (end-then-insert). So gibt es keinen dauerhaften Stuck-State.
+// Heartbeat-Tod: der Beamer frischt updated_at regelmäßig auf (heartbeat-Action,
+// alle 20 s). Bleibt ein Lebenszeichen länger als 60 s aus (Browser-Absturz,
+// OS-Shutdown, harter Tab-Kill), gilt die Session als tot → das Kind-Overlay
+// verschwindet nach ≤60 s statt erst nach dem 4-h-Netz. 60 s toleriert 2 verpasste
+// 20-s-Heartbeats. Die Session wird NICHT mutiert (Idempotenz/Statistik); der
+// nächste start_live_session beendet sie ohnehin via end-then-insert (RPC).
+const HEARTBEAT_DEAD_MS = 60 * 1000; // 60 s
+
+// Maximales Alter einer aktiven Session. Zweites Netz für den Fall, dass eine
+// Session trotz Heartbeats unrealistisch lange läuft (z. B. vergessener Beamer).
 const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 h
 
 // Liest die aktive Session einer Klasse (max. eine — partial unique index).
-// Gibt null zurück, wenn die Session älter als SESSION_MAX_AGE_MS ist (Timeout-Schutz
-// gegen stecken gebliebene Sessions nach Browser-Absturz / Tab-Schließen).
+// Gibt null zurück, wenn die Session tot (Heartbeat > 60 s aus) oder älter als
+// 4 h ist — Schutz gegen stecken gebliebene Sessions nach Browser-Absturz/Tab-Kill.
 export async function getActiveSessionForClass(classId: string): Promise<ActiveLiveSession | null> {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('live_sessions')
-    .select('id, module_id, current_block_index, created_at')
+    .select('id, module_id, current_block_index, created_at, updated_at')
     .eq('class_id', classId)
     .eq('status', 'active')
     .maybeSingle();
   if (!data) {
     return null;
   }
-  // Timeout-Check: Sessions älter als 4 h werden als beendet behandelt.
-  const age = Date.now() - new Date(data.created_at as string).getTime();
-  if (age > SESSION_MAX_AGE_MS) {
+  const now = Date.now();
+  // Heartbeat-Tod: kein Lebenszeichen seit > 60 s → Session gilt als beendet.
+  if (now - new Date(data.updated_at as string).getTime() > HEARTBEAT_DEAD_MS) {
+    return null;
+  }
+  // Zweites Netz: Sessions älter als 4 h werden als beendet behandelt.
+  if (now - new Date(data.created_at as string).getTime() > SESSION_MAX_AGE_MS) {
     return null;
   }
   return {
@@ -42,6 +53,25 @@ export async function getActiveSessionForClass(classId: string): Promise<ActiveL
     moduleId: data.module_id,
     currentBlockIndex: data.current_block_index ?? 0,
   };
+}
+
+// Teacher-seitige Prüfung (User-Client + RLS), ob für die Klasse gerade eine
+// Session läuft — für das „Live-Präsentation läuft"-Banner im Dashboard, das die
+// Session auch von einem anderen Gerät beenden kann. Identische Heartbeat-Tod-
+// Logik wie der Schüler:innen-Lesepfad, damit das Banner nicht bei toten Sessions
+// hängt. RLS stellt sicher, dass nur eigene Klassen sichtbar sind.
+export async function isPresentationLiveForTeacher(classId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('live_sessions')
+    .select('updated_at')
+    .eq('class_id', classId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (!data) {
+    return false;
+  }
+  return Date.now() - new Date(data.updated_at as string).getTime() <= HEARTBEAT_DEAD_MS;
 }
 
 export type LivePoll = {

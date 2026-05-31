@@ -1,24 +1,52 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import type { Block } from '@/lib/schemas/blocks';
+import { endPresentation } from '@/lib/db/live-session-actions';
+import { useIdleEnd } from '@/components/blocks/useIdleEnd';
 import { Button } from '@/components/ui/button';
 import { BlockView } from '@/components/blocks/BlockView';
 import { LivePollBeamer } from '@/components/blocks/LivePollBeamer';
 import { usePresentationLive } from '@/components/blocks/usePresentationLive';
+import { EndPresentationButton } from '@/components/blocks/EndPresentationButton';
 
-// Navigationsleiste am unteren Rand: Zurück, Folienzähler, Weiter.
+// Auto-Ende: läuft der Beamer ungenutzt (kein Folienwechsel) 30 min, wird die
+// Session beendet — Schutz vor vergessenen Präsentationen.
+const IDLE_END_MS = 30 * 60 * 1000;
+
+// Tastatur-Navigation: ←/→ und Leertaste blättern. Ausgelagert, damit der Runner
+// unter der max-lines-per-function-Grenze bleibt.
+function useArrowNav(go: (delta: number, max: number) => void, total: number) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        go(1, total);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        go(-1, total);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [go, total]);
+}
+
+// Navigationsleiste am unteren Rand: Zurück, Folienzähler, Weiter + (live) Beenden.
 function NavBar({
   index,
   total,
   onPrev,
   onNext,
+  classId,
 }: {
   index: number;
   total: number;
   onPrev: () => void;
   onNext: () => void;
+  classId?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 border-t p-4">
@@ -32,9 +60,12 @@ function NavBar({
         <ChevronLeftIcon className="size-5" aria-hidden />
         Zurück
       </Button>
-      <span className="text-muted-foreground text-sm tabular-nums">
-        Folie {index + 1} / {total}
-      </span>
+      <div className="flex items-center gap-4">
+        <span className="text-muted-foreground text-sm tabular-nums">
+          Folie {index + 1} / {total}
+        </span>
+        {classId && <EndPresentationButton classId={classId} />}
+      </div>
       <Button
         onClick={onNext}
         disabled={index === total - 1}
@@ -66,26 +97,28 @@ export function PresentationRunner({
 }) {
   const [index, setIndex] = useState(0);
   const total = blocks.length;
+  const router = useRouter();
 
   usePresentationLive(classId, moduleId, index);
 
-  const go = useCallback((delta: number, max: number) => {
-    setIndex((i) => Math.min(Math.max(i + delta, 0), max - 1));
-  }, []);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowRight' || e.key === ' ') {
-        e.preventDefault();
-        go(1, total);
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        go(-1, total);
-      }
+  // Auto-Ende bei Inaktivität (nur Live-Modus). bump() setzt den Timer bei jeder
+  // Navigation zurück; läuft er ab, wird die Session beendet + zurücknavigiert.
+  const bumpIdle = useIdleEnd(() => {
+    if (classId) {
+      void endPresentation(classId);
+      router.push(`/lehrer/klassen/${classId}`);
     }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [go, total]);
+  }, IDLE_END_MS);
+
+  const go = useCallback(
+    (delta: number, max: number) => {
+      bumpIdle();
+      setIndex((i) => Math.min(Math.max(i + delta, 0), max - 1));
+    },
+    [bumpIdle]
+  );
+
+  useArrowNav(go, total);
 
   if (total === 0) {
     return (
@@ -127,6 +160,7 @@ function Stage({
         total={total}
         onPrev={() => go(-1, total)}
         onNext={() => go(1, total)}
+        classId={classId}
       />
     </div>
   );

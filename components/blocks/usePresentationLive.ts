@@ -1,7 +1,16 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { startPresentation, setLiveBlock, endPresentation } from '@/lib/db/live-session-actions';
+import {
+  startPresentation,
+  setLiveBlock,
+  endPresentation,
+  heartbeat,
+} from '@/lib/db/live-session-actions';
+
+// Heartbeat-Takt: < 60 s (Tod-Schwelle in getActiveSessionForClass), damit zwei
+// verpasste Lebenszeichen toleriert werden.
+const HEARTBEAT_MS = 20_000;
 
 // Verdrahtet den Beamer-PresentationRunner mit der Live-Session: startet die
 // Präsentation beim Mount, meldet jeden Folienwechsel an die DB (Schüler:innen-
@@ -36,8 +45,15 @@ export function usePresentationLive(
     }
     window.addEventListener('beforeunload', onUnload);
 
+    // Heartbeat: hält die Session am Leben. Fällt der Beamer weg, altert
+    // updated_at und das Kind-Overlay verschwindet serverseitig nach ≤60 s.
+    const beat = setInterval(() => {
+      if (started.current) void heartbeat(classId);
+    }, HEARTBEAT_MS);
+
     return () => {
       window.removeEventListener('beforeunload', onUnload);
+      clearInterval(beat);
       if (started.current) void endPresentation(classId);
     };
     // Nur beim Mount/Unmount — index-Updates laufen über den zweiten Effect.

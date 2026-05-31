@@ -52,6 +52,24 @@ export async function setLiveBlock(classId: string, index: number): Promise<Live
   return { error: null };
 }
 
+// Lebenszeichen des Beamers. Frischt updated_at der aktiven Session auf, damit
+// getActiveSessionForClass sie nicht als tot (Heartbeat > 60 s) einstuft. Wird
+// vom Beamer alle 20 s aufgerufen. Bleibt der Beamer weg (Absturz/Tab-Kill),
+// altert updated_at und das Kind-Overlay verschwindet nach ≤60 s automatisch.
+export async function heartbeat(classId: string): Promise<LiveActionState> {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('live_sessions')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('class_id', classId)
+    .eq('status', 'active');
+  if (error) {
+    return { error: 'Heartbeat fehlgeschlagen.' };
+  }
+  return { error: null };
+}
+
 // Beendet die laufende Präsentation der Klasse — bei allen Schüler:innen-Geräten
 // verschwindet danach das Overlay (nächster Poll liefert active:false).
 export async function endPresentation(classId: string): Promise<LiveActionState> {

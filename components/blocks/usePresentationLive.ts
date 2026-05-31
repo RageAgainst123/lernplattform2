@@ -14,13 +14,30 @@ export function usePresentationLive(
 ) {
   const started = useRef(false);
 
-  // Start beim Mount + sauberes Beenden beim Unmount.
+  // Start beim Mount + sauberes Beenden beim Unmount UND beim Tab-Schließen.
   useEffect(() => {
     if (!classId || !moduleId) return;
     void startPresentation(classId, moduleId);
     started.current = true;
-    // Beim Tab-Schließen best-effort beenden (sendBeacon-Ersatz: fire & forget).
+
+    // beforeunload: letzter Versuch beim Tab-Schließen/Neu-Laden.
+    // fetch mit keepalive überlebt das Unload-Event (sendBeacon-Ersatz für Server-Actions).
+    // classId im Body ist der Scope — der Server prüft, ob eine aktive Session
+    // für genau diese Klasse existiert.
+    function onUnload() {
+      if (started.current) {
+        void fetch('/api/live/end', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ classId }),
+        });
+      }
+    }
+    window.addEventListener('beforeunload', onUnload);
+
     return () => {
+      window.removeEventListener('beforeunload', onUnload);
       if (started.current) void endPresentation(classId);
     };
     // Nur beim Mount/Unmount — index-Updates laufen über den zweiten Effect.

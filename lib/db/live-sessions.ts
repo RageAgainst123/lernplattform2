@@ -12,16 +12,29 @@ export type ActiveLiveSession = {
   currentBlockIndex: number;
 };
 
+// Maximales Alter einer aktiven Session. Präsentationen die länger als 4 Stunden
+// laufen, sind fast sicher hängen geblieben (Browser-Absturz, Tab geschlossen).
+// Wir behandeln sie als beendet, ohne die DB zu mutieren — der nächste Start-Aufruf
+// überschreibt sie via RPC (end-then-insert). So gibt es keinen dauerhaften Stuck-State.
+const SESSION_MAX_AGE_MS = 4 * 60 * 60 * 1000; // 4 h
+
 // Liest die aktive Session einer Klasse (max. eine — partial unique index).
+// Gibt null zurück, wenn die Session älter als SESSION_MAX_AGE_MS ist (Timeout-Schutz
+// gegen stecken gebliebene Sessions nach Browser-Absturz / Tab-Schließen).
 export async function getActiveSessionForClass(classId: string): Promise<ActiveLiveSession | null> {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('live_sessions')
-    .select('id, module_id, current_block_index')
+    .select('id, module_id, current_block_index, created_at')
     .eq('class_id', classId)
     .eq('status', 'active')
     .maybeSingle();
   if (!data) {
+    return null;
+  }
+  // Timeout-Check: Sessions älter als 4 h werden als beendet behandelt.
+  const age = Date.now() - new Date(data.created_at as string).getTime();
+  if (age > SESSION_MAX_AGE_MS) {
     return null;
   }
   return {

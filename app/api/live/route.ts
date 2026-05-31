@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getStudentSession } from '@/lib/auth/student-auth';
+import { getActiveSessionForClass, getActivePollForClass } from '@/lib/db/live-sessions';
 
 // Polling-Endpunkt für die Live-Präsentation. Das Schüler:innen-Gerät fragt hier
 // alle paar Sekunden: „Läuft in meiner Klasse gerade eine Präsentation?"
@@ -30,7 +31,15 @@ export async function GET() {
   if (!session) {
     return noStore({ active: false });
   }
-  // Schritt 3 ersetzt das durch das echte Lesen der aktiven Session
-  // (lib/db/live-sessions.ts via Service-Role, anhand session.classId).
-  return noStore({ active: false });
+  const live = await getActiveSessionForClass(session.classId);
+  if (!live) {
+    return noStore({ active: false });
+  }
+  // Nur wenn der aktuelle Block ein live_poll ist, kommt Inhalt (Frage +
+  // Optionen) ans Gerät — reine Folien liefern KEIN Modul-Inhalt (nur dimmen).
+  const poll = await getActivePollForClass(live);
+  if (!poll) {
+    return noStore({ active: true, interactive: false });
+  }
+  return noStore({ active: true, interactive: true, poll });
 }

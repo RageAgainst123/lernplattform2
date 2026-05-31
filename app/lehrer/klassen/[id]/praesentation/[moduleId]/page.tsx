@@ -29,5 +29,7 @@ export default async function PresentationPage({
   const parsed = moduleContentSchema.safeParse(moduleData.content);
   const blocks = parsed.success ? parsed.data.blocks : [];
 
-  return <PresentationRunner blocks={blocks} />;
+  // classId + moduleId → Live-Modus: startet eine Session, Schüler:innen-Geräte
+  // dimmen bzw. zeigen bei live_poll-Folien die Abstimmung.
+  return <PresentationRunner blocks={blocks} classId={schoolClass.id} moduleId={moduleData.id} />;
 }

@@ -10,6 +10,7 @@ import { FillBlankBlock } from '@/components/blocks/FillBlankBlock';
 import { MatchBlock } from '@/components/blocks/MatchBlock';
 import { ReflectionBlock } from '@/components/blocks/ReflectionBlock';
 import { SlideBlock } from '@/components/blocks/SlideBlock';
+import { LivePollBlock } from '@/components/blocks/LivePollBlock';
 
 type CommonProps = {
   answer: BlockAnswer | undefined;
@@ -67,6 +68,8 @@ export function BlockView({ block, answer, checked, readOnly = false, onAnswer }
       return <InfoboxBlock block={block} />;
     case 'slide':
       return <SlideBlock block={block} />;
+    case 'live_poll':
+      return <LivePollBlock block={block} />;
     case 'reflection':
       return (
         <ReflectionBlock

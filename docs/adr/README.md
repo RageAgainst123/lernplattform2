@@ -47,3 +47,4 @@ Was kostet/bringt die Entscheidung? Welche Folge-Entscheidungen hängen daran?
 | [0010](0010-design-tokens-zwei-quellen.md)       | Design-Tokens in zwei spiegelnden Quellen         | 2026-05-29 |
 | [0011](0011-bestehens-schwelle-pro-zuweisung.md) | Bestehens-Schwelle pro Zuweisung, nicht pro Modul | 2026-05-30 |
 | [0012](0012-feedback-rueckgabe-zyklus.md)        | Lehrer:innen-Feedback & Rückgabe-Zyklus (ohne KI) | 2026-05-30 |
+| [0013](0013-live-praesentation-polling.md)       | Live-Präsentation via Polling (kein Realtime)     | 2026-05-30 |

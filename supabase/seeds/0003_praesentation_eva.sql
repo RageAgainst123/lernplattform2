@@ -49,6 +49,16 @@ values (
         "body": "Das Ergebnis kommt heraus — z. B. am Bildschirm, Drucker oder Lautsprecher."
       },
       {
+        "id": "p1",
+        "type": "live_poll",
+        "question": "Ist eine Tastatur Eingabe oder Ausgabe?",
+        "options": [
+          { "id": "ein", "text": "Eingabe" },
+          { "id": "aus", "text": "Ausgabe" },
+          { "id": "beides", "text": "Beides" }
+        ]
+      },
+      {
         "id": "s6",
         "type": "slide",
         "title": "Jetzt seid ihr dran",

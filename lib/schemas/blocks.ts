@@ -85,6 +85,22 @@ export const slideBlockSchema = z.object({
   imageUrl: z.string().url().optional(),
 });
 
+// Live-Abstimmung während einer Präsentation. Anders als multiple_choice gibt es
+// KEIN `correct` — es ist ein unbenotetes Meinungsbild (Stimmungsabfrage,
+// Diskussionsanlass). Nicht auto-bewertet. Die Stimmen leben in der Tabelle
+// live_votes, nicht in student_progress.
+const pollOptionSchema = z.object({
+  id: z.string().min(1),
+  text: z.string(),
+});
+
+export const livePollBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('live_poll'),
+  question: z.string(),
+  options: z.array(pollOptionSchema).min(2),
+});
+
 export const blockSchema = z.discriminatedUnion('type', [
   textBlockSchema,
   infoboxBlockSchema,
@@ -94,6 +110,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   matchBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
+  livePollBlockSchema,
 ]);
 
 export const moduleContentSchema = z.object({
@@ -111,3 +128,4 @@ export type MatchBlock = z.infer<typeof matchBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;
 export type SlideBlock = z.infer<typeof slideBlockSchema>;
+export type LivePollBlock = z.infer<typeof livePollBlockSchema>;

@@ -9,7 +9,9 @@ import { getLiveResults } from '@/lib/db/live-results-action';
 // füllen sich relativ zur größten Option. Wird vom PresentationRunner nur
 // gezeigt, wenn der aktuelle Block ein live_poll ist und eine Live-Session läuft.
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
-const POLL_MS = 2500;
+// Beamer-Ergebnisbalken: schnell pollen (1 s), damit eintreffende Stimmen für
+// die Klasse gefühlt sofort wachsen. Läuft nur, solange eine Poll-Folie offen ist.
+const POLL_MS = 1000;
 
 function usePollCounts(classId: string, blockId: string): Record<string, number> {
   const [counts, setCounts] = useState<Record<string, number>>({});

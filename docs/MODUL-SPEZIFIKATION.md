@@ -21,22 +21,40 @@
 
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
-(diskriminierte Union). Vier Typen sind **automatisch bewertbar** (zählen zur
-Prozent-Note), drei sind **nicht bewertbar** (reiner Inhalt bzw. freie Antwort).
+(diskriminierte Union). 13 Block-Typen total — verteilt auf **drei Gruppen**:
+Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (4 davon auto-bewertbar),
+und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
+nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
 
 ## 2. Block-Typen auf einen Blick
 
-| `type`            | Zweck                       | Auto-bewertbar? | Wo die Lösung steht                                   |
-| ----------------- | --------------------------- | --------------- | ----------------------------------------------------- |
-| `text`            | Erklärtext                  | ❌ nein         | — (kein Eingabefeld)                                  |
-| `infobox`         | „Merke"-Kasten              | ❌ nein         | — (kein Eingabefeld)                                  |
-| `multiple_choice` | Mehrfachauswahl             | ✅ ja           | `options[].correct: true`                             |
-| `true_false`      | Wahr/Falsch                 | ✅ ja           | `answer: true \| false`                               |
-| `fill_blank`      | Lückentext                  | ✅ ja           | `solutions[]` (Reihenfolge der `{0}`,`{1}`…)          |
-| `match`           | Zuordnung Begriff→Kategorie | ✅ ja           | `pairs[].category`                                    |
-| `reflection`      | Freie offene Antwort        | ❌ nein         | — (manuell von Lehrer:in beurteilt)                   |
-| `slide`           | Präsentationsfolie (Beamer) | ❌ nein         | — (reine Anzeige, `display_mode:'presentation'`)      |
-| `live_poll`       | Live-Abstimmung (Beamer)    | ❌ nein         | — (unbenotetes Meinungsbild; Stimmen in `live_votes`) |
+**Gruppe A — Theorie/Folie** (statische Anzeige, kein Eingabefeld, nicht bewertet):
+
+| `type`    | Zweck                       | Modus                                 |
+| --------- | --------------------------- | ------------------------------------- |
+| `text`    | Erklärtext, optional Bild   | Worksheet + Presentation              |
+| `infobox` | „Merke"-Kasten              | Worksheet + Presentation              |
+| `slide`   | Präsentationsfolie (Beamer) | **Nur** `display_mode='presentation'` |
+
+**Gruppe B — Worksheet-Aufgaben** (Eingabefelder, automatisch bewertet außer `reflection`):
+
+| `type`            | Zweck                       | Auto-bewertbar? | Wo die Lösung steht                          |
+| ----------------- | --------------------------- | --------------- | -------------------------------------------- |
+| `multiple_choice` | Mehrfachauswahl             | ✅ ja           | `options[].correct: true`                    |
+| `true_false`      | Wahr/Falsch                 | ✅ ja           | `answer: true \| false`                      |
+| `fill_blank`      | Lückentext                  | ✅ ja           | `solutions[]` (Reihenfolge der `{0}`,`{1}`…) |
+| `match`           | Zuordnung Begriff→Kategorie | ✅ ja           | `pairs[].category`                           |
+| `reflection`      | Freie offene Antwort        | ❌ nein         | — (manuell von Lehrer:in beurteilt)          |
+
+**Gruppe C — Live-Interaktionen** (nur `display_mode='presentation'`, Stimmen in `live_votes`, **nicht bewertet** — zählen nicht zu `max_score`):
+
+| `type`          | Zweck                              | Eingabe am Schüler-Gerät  | Stimmen-Speicher              |
+| --------------- | ---------------------------------- | ------------------------- | ----------------------------- |
+| `live_poll`     | Unbenotetes Meinungsbild           | Buttons mit Optionen      | `live_votes.option_id`        |
+| `quiz_poll`     | Quiz mit richtiger Antwort         | Buttons mit Optionen      | `live_votes.option_id`        |
+| `word_cloud`    | Freitext-Wortwolke                 | Textfeld (max 40 Zeichen) | `live_votes.free_text`        |
+| `scale`         | Skala 1–N (z. B. Selbsteinschätz.) | Buttons mit Zahlen        | `live_votes.option_id` ('1'…) |
+| `understanding` | Verständnis-Ampel (rot/gelb/grün)  | 3 feste Ampel-Buttons     | `live_votes.option_id`        |
 
 > **Merksatz für die Bewertung:** `max_score` = **Anzahl der auto-bewertbaren
 > Blöcke** (jeder zählt 1 Punkt). `score` = Summe der korrekt gelösten. Hat ein
@@ -46,7 +64,7 @@ Prozent-Note), drei sind **nicht bewertbar** (reiner Inhalt bzw. freie Antwort).
 ## 3. Felder pro Block-Typ
 
 Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
-Modul) und `type` (einer der sieben Werte).
+Modul) und `type` (einer der 13 Werte aus der Tabelle in §2).
 
 ### 3.1 `text` — Erklärtext (nicht bewertet)
 
@@ -197,21 +215,170 @@ Modul) und `type` (einer der sieben Werte).
 }
 ```
 
+### 3.8 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
+
+Großformatige Folie am Beamer. **Nur** in Modulen mit `display_mode='presentation'`
+sinnvoll — im Worksheet-Modus wirkt sie sperrig.
+
+| Feld       | Typ    | Pflicht  | Hinweis                                     |
+| ---------- | ------ | -------- | ------------------------------------------- |
+| `title`    | string | ✅       | Großer Titel (eine Zeile).                  |
+| `body`     | string | optional | Erläuternder Text unter dem Titel.          |
+| `imageUrl` | string | optional | Gültige URL eines Bildes (max. ca. 800 px). |
+
+```json
+{
+  "id": "s1",
+  "type": "slide",
+  "title": "Was passiert beim Speichern?",
+  "body": "Wenn du Strg+S drückst, wird die Datei auf die Festplatte geschrieben."
+}
+```
+
+### 3.9 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
+
+Unbenoteter Meinungsbild-Block. Schüler:innen sehen Optionen auf ihrem Gerät,
+am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
+
+| Feld       | Typ      | Pflicht | Hinweis                                 |
+| ---------- | -------- | ------- | --------------------------------------- |
+| `question` | string   | ✅      | Die Frage am Beamer.                    |
+| `options`  | Option[] | ✅      | **Mindestens 2**. Jede: `{ id, text }`. |
+
+- **Option:** `id` (nicht-leer, **eindeutig** im Block), `text` (string).
+- **Kein `correct`-Feld** — `live_poll` ist ein Meinungsbild. Wenn du eine
+  richtige Antwort willst, nimm `quiz_poll`.
+
+```json
+{
+  "id": "p1",
+  "type": "live_poll",
+  "question": "Wie fühlst du dich nach der Pause?",
+  "options": [
+    { "id": "o1", "text": "Wach" },
+    { "id": "o2", "text": "Geht so" },
+    { "id": "o3", "text": "Müde" }
+  ]
+}
+```
+
+### 3.10 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
+
+Wie `live_poll`, aber mit **richtiger Antwort**. Schüler:innen sehen die Antwort
+**nicht** vorab (das `correct`-Flag wird serverseitig entfernt, bevor es ans
+Gerät geht). Erst beim Klick auf „Auflösen" markiert der Beamer die richtige(n)
+Option(en) grün.
+
+| Feld       | Typ      | Pflicht | Hinweis                                          |
+| ---------- | -------- | ------- | ------------------------------------------------ |
+| `question` | string   | ✅      | Die Frage am Beamer.                             |
+| `options`  | Option[] | ✅      | **Mindestens 2**. Jede: `{ id, text, correct }`. |
+
+- **Option:** `id`, `text`, `correct` (boolean). Mindestens eine `correct: true`.
+- **Sicherheit:** Das `correct`-Flag wird **niemals** an Schüler:innen-Geräte
+  gesendet. Im Network-Tab eines Kind-Browsers tauchen die Optionen ohne
+  `correct` auf.
+
+```json
+{
+  "id": "q1",
+  "type": "quiz_poll",
+  "question": "Welches ist ein Eingabegerät?",
+  "options": [
+    { "id": "a", "text": "Drucker", "correct": false },
+    { "id": "b", "text": "Maus", "correct": true },
+    { "id": "c", "text": "Lautsprecher", "correct": false },
+    { "id": "d", "text": "Bildschirm", "correct": false }
+  ]
+}
+```
+
+### 3.11 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
+
+Schüler:innen tippen ein Wort oder einen kurzen Satz (max 40 Zeichen). Am Beamer
+erscheinen die Beiträge als Wortwolke — häufige Wörter werden größer
+dargestellt (lowercase + getrimmter Vergleich für Duplikat-Zählung).
+
+| Feld       | Typ    | Pflicht | Hinweis                                           |
+| ---------- | ------ | ------- | ------------------------------------------------- |
+| `question` | string | ✅      | Der Prompt am Beamer („Was fällt dir ein zu …?"). |
+
+```json
+{
+  "id": "w1",
+  "type": "word_cloud",
+  "question": "Was fällt dir zum Wort „Internet" ein?"
+}
+```
+
+### 3.12 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
+
+Schüler:innen klicken einen Wert auf einer Skala (Default 1–5). Am Beamer werden
+Durchschnitt und Verteilung als Balkendiagramm angezeigt. Gut für
+Selbsteinschätzung oder Stimmungsbilder mit Abstufung.
+
+| Feld       | Typ    | Pflicht  | Hinweis                                          |
+| ---------- | ------ | -------- | ------------------------------------------------ |
+| `question` | string | ✅       | Die Frage am Beamer.                             |
+| `min`      | number | optional | Untere Grenze, Default `1`.                      |
+| `max`      | number | optional | Obere Grenze, Default `5`. Üblich: 3–7 Schritte. |
+| `minLabel` | string | optional | Beschriftung unter dem `min`-Wert.               |
+| `maxLabel` | string | optional | Beschriftung unter dem `max`-Wert.               |
+
+```json
+{
+  "id": "sc1",
+  "type": "scale",
+  "question": "Wie sicher fühlst du dich mit der Tastatur?",
+  "min": 1,
+  "max": 5,
+  "minLabel": "gar nicht",
+  "maxLabel": "sehr sicher"
+}
+```
+
+### 3.13 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
+
+Schnelles Drei-Tasten-Signal: 🟢 verstanden / 🟡 unsicher / 🔴 noch nicht. Keine
+freien Optionen — die drei Werte sind im Code fest verdrahtet, der Beamer zeigt
+sie als drei Ampel-Balken mit Prozenten.
+
+| Feld       | Typ    | Pflicht  | Hinweis                                                              |
+| ---------- | ------ | -------- | -------------------------------------------------------------------- |
+| `question` | string | optional | Default: „Wie gut hast du das verstanden?". Kann übersteuert werden. |
+
+```json
+{
+  "id": "u1",
+  "type": "understanding",
+  "question": "Hast du das EVA-Prinzip verstanden?"
+}
+```
+
 ## 4. Wie die automatische Bewertung rechnet
 
 Die gesamte Logik lebt in **`lib/blocks/evaluate.ts`** (und ist unit-getestet).
 Sie ist **typ-agnostisch**: jede Auswertung läuft über `gradeBlock()` +
 `isGraded()`, nie über eine fest verdrahtete Typ-Liste außerhalb dieser Datei.
 
-| Funktion                          | Was sie liefert                                                          |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `isGraded(block)`                 | `true` für die 4 bewertbaren Typen, `false` für text/infobox/reflection. |
-| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0** (heute binär: 0 oder 1).                        |
-| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.     |
-| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                 |
-| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                      |
-| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.      |
-| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).            |
+> **Live-Blöcke fließen nicht in die Bewertung ein.** `live_poll`, `quiz_poll`,
+> `word_cloud`, `scale`, `understanding` und `slide` sind in `NON_GRADED` —
+> sie zählen nicht zu `max_score`, ihre Stimmen leben in `live_votes`
+> (nicht in `student_progress.answers`), und sie tauchen weder in der
+> Lehrer:innen-Fortschritts-Matrix noch in der Prozent-Note auf. Das ist
+> bewusst: Live-Interaktion ist Klassen-Stimmungsbild, keine Leistungsmessung.
+> Für eine bewertbare Quiz-Frage nimm `multiple_choice` oder `true_false` im
+> Worksheet-Modus.
+
+| Funktion                          | Was sie liefert                                                         |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `isGraded(block)`                 | `true` für die 4 bewertbaren Worksheet-Typen, `false` für alle anderen. |
+| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0** (heute binär: 0 oder 1).                       |
+| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.    |
+| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                |
+| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                     |
+| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.     |
+| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).           |
 
 **Bestehens-Schwelle** (`pass_threshold`) lebt **pro Klassen-Zuweisung**, nicht
 pro Modul (siehe ADR-0011). Ein Modul mit `max_score = 0` kann nie „bestanden"
@@ -232,14 +399,35 @@ als `Record<blockId, answer>` in `student_progress.answers`:
 
 ## 5. Pflicht-Checkliste vor dem Import
 
+**Allgemein:**
+
 - [ ] Top-Level ist `{ "blocks": [ … ] }` (das Array allein geht auch durch das
       Validierungs-Script, der Editor erwartet aber das Objekt).
 - [ ] Jede Block-`id` ist **eindeutig**.
+- [ ] `pnpm validate:module modul.json` läuft **grün**.
+
+**Worksheet-Module** (`display_mode='worksheet'`, Standard):
+
 - [ ] Jeder `multiple_choice` hat **≥ 1** Option mit `correct: true`; Options-`id`s eindeutig.
 - [ ] Jeder `fill_blank`: **Anzahl `solutions` == höchster `{n}`-Index + 1**.
 - [ ] Jeder `match`: **≥ 2 unterschiedliche** `category`-Werte; `pair`-`id`s eindeutig.
 - [ ] Mindestens **ein** auto-bewertbarer Block, falls eine Prozent-Note erwünscht ist.
-- [ ] `pnpm validate:module modul.json` läuft **grün**.
+- [ ] **Keine** Live-Blöcke (`live_poll`, `quiz_poll`, `word_cloud`, `scale`,
+      `understanding`, `slide`) — die brauchen `display_mode='presentation'`.
+
+**Presentation-Module** (`display_mode='presentation'`, geführter Beamer-Verlauf):
+
+- [ ] Jeder `live_poll` / `quiz_poll`: **≥ 2** Optionen, Options-`id`s eindeutig.
+- [ ] Jeder `quiz_poll`: **≥ 1** Option mit `correct: true` (sonst leuchtet beim
+      Auflösen nichts grün).
+- [ ] Jeder `scale`: wenn `min`/`max` gesetzt, dann `max > min` und Spanne ≤ 10
+      (sonst werden die Buttons zu klein für Handys).
+- [ ] Reihenfolge folgt einer didaktischen Dramaturgie (siehe
+      `docs/AUTOR-WORKFLOW.md` §9: Einstieg → Theorie-Folien → Aktivierung →
+      Sicherung → Reflexion).
+- [ ] **Keine** Worksheet-Aufgaben (`multiple_choice`, `true_false`, `fill_blank`,
+      `match`) — die haben keine Beamer-Renderer und würden im Presentation-Modus
+      stumm bleiben. Für Quizfragen im Live-Modus: `quiz_poll`.
 
 ## 6. Einen NEUEN Block-Typ einführen (für Entwickler:innen)
 

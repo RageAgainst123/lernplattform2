@@ -113,9 +113,43 @@ for (const b of blocks) {
   }
 }
 
+// Presentation-Heuristik: wenn ALLE Blöcke Live-/Folien-Typen sind, ist das
+// vermutlich ein bewusstes Live-Modul (display_mode='presentation'). Dann ist
+// „keine Bewertung" das gewollte Verhalten und keine Warnung nötig — stattdessen
+// ein Hinweis dass dieses Modul mit display_mode='presentation' importiert werden
+// soll. Wenn aber Theorie-Blöcke (text/infobox/reflection) ohne Aufgaben gemixt
+// sind, bleibt es ein degeneriertes Worksheet → klassische Warnung.
+const LIVE_TYPES = new Set([
+  'slide',
+  'live_poll',
+  'quiz_poll',
+  'word_cloud',
+  'scale',
+  'understanding',
+]);
+const allLive = blocks.length > 0 && blocks.every((b) => LIVE_TYPES.has(b.type));
+
 if (gradedCount === 0) {
+  if (allLive) {
+    warnings.push(
+      'Live-Modul erkannt (alle Blöcke sind slide/live_poll/quiz_poll/word_cloud/scale/understanding). Beim Import unbedingt display_mode auf „presentation" setzen — Worksheet-Modus rendert diese Block-Typen nicht.'
+    );
+  } else {
+    warnings.push(
+      'Keine auto-bewertbaren Blöcke (multiple_choice/true_false/fill_blank/match) — das Modul kann nicht prozentual bewertet werden (max_score wäre 0).'
+    );
+  }
+}
+
+// Mix-Warnung: Live-Blöcke + Worksheet-Aufgaben gemischt funktioniert weder im
+// Worksheet- noch im Presentation-Modus sauber. Lieber in zwei Module trennen.
+const hasLive = blocks.some((b) => LIVE_TYPES.has(b.type));
+const hasWorksheetTask = blocks.some((b) =>
+  ['multiple_choice', 'true_false', 'fill_blank', 'match'].includes(b.type)
+);
+if (hasLive && hasWorksheetTask) {
   warnings.push(
-    'Keine auto-bewertbaren Blöcke (multiple_choice/true_false/fill_blank/match) — das Modul kann nicht prozentual bewertet werden (max_score wäre 0).'
+    'Mix erkannt: das Modul enthält Live-Blöcke UND Worksheet-Aufgaben. Im Worksheet-Modus werden Live-Blöcke nicht angezeigt; im Presentation-Modus werden Worksheet-Aufgaben nicht angezeigt. Bitte in zwei Module trennen.'
   );
 }
 

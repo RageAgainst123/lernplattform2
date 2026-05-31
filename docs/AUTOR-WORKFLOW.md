@@ -265,7 +265,133 @@ einem 3-Zeilen-Docstring der erklärt was es ist.
 | `import _styles` schlägt im Terminal fehl | Skript als `python arbeitsblaetter/gen_x.py` ausgeführt — kein Package-Kontext                        | Skript so anfangen: `import sys; from pathlib import Path; sys.path.insert(0, str(Path(__file__).parent)); import _styles as s` |
 | Farben weichen vom Web ab                 | Generator nutzt eigene Farben statt `_design_tokens.py`                                               | KEINE direkten Farb-Konstanten im Generator. NUR Helper-Aufrufe.                                                                |
 
-## 7. Lehrplan-Referenz
+## 7. Live-Module bauen (Presentation-Modus)
+
+> Dieser Abschnitt ist der Pendant zu §4/§5, aber für **Live-Präsentationen am
+> Beamer** statt Worksheet-Selbstbearbeitung. Lehrkraft führt durch, Klasse
+> stimmt vom Tablet/Handy ab. `display_mode='presentation'`, keine PDF-Spur,
+> keine Bewertung — Stimmen leben in `live_votes` und sind unbewertete
+> Klassen-Stimmungsbilder. Volle Block-Typ-Liste in
+> [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) §3.8–3.13.
+
+### Didaktische Stundendramaturgie für Live-Module
+
+Bewährter Verlauf für eine ~45-min-Stunde mit 5–8 Blöcken:
+
+| Phase          | Block-Vorschlag                                       | Zweck                                               |
+| -------------- | ----------------------------------------------------- | --------------------------------------------------- |
+| 1. Einstieg    | `live_poll` ODER `understanding`                      | Vorwissen aktivieren, alle „abholen"                |
+| 2. Theorie     | 2–3 × `slide` (+ `text`/`infobox` falls Theorie tief) | Kernidee am Beamer erklären                         |
+| 3. Aktivierung | `word_cloud` ODER `scale`                             | Anwenden, Vorstellungen sammeln                     |
+| 4. Sicherung   | `quiz_poll`                                           | Verständnis prüfen mit richtiger Antwort + Auflösen |
+| 5. Reflexion   | `understanding`                                       | Zwischenstand der Klasse einholen (Ampel)           |
+
+**Daumenregeln:**
+
+- **5–8 Blöcke** gesamt (≈ 5 min pro Block + Übergang).
+- Beginne **immer** mit einem aktivierenden Block — nicht mit Theorie. Kinder
+  haben das Handy in der Hand und wollen sofort etwas tun.
+- Setze **maximal 1 `quiz_poll` pro Stunde**. Mehr fühlt sich wie eine Prüfung
+  an, das ist nicht der Zweck.
+- `understanding` ist ein **schnelles Signal**, kein voller Block — gut am
+  Ende oder zwischendurch.
+- Mische nicht: Worksheet-Aufgaben (`multiple_choice`, `fill_blank`, …)
+  haben **keine** Beamer-Renderer und werden im Presentation-Modus stumm.
+
+### Prompt-Vorlage „Live-Modul" (copy-paste-fertig)
+
+```text
+Du hilfst mir, ein Live-Präsentations-Modul für die österreichische
+Lernplattform DGB (Digitale Grundbildung, Sekundarstufe I) zu schreiben.
+Es wird in einer Schulstunde am Beamer gezeigt; Kinder stimmen vom Tablet
+oder Handy ab.
+
+KONTEXT
+- Plattform: lernplattform2 (eigene App, Next.js + Block-Engine)
+- Anzeige-Modus: presentation (Beamer + Schüler-Geräte)
+- Schulstufe: {SCHULSTUFE}
+- Kompetenzbereich: {BEREICH}   (orientierung | information | kommunikation | produktion | handeln)
+- Thema: {TOPIC}
+- Lehrplan-Bezug (BGBl. II 267/2022): {LEHRPLAN_BEZUG}
+- Lernziele: {LERNZIELE}
+- Stundendauer: ~45 min, ca. 5–8 Blöcke
+
+AUFGABE
+Schreib mir ein JSON mit 5–8 Blöcken nach dem Format unten. Folge dieser
+Dramaturgie (Block-Reihenfolge ist verbindlich, Block-Typen austauschbar):
+
+  1. EINSTIEG (1 Block): live_poll ODER understanding — kurze Aktivierungsfrage,
+     holt alle ab, baut Spannung auf.
+  2. THEORIE (2–3 Blöcke): slide-Folien mit Titel + kurzem Body. Falls eine
+     vertiefte Erklärung nötig ist, ergänze EIN text- oder infobox-Block.
+  3. AKTIVIERUNG (1 Block): word_cloud ODER scale — bringt Kinder dazu, Inhalt
+     zu reproduzieren oder einzuschätzen.
+  4. SICHERUNG (1 Block, optional): quiz_poll mit 3-4 Optionen, GENAU 1 richtig.
+     Wird am Ende per „Auflösen" am Beamer gezeigt.
+  5. REFLEXION (1 Block): understanding — Verständnis-Ampel zum Stundenausklang.
+
+SPRACHE
+- Du-Form, kurze Sätze (max 20 Wörter)
+- Folientitel knackig (max 6 Wörter)
+- Slide-Body als 1 Satz, nicht Absatz (Folie soll nicht voll sein)
+- Quiz-Optionen alle plausibel — Distraktoren dürfen nicht offensichtlich
+  falsch sein (z. B. NICHT „Maus" gegen „Banane", sondern „Maus" gegen
+  „Drucker"/„Lautsprecher"/„Bildschirm")
+
+JSON-SCHEMA (zwingend einhalten — Sub-Set der vollen Block-Schemas)
+{
+  "blocks": [
+    { "id": "p1", "type": "live_poll", "question": "...",
+      "options": [
+        { "id": "o1", "text": "..." },
+        { "id": "o2", "text": "..." }
+      ] },
+    { "id": "s1", "type": "slide", "title": "...", "body": "..." },
+    { "id": "s2", "type": "slide", "title": "...", "body": "..." },
+    { "id": "w1", "type": "word_cloud", "question": "Was fällt dir ein zu …?" },
+    { "id": "q1", "type": "quiz_poll", "question": "...",
+      "options": [
+        { "id": "a", "text": "...", "correct": false },
+        { "id": "b", "text": "...", "correct": true  },
+        { "id": "c", "text": "...", "correct": false },
+        { "id": "d", "text": "...", "correct": false }
+      ] },
+    { "id": "u1", "type": "understanding", "question": "Hast du das verstanden?" }
+  ]
+}
+
+OPTIONALE Block-Varianten (nutze NUR wenn passend, statt dem obigen Default):
+- scale (Selbsteinschätzung 1–5):
+    { "id": "sc1", "type": "scale", "question": "Wie sicher fühlst du dich?",
+      "min": 1, "max": 5, "minLabel": "gar nicht", "maxLabel": "sehr sicher" }
+- text (vertiefte Erklärung neben einer Folie):
+    { "id": "t1", "type": "text", "content": "Erklärungstext, ca. 200 Zeichen." }
+- infobox (Merksatz):
+    { "id": "i1", "type": "infobox", "title": "Merke", "content": "Kurzer Satz." }
+
+VERBOTEN in Live-Modulen:
+- multiple_choice, true_false, fill_blank, match, reflection — diese
+  Worksheet-Aufgaben haben keine Beamer-Renderer.
+
+GIB MIR NUR DAS JSON ZURÜCK, kein Drumherum. Alle IDs eindeutig.
+```
+
+### Live-Modul importieren + zuweisen
+
+Gleicher Pfad wie Worksheet (siehe §3 oben):
+
+1. `pnpm validate:module live-modul.json` — muss grün sein.
+2. Admin-Editor `/admin/module/neu` → JSON-Import-Dialog → einfügen → speichern.
+3. **Wichtig:** `display_mode` im Editor auf `presentation` umstellen
+   (Default ist `worksheet`).
+4. Modul einer Klasse zuweisen.
+5. Klasse öffnen → Modul-Karte → „Präsentation starten" → Beamer-Route lädt.
+
+**Smoketest in 2 Browsern:** Lehrer-Tab am Beamer, ein Schüler-Tab via `/k/[code]`
+einloggen. Pro Block durchklicken und sehen ob Eingabe + Beamer-Aggregat
+stimmen.
+
+## 8. Lehrplan-Referenz
 
 Verordnung BGBl. II Nr. 267/2022 (Pflichtfach Digitale Grundbildung,
 Sekundarstufe I, 5.–8. SSt., je 1 Wochenstunde). RIS:
@@ -295,14 +421,17 @@ Sekundarstufe I, 5.–8. SSt., je 1 Wochenstunde). RIS:
 Bauen aufeinander auf. Pro Stufe ein neuer Tabellen-Abschnitt sobald die
 ersten Module dafür entstehen.
 
-## 8. Querverweise
+## 9. Querverweise
 
 - [`docs/THEMA-WORKFLOW.md`](THEMA-WORKFLOW.md) — didaktisches Standard-Stundenbild
   eines Themas (die Ebene ÜBER diesem technischen Workflow)
+- [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 13 Block-Typen
+  im Detail (Felder, Beispiel-JSON, Bewertung)
 - [`docs/INHALTSKONZEPT.md`](INHALTSKONZEPT.md) — Material vs. Modul,
   Display-Modes, Status-Logik
 - [`docs/DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) — Farben/Spacing/Typografie
 - [`docs/ROLES.md`](ROLES.md) — wer darf was
 - [`arbeitsblaetter/_styles.py`](../arbeitsblaetter/_styles.py) — PDF-Bausteine
 - [`arbeitsblaetter/gen_eva.py`](../arbeitsblaetter/gen_eva.py) — Referenz-Skript
-- [`supabase/seeds/0001_modul_eva.sql`](../supabase/seeds/0001_modul_eva.sql) — Referenz-Modul-JSON
+- [`supabase/seeds/0001_modul_eva.sql`](../supabase/seeds/0001_modul_eva.sql) — Referenz-Worksheet-Modul-JSON
+- [`supabase/seeds/0005_interaktiv_demo.sql`](../supabase/seeds/0005_interaktiv_demo.sql) — Referenz-Live-Modul-JSON mit allen 5 Live-Block-Typen

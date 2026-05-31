@@ -21,6 +21,7 @@ const EVA: AssignedModuleForTeacher = {
   description: null,
   schulstufe: 5,
   topic: 'EVA-Prinzip',
+  activityKind: 'lernmodul',
   displayMode: 'worksheet',
   dueDate: null,
   assignedAt: '2026-05-29T00:00:00Z',
@@ -32,13 +33,14 @@ const SUCHEN: PublishedModuleOption = { id: 'suchen', title: 'Suchen im Internet
 describe('ModuleAssignmentPanel', () => {
   it('shows the empty state when no modules are assigned', () => {
     render(<ModuleAssignmentPanel classId="c1" assigned={[]} available={[SUCHEN]} />);
-    expect(screen.getByText(/noch kein Modul zugewiesen/i)).toBeInTheDocument();
+    expect(screen.getByText(/noch nichts zugewiesen/i)).toBeInTheDocument();
   });
 
-  it('lists assigned modules', () => {
+  it('lists assigned modules unter der passenden Aktivitäts-Sektion', () => {
     render(<ModuleAssignmentPanel classId="c1" assigned={[EVA]} available={[SUCHEN]} />);
     expect(screen.getByText('Das EVA-Prinzip')).toBeInTheDocument();
-    expect(screen.getByText(/zugewiesene Module \(1\)/i)).toBeInTheDocument();
+    // EVA ist activityKind='lernmodul' → erscheint unter „Lernmodule (1)"
+    expect(screen.getByText(/Lernmodule \(1\)/)).toBeInTheDocument();
   });
 
   it('hides already assigned modules from the dropdown choices', () => {

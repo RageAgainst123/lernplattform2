@@ -25,6 +25,7 @@ const rowEva = {
     description: null,
     schulstufe: 5,
     topic: 'EVA-Prinzip',
+    activity_kind: 'lernmodul',
     display_mode: 'worksheet',
   },
 };
@@ -39,6 +40,7 @@ const rowSuchen = {
     description: 'desc',
     schulstufe: 5,
     topic: 'Suchen im Internet',
+    activity_kind: 'lernmodul',
     display_mode: 'worksheet',
   },
 };
@@ -54,6 +56,7 @@ describe('getAssignedModulesForClass', () => {
         description: null,
         schulstufe: 5,
         topic: 'EVA-Prinzip',
+        activityKind: 'lernmodul',
         displayMode: 'worksheet',
         dueDate: null,
         assignedAt: '2026-05-29T10:00:00Z',

@@ -315,7 +315,32 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   (`pass_threshold`, `teacher_feedback`, `returned_at`, `manual_marks` +
   RLS-UPDATE-Policy), ADR-0011 + ADR-0012, `docs/MODUL-SPEZIFIKATION.md` +
   `pnpm validate:module`.
-- 🔜 **Phase 17:** Lernpfad-Entscheidung, Lösch-Funktion für Klassen/Codes,
-  Phase-2-Block-Typen, PWA/Offline
+- ✅ **Phase 17–22 (Live-Präsentation):** Beamer-Route, live_sessions,
+  live_votes, Reveal/Lock, Heartbeat-Tod, „Beenden"-Button, 4 weitere
+  Live-Block-Typen (quiz_poll, word_cloud, scale, understanding) plus
+  Polling-API-Routes statt Server-Actions. Migrationen 0008–0011.
+- ✅ **Phase E (E1):** Drei first-class Aktivitäten statt einem generischen
+  „Modul". Migration 0012 (`modules.activity_kind` = `lernmodul`
+  | `praesentation`), drei getrennte Admin-Routen
+  (`/admin/lernmodule`, `/admin/praesentationen`, `/admin/arbeitsblaetter`),
+  Admin-Dashboard mit drei großen Aktivitäts-Karten, `lib/activities.ts`
+  als Single Source of Truth, AddBlockDialog filtert Block-Typen pro
+  Aktivität. Alte URLs (`/admin/module/*`, `/admin/material/*`) redirecten
+  weiterhin. Lehrer-Sicht: zugewiesene Module nach Aktivität gruppiert.
+  Schüler-Dispatcher filtert Präsentationen aus (latenter Bug gefixt).
+- 🔜 **Phase F (UI-Politur):** Editor-Layout-Redesign (Vorschau als Tab),
+  Spacing/Typography-Pass, Mobile-Optimierung.
+
+**Begriffs-Trio (Phase E, bindend):**
+
+- **Arbeitsblatt** = PDF-Upload zum Drucken/Download. Lebt in `materials`.
+- **Lernmodul** = online für eingeloggte Schüler:innen. `modules` mit
+  `activity_kind='lernmodul'`, Unter-Variante `display_mode='quiz'|'worksheet'`.
+- **Präsentation** = live am Beamer mit Schüler:innen-Geräten. `modules` mit
+  `activity_kind='praesentation'`. `display_mode` für Präsentationen irrelevant.
+
+Diese Trennung gilt ÜBERALL: Sprache, Routen, Editoren, Lehrer-Listen.
+Das Wort „Modul" ist DB-/Code-Sprache; im UI sieht man entweder „Lernmodul"
+oder „Präsentation". Single Source of Truth: `lib/activities.ts`.
 
 (Detaillierter Phasen-Verlauf siehe `CHANGELOG.md`.)

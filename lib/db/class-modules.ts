@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { DisplayMode } from '@/lib/schemas/entities';
+import type { ActivityKind, DisplayMode } from '@/lib/schemas/entities';
 
 // Lese-Queries für class_modules (Modul-Zuweisungen einer Klasse).
 // RLS-Policy `class_modules_all_own` erzwingt, dass nur Klassen des aktuell
@@ -12,6 +12,7 @@ export type AssignedModuleForTeacher = {
   description: string | null;
   schulstufe: number | null;
   topic: string | null;
+  activityKind: ActivityKind;
   displayMode: DisplayMode;
   dueDate: string | null;
   assignedAt: string;
@@ -29,6 +30,7 @@ type AssignmentRow = {
     description: string | null;
     schulstufe: number | null;
     topic: string | null;
+    activity_kind: ActivityKind;
     display_mode: DisplayMode | null;
   } | null;
 };
@@ -42,7 +44,7 @@ export async function getAssignedModulesForClass(
   const { data, error } = await supabase
     .from('class_modules')
     .select(
-      'module_id, due_date, assigned_at, pass_threshold, modules(title, description, schulstufe, topic, display_mode)'
+      'module_id, due_date, assigned_at, pass_threshold, modules(title, description, schulstufe, topic, activity_kind, display_mode)'
     )
     .eq('class_id', classId);
   if (error) {
@@ -57,6 +59,7 @@ export async function getAssignedModulesForClass(
       description: r.modules!.description,
       schulstufe: r.modules!.schulstufe,
       topic: r.modules!.topic,
+      activityKind: r.modules!.activity_kind,
       displayMode: r.modules!.display_mode ?? 'quiz',
       dueDate: r.due_date,
       assignedAt: r.assigned_at,

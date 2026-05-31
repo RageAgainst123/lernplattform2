@@ -26,6 +26,25 @@ Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (4 davon auto-bewertbar),
 und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
 nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
 
+### Begriffsklärung „Modul" (Phase E)
+
+„Modul" ist DB-/Code-Sprache (`modules`-Tabelle). Im UI sieht der User aber
+**zwei** verschiedene Dinge die beide aus dieser Tabelle stammen:
+
+| User-Wort        | DB                                      | Wo erstellt                  |
+| ---------------- | --------------------------------------- | ---------------------------- |
+| **Lernmodul**    | `modules.activity_kind='lernmodul'`     | `/admin/lernmodule/neu`      |
+| **Präsentation** | `modules.activity_kind='praesentation'` | `/admin/praesentationen/neu` |
+
+Plus die dritte Aktivität **Arbeitsblatt** (PDF-Upload), die in der
+`materials`-Tabelle lebt — komplett anderes Datenmodell, nicht Teil dieser
+Spezifikation hier.
+
+Diese Spezifikation beschreibt das Block-JSON-Format, das für BEIDE
+Aktivitäts-Typen (Lernmodul + Präsentation) gleich ist. Was sich pro
+Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
+`lib/activities.ts` (`isBlockAllowedFor`).
+
 ## 2. Block-Typen auf einen Blick
 
 **Gruppe A — Theorie/Folie** (statische Anzeige, kein Eingabefeld, nicht bewertet):

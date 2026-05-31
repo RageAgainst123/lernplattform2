@@ -37,6 +37,7 @@ function mod(id: string, title: string): AssignedModuleForTeacher {
     description: null,
     schulstufe: 5,
     topic: null,
+    activityKind: 'lernmodul',
     displayMode: 'quiz',
     dueDate: null,
     assignedAt: '2026-05-29T10:00:00Z',

@@ -8,6 +8,53 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase E — Drei Aktivitäten sauber trennen
+
+**2026-05-31** · Commits `8e07368` + (E2/E3 dieser Commit, folgt) (Branch
+`feature/thema-workflow`) · Savepoint `phase-d-savepoint`
+
+### Hinzugefügt
+
+- **Drei first-class Aktivitäten** im UI: Arbeitsblatt · Lernmodul · Präsentation.
+  Vorher hieß alles „Modul" und unterschied sich nur durch `display_mode`.
+- **`lib/activities.ts`** als Single Source of Truth für Labels, URLs,
+  Beschreibungen und welche Block-Typen pro Aktivität erlaubt sind.
+- **Drei getrennte Admin-Routen** mit eigenen Listen + Erstellen + Editieren:
+  `/admin/lernmodule`, `/admin/praesentationen`, `/admin/arbeitsblaetter`
+  (letztere redirected aktuell zu `/admin/material`, Daten-Tabelle bleibt).
+- **Admin-Dashboard** mit drei großen Aktivitäts-Karten statt einer Liste.
+- **`AddBlockDialog` filtert pro Aktivität**: Lernmodul zeigt Theorie (ohne Slide)
+  - Worksheet-Aufgaben, Präsentation zeigt Theorie (mit Slide) + Live-Blöcke.
+- **Lehrer-Sicht** zeigt zugewiesene Aktivitäten nach Aktivitäts-Typ gruppiert
+  (Lernmodule + Präsentationen als getrennte Sektionen mit passenden Aktions-Verben).
+
+### Geändert
+
+- Migration 0012: neue Spalte `modules.activity_kind`
+  (`'lernmodul' | 'praesentation'`), Bestand gemappt:
+  alle `presentation`-Module → `praesentation`, Rest → `lernmodul`.
+- `display_mode` bleibt als Sub-Variante FÜR Lernmodule (`'quiz' | 'worksheet'`).
+- Wording-Pass: Admin-Nav, Dashboard, Editor-Titel, Schüler-Dashboard
+  („Deine Module" → „Deine Lernmodule").
+
+### Behoben
+
+- Latenter Schüler-Dispatcher-Bug: Präsentationen würden vor Phase E
+  stillschweigend in den Quiz-Runner fallen wenn jemand die ID öffnet —
+  jetzt filtert `getStudentModule` + `getAssignedModules` auf
+  `activity_kind='lernmodul'`.
+- Beamer-Route prüft jetzt `activityKind` (primärer Diskriminator) statt
+  des fragilen `displayMode === 'presentation'`.
+
+### Nicht geändert
+
+- Block-Schema, Block-Renderer, Block-Engine — geteiltes Fundament.
+- `materials`-Tabelle für Arbeitsblätter — Daten + Edit-UI bleiben wie heute.
+- Alte URLs (`/admin/module/*`, `/admin/material/*`) — redirecten weiterhin
+  auf die neuen Routen (Bookmark-Schutz).
+
+---
+
 ## Phase 16 — Abgaben einsehen + Feedback/Rückgabe + Auto-Bewertung
 
 **2026-05-30** · Commits `43b3814`, `d74bf01`, `0088190` (Branch

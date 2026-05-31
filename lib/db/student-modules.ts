@@ -38,6 +38,12 @@ async function isAssigned(moduleId: string, classId: string): Promise<boolean> {
 
 // Lädt ein der Klasse zugewiesenes, veröffentlichtes Modul. Null, wenn nicht
 // zugewiesen (Zugriffsschutz für Schüler:innen).
+//
+// Phase E: Präsentationen werden NICHT geliefert — sie sind für den Beamer
+// gedacht, nicht für die Schüler:innen-Selbstbearbeitung. Vor Phase E ging
+// eine Präsentations-ID stillschweigend in den Quiz-Runner; jetzt → null →
+// page.tsx ruft notFound(). Schüler:innen sehen Präsentations-Folien nur
+// während einer laufenden live_session via LiveOverlay (separate Polling-API).
 export async function getStudentModule(
   moduleId: string,
   classId: string
@@ -48,8 +54,9 @@ export async function getStudentModule(
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('modules')
-    .select('id, title, content, is_published, display_mode')
+    .select('id, title, content, is_published, activity_kind, display_mode')
     .eq('id', moduleId)
+    .eq('activity_kind', 'lernmodul')
     .maybeSingle();
   if (!data || !data.is_published) {
     return null;
@@ -70,10 +77,18 @@ export type AssignedModule = {
   status: ModuleStatus;
 };
 
-type ModuleRef = { id: string; title: string; description: string | null; is_published: boolean };
+type ModuleRef = {
+  id: string;
+  title: string;
+  description: string | null;
+  is_published: boolean;
+  activity_kind: string;
+};
 
-// Lädt die der Klasse zugewiesenen, veröffentlichten Module + 3-Stufen-Status
-// der Schüler:in (fürs Dashboard).
+// Lädt die der Klasse zugewiesenen, veröffentlichten LERNMODULE + 3-Stufen-Status
+// der Schüler:in (fürs Dashboard). Phase E: Präsentationen filtern wir hier raus —
+// sie sind für den Beamer gedacht und erscheinen für Schüler:innen nur als
+// LiveOverlay während einer laufenden live_session, nicht als eigene Modul-Karte.
 export async function getAssignedModules(
   classId: string,
   studentCodeId: string
@@ -81,7 +96,7 @@ export async function getAssignedModules(
   const supabase = createServiceClient();
   const { data: assignments } = await supabase
     .from('class_modules')
-    .select('modules(id, title, description, is_published)')
+    .select('modules(id, title, description, is_published, activity_kind)')
     .eq('class_id', classId);
   if (!assignments) {
     return [];
@@ -95,7 +110,7 @@ export async function getAssignedModules(
 
   return assignments
     .map((a) => a.modules as unknown as ModuleRef)
-    .filter((m) => m && m.is_published)
+    .filter((m) => m && m.is_published && m.activity_kind === 'lernmodul')
     .map((m) => ({
       id: m.id,
       title: m.title,

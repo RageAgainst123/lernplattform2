@@ -49,7 +49,9 @@ werden per 308 dorthin umgeleitet.)
 
 ### Schritt 3 — Modul-JSON importieren
 
-1. Im Browser einloggen als Lehrer:in (Magic Link), dann auf `/admin/module/neu`.
+1. Im Browser einloggen als Lehrer:in (Magic Link), dann auf
+   `/admin/lernmodule/neu` (Phase E: drei separate Aktivitäts-Routen
+   statt der alten Sammelroute `/admin/module`).
 2. Metadaten ausfüllen:
    - Titel (Anzeigename)
    - Schulstufe + Kompetenzbereich + Topic (Anzeigetitel, nicht Slug!)
@@ -85,7 +87,8 @@ werden per 308 dorthin umgeleitet.)
 
 ### Schritt 6 — PDF als Material hochladen
 
-1. Im Browser auf `/admin/material/neu`.
+1. Im Browser auf `/admin/material/neu` (Phase E: auch erreichbar als
+   `/admin/arbeitsblaetter/neu` — gleiche Seite, neue Aktivitäts-URL).
 2. Felder ausfüllen:
    - Titel: „<Topic> — Arbeitsblatt" (z. B. „Suchen im Internet — Arbeitsblatt")
    - Material-Typ: **`arbeitsblatt`**
@@ -98,7 +101,9 @@ werden per 308 dorthin umgeleitet.)
 
 ### Schritt 7 — Modul veröffentlichen + einer Klasse zuweisen
 
-1. Zurück auf `/admin/module/<id>` → Checkbox „Veröffentlicht" → Speichern.
+1. Zurück auf `/admin/lernmodule/<id>` → Checkbox „Veröffentlicht" → Speichern.
+   (Bei Präsentationen: `/admin/praesentationen/<id>`. Alte URL
+   `/admin/module/<id>` redirected automatisch zur richtigen Aktivität.)
 2. **Modul der Klasse zuweisen** (Lehrer:innen-Sicht): auf
    `/lehrer/klassen/<id>` runter zur Modul-Sektion → Dropdown → Modul
    wählen → ggf. Fälligkeitsdatum → **Zuweisen**.
@@ -381,7 +386,10 @@ GIB MIR NUR DAS JSON ZURÜCK, kein Drumherum. Alle IDs eindeutig.
 Gleicher Pfad wie Worksheet (siehe §3 oben):
 
 1. `pnpm validate:module live-modul.json` — muss grün sein.
-2. Admin-Editor `/admin/module/neu` → JSON-Import-Dialog → einfügen → speichern.
+2. Admin-Editor `/admin/praesentationen/neu` → JSON-Import-Dialog → einfügen → speichern.
+   (Für Live-Module — also Präsentationen mit Live-Polls, Wortwolken, Quiz etc. —
+   ist das die richtige Route. Lernmodule mit Worksheet-Aufgaben gehören auf
+   `/admin/lernmodule/neu`.)
 3. **Wichtig:** `display_mode` im Editor auf `presentation` umstellen
    (Default ist `worksheet`).
 4. Modul einer Klasse zuweisen.

@@ -22,7 +22,10 @@ export default async function PresentationPage({
   const { id, moduleId } = await params;
 
   const [schoolClass, moduleData] = await Promise.all([getClass(id), getModuleById(moduleId)]);
-  if (!schoolClass || !moduleData || moduleData.displayMode !== 'presentation') {
+  // Phase E: Primärprüfung über activityKind. Altes Verhalten (displayMode-Check)
+  // war fragil — neue Präsentationen haben displayMode='quiz' als Default, aber
+  // activityKind='praesentation'. Wir prüfen jetzt auf den primären Diskriminator.
+  if (!schoolClass || !moduleData || moduleData.activityKind !== 'praesentation') {
     notFound();
   }
 

@@ -34,7 +34,7 @@ export default async function StudentDashboard() {
       ) : (
         <>
           <StatusSummary counts={counts} />
-          <h2 className="text-lg font-medium">Deine Module</h2>
+          <h2 className="text-lg font-medium">Deine Lernmodule</h2>
           <div className="flex flex-col gap-3">
             {sorted.map((module) => (
               <ModuleCard key={module.id} module={module} />

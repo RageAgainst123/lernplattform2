@@ -1,6 +1,8 @@
 # ADR 0012 — Lehrer:innen-Feedback & Rückgabe-Zyklus (ohne KI)
 
-**Status:** akzeptiert · **Datum:** 2026-05-30
+**Status:** accepted
+**Datum:** 2026-05-30
+**Erweitert:** ADR-0007 (4. Status-Stufe `returned`)
 
 ## Kontext
 

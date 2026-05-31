@@ -82,7 +82,8 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   - `admin-auth.ts` (`isAdmin` + `requireAdmin`)
   - `pin.ts` (`generatePin` + `hashPin` + `verifyPin`, bcrypt, SALT_ROUNDS=10)
   - `actions.ts` (signOut Server Action für Lehrer:in)
-  - `student-actions.ts` (`studentLogout`, `loginStudent` Server Actions)
+  - `student-actions.ts` (`studentLogout` Server Action; Login liegt in
+    `lib/db/student-login-action.ts` → `studentLogin`)
 - **`lib/supabase/`** — `client.ts` (Browser), `server.ts` (Server Component),
   `admin.ts` (Service-Role, **server-only**, umgeht RLS)
 - **`lib/db/`** — DB-Layer, ein File pro Domäne. **Server-only.** Beispiele:
@@ -95,7 +96,8 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   - `progress-action.ts` (saveProgress, saveWorksheetDraft, submitWorksheet)
   - `public-content.ts` + `public-content-stufe.ts` (öffentliche Browser-Routen)
 - **`lib/blocks/`** — Block-Engine-Logik (Auswertung, Shuffle-Helper)
-  - `evaluate.ts` — `BlockAnswer`-Typen + `isGraded`/`evaluateBlock`
+  - `evaluate.ts` — `BlockAnswer`-Typen + `isGraded`/`gradeBlock` (0–1, teilpunkt-fähig)
+    - `scoreModule`/`maxScore`/`percentScore`/`isPassed`/`blockResult` (Phase 16)
   - `fill-blank.ts` — `shuffle<T>()` Fisher-Yates für FillBlank-Pool
 - **`lib/schemas/`** — Zod-Schemas (Blöcke, Entities)
 
@@ -204,7 +206,8 @@ supabase start
 # 2) Einmal in /login als Lehrer:in einloggen (ein Profil in `teachers` anlegen).
 
 # 3) Test-Seed laufen lassen (idempotent — kann mehrfach laufen):
-supabase db remote sql --file supabase/seed-test-accounts.sql
+#    den Inhalt von supabase/seed-test-accounts.sql im Supabase-SQL-Editor
+#    ausführen (oder via psql gegen die lokale DB).
 ```
 
 Das Skript legt an:
@@ -237,7 +240,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - **Commits:** Conventional Commits, **klein geschrieben**! `feat: x` (nicht
   `feat: X`). CommitLint blockt sonst. Footer:
   ```
-  Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+  Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
   ```
 - **Imports:** Lazy-Code-Splitting für „schwere" Libraries (`@react-pdf/renderer`)
   via `next/dynamic({ ssr: false })`.
@@ -273,7 +276,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - **Niemals** `package.json`-Hauptversionen ohne Auftrag anheben — der
   Stack ist bewusst stabil (Next 16 hat schon genug Breaking Changes).
 
-## Phasen-Status (Stand 2026-05-29)
+## Phasen-Status (Stand 2026-05-30)
 
 - ✅ **Phase 1:** Scaffold (Next 16, Tailwind v4, ESLint strict, Vitest)
 - ✅ **Phase 2:** shadcn/ui-Setup, Demo-Verifikation
@@ -283,8 +286,10 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - ✅ **Phase 6:** PDF-Export der Code-Liste (@react-pdf/renderer)
 - ✅ **Phase 7:** Schüler:innen-Login (jose, /k → /s), Migration 0003 (join_code)
 - ✅ **Phase 8:** Block-Engine, 7 Block-Typen, ModuleRunner (Quiz), EVA-Demo
-- ✅ **Phase 9:** Öffentliche Materialbibliothek (`/dgb/[stufe]/[bereich]`,
-  Hash-Accordion-Navigation, Bereich-Stufe-Aggregation)
+- ✅ **Phase 9:** Öffentliche Materialbibliothek (`/dgb/[stufe]` mit
+  Hash-Accordion-Navigation `#bereich/slug`, Bereich-Stufe-Aggregation;
+  die alte `[bereich]`-Route wurde durch Hash-Anker ersetzt, proxy.ts
+  308-redirectet Legacy-URLs)
 - ✅ **Phase 10:** Branding (Header, Footer, Impressum, Datenschutz, Akzent)
 - ✅ **Phase 11:** Admin-Bereich + Modul-Editor + Material↔Modul-Verknüpfung,
   Migration 0005 (`materials.related_module_id`)
@@ -299,7 +304,13 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   (`/lehrer/klassen/[id]` Modul-Sektion mit Dropdown + Liste) +
   Klassen-Fortschritts-Matrix (`/lehrer/klassen/[id]/fortschritt`):
   Schüler:innen × Module mit Status-Badges + Score
-- 🔜 **Phase 16:** Lernpfad-Entscheidung, Lösch-Funktion für Klassen/Codes,
+- ✅ **Phase 16:** Abgaben einsehen (Lehrer:innen-Detailseite) + Feedback/
+  Rückgabe-Zyklus (`returned`-Status, 4. Stufe) + automatische prozentuale
+  Bewertung mit Bestehens-Schwelle pro Zuweisung. Migration 0007
+  (`pass_threshold`, `teacher_feedback`, `returned_at`, `manual_marks` +
+  RLS-UPDATE-Policy), ADR-0011 + ADR-0012, `docs/MODUL-SPEZIFIKATION.md` +
+  `pnpm validate:module`.
+- 🔜 **Phase 17:** Lernpfad-Entscheidung, Lösch-Funktion für Klassen/Codes,
   Phase-2-Block-Typen, PWA/Offline
 
 (Detaillierter Phasen-Verlauf siehe `CHANGELOG.md`.)

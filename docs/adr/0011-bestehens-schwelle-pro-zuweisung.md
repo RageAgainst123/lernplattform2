@@ -1,6 +1,7 @@
 # ADR 0011 — Bestehens-Schwelle pro Zuweisung (nicht pro Modul)
 
-**Status:** akzeptiert · **Datum:** 2026-05-30
+**Status:** accepted
+**Datum:** 2026-05-30
 
 ## Kontext
 

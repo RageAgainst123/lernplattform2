@@ -89,9 +89,9 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ### Tests
 
-- 213 grün (+21): `class-modules` (6), `class-progress` (6 für pure
+- 213 grün (+51): u. a. `class-modules` (6), `class-progress` (6 für pure
   Helper), `ClassProgressCell` (5), `ModuleAssignmentPanel` (5 incl.
-  Filter-Logik).
+  Filter-Logik) + weitere.
 
 ---
 

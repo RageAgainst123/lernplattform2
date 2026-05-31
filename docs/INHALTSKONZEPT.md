@@ -2,7 +2,7 @@
 
 > Diese Datei klärt das **Was** der Inhalte — Begriffe, Ebenen, wer was sieht.
 > Sie ist die verbindliche Referenz, bevor Inhalts-Features gebaut werden.
-> Stand: 2026-05-29.
+> Stand: 2026-05-30.
 
 ## 1. Grundprinzip: Inhalte erstellt nur der Autor (Geo)
 
@@ -22,7 +22,7 @@ vermischt. Tatsächlich gibt es **zwei verschiedene Dinge**:
 | **Format**       | Datei zum Ansehen/Drucken                             | 7 Block-Typen am Bildschirm, zwei Anzeige-Modi (s. u.)              |
 | **Sichtbarkeit** | **Öffentlich**, ohne Login                            | Schüler:innen **nach Zuweisung** durch Lehrer:in                    |
 | **Interaktion**  | herunterladen, ausdrucken                             | bearbeiten, Antworten, Fortschritt wird gespeichert                 |
-| **Tabelle**      | `materials` (existiert, noch leer)                    | `modules` (mit `display_mode`-Spalte; EVA-Demo drin)                |
+| **Tabelle**      | `materials` (Schema fertig; Inhalte je nach DB-Stand) | `modules` (mit `display_mode`-Spalte; EVA- + Suchen-Demo)           |
 | **Lösungen**     | `is_teacher_only`-Flag (nur eingeloggte Lehrer:innen) | —                                                                   |
 
 **Sprachregelung (verbindlich):**
@@ -51,25 +51,27 @@ interaktiven Block-Renderer mit `readOnly`-Prop nach Abgabe.
 im Worksheet-Modus mit „📖 Lesen"-Label und gedämpftem Hintergrund
 (`bg-muted/30`), nicht als „Aufgabe N" gezählt.
 
-## 2b. Modul-Bearbeitungs-Status (3 Stufen, pro Schüler:in)
+## 2b. Modul-Bearbeitungs-Status (4 Stufen, pro Schüler:in)
 
-Pro Schüler:in und Modul existieren drei Zustände, abgeleitet aus
-`student_progress` (KEIN neues DB-Feld; siehe ADR-0007 und
+Pro Schüler:in und Modul existieren vier Zustände (`ModuleStatus`), abgeleitet
+aus `student_progress` (KEIN neues DB-Feld; siehe ADR-0007 für das Grundprinzip
+und ADR-0012 für die 4. Stufe `returned`; Quelle:
 `lib/db/student-modules-status.ts`):
 
-| Status        | Wann                                                 | Dashboard-Anzeige                                 |
-| ------------- | ---------------------------------------------------- | ------------------------------------------------- |
-| `open`        | keine `student_progress`-Row für (Modul, Schüler:in) | kein Badge, Akzentrand links, CTA „Starten"       |
-| `in_progress` | Row existiert, `completed_at IS NULL`                | Gelbes „📝 In Bearbeitung"-Badge + „Weitermachen" |
-| `done`        | Row existiert, `completed_at` gesetzt (abgegeben)    | Primary-Badge „✓ Erledigt", Karte gedimmt         |
+| Status        | Wann                                                       | Dashboard-Anzeige                                 |
+| ------------- | ---------------------------------------------------------- | ------------------------------------------------- |
+| `open`        | keine `student_progress`-Row für (Modul, Schüler:in)       | kein Badge, Akzentrand links, CTA „Starten"       |
+| `in_progress` | Row existiert, `completed_at IS NULL`                      | Gelbes „📝 In Bearbeitung"-Badge + „Weitermachen" |
+| `returned`    | `returned_at` gesetzt, `completed_at` noch leer (Rückgabe) | Amber „↩ Zur Überarbeitung"-Badge + Feedback      |
+| `done`        | Row existiert, `completed_at` gesetzt (abgegeben)          | Primary-Badge „✓ Erledigt", Karte gedimmt         |
 
 Im Schüler:innen-Dashboard `/s`:
 
-- **Übersichts-Pille** oben: „N in Bearbeitung · N offen · N erledigt"
-  (Status mit 0 Modulen werden ausgeblendet).
-- **Sortierung:** `in_progress` zuerst (gerade dran), dann `open`, zuletzt
-  `done` (erledigt). Stabile Sortierung — innerhalb derselben Stufe bleibt
-  die ursprüngliche Reihenfolge erhalten.
+- **Übersichts-Pille** oben: zählt die Stufen (Status mit 0 Modulen werden
+  ausgeblendet).
+- **Sortierung:** `returned` zuerst (dringend), dann `in_progress`, dann `open`,
+  zuletzt `done`. Stabile Sortierung — innerhalb derselben Stufe bleibt die
+  ursprüngliche Reihenfolge erhalten.
 
 ## 3. Navigations-Hierarchie (verbindlich)
 
@@ -112,12 +114,12 @@ Feld `fach` (enum: dgb | informatik) auf beide Tabellen ergänzen (eigene Migrat
 
 ## 4. Wer sieht/macht was — Nutzer-Rollen
 
-| Rolle                       | Material                                        | Modul                                                                                                    |
-| --------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Öffentlich (ohne Login)** | sehen + herunterladen (außer `is_teacher_only`) | — (sieht nur, dass es Module gibt; bearbeiten nur eingeloggt)                                            |
-| **Lehrer:in (eingeloggt)**  | sehen + auch Lösungen                           | Module der Klasse **zuweisen**, Fortschritt der Klasse sehen                                             |
-| **Schüler:in (Code+PIN)**   | — (kommt über öffentlichen Bereich dran)        | **zugewiesene** Module bearbeiten (3 Stufen: offen / in Bearbeitung / erledigt), Fortschritt gespeichert |
-| **Autor (Geo)**             | erstellt Materialien                            | erstellt Module                                                                                          |
+| Rolle                       | Material                                        | Modul                                                                                                                    |
+| --------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Öffentlich (ohne Login)** | sehen + herunterladen (außer `is_teacher_only`) | — (sieht nur, dass es Module gibt; bearbeiten nur eingeloggt)                                                            |
+| **Lehrer:in (eingeloggt)**  | sehen + auch Lösungen                           | Module der Klasse **zuweisen**, Fortschritt der Klasse sehen                                                             |
+| **Schüler:in (Code+PIN)**   | — (kommt über öffentlichen Bereich dran)        | **zugewiesene** Module bearbeiten (4 Stufen: offen / in Bearbeitung / zurückgegeben / erledigt), Fortschritt gespeichert |
+| **Autor (Geo)**             | erstellt Materialien                            | erstellt Module                                                                                                          |
 
 ## 5. Offene Design-Frage: „Lernpfad"?
 

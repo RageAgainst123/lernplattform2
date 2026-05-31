@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CheckIcon, PencilIcon, ArrowRightIcon } from 'lucide-react';
+import { CheckIcon, PencilIcon, ArrowRightIcon, RotateCcwIcon } from 'lucide-react';
 import type { AssignedModule } from '@/lib/db/student-modules';
 import type { ModuleStatus } from '@/lib/db/student-modules-status';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 // Zeigt ein Schüler:innen-Dashboard-Modul mit Status-Badge + Karten-Style:
 //   - 'open': kein Badge, linker Akzentrand → „los geht's"
 //   - 'in_progress': gelbes Badge + linker Akzentrand + „Weitermachen"-Hinweis
+//   - 'returned': amber Badge + amber Akzentrand → „bitte überarbeiten"
 //   - 'done': Erledigt-Badge, leicht gedimmt → ans Ende sortiert
 //
 // Ziel: Schüler:innen sehen auf einen Blick was noch zu tun ist.
@@ -17,6 +18,14 @@ function StatusBadge({ status }: { status: ModuleStatus }) {
       <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium">
         <CheckIcon className="size-3.5" aria-hidden />
         Erledigt
+      </span>
+    );
+  }
+  if (status === 'returned') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+        <RotateCcwIcon className="size-3.5" aria-hidden />
+        Zur Überarbeitung
       </span>
     );
   }
@@ -33,7 +42,8 @@ function StatusBadge({ status }: { status: ModuleStatus }) {
 
 function CardCta({ status }: { status: ModuleStatus }) {
   if (status === 'done') return null;
-  const label = status === 'in_progress' ? 'Weitermachen' : 'Starten';
+  const label =
+    status === 'returned' ? 'Überarbeiten' : status === 'in_progress' ? 'Weitermachen' : 'Starten';
   return (
     <p className="text-primary mt-2 flex items-center gap-1 text-sm font-medium">
       {label}
@@ -48,6 +58,10 @@ function cardClassesFor(status: ModuleStatus): string {
   const base = 'transition-colors';
   if (status === 'done') {
     return `${base} hover:bg-muted/50 opacity-70`;
+  }
+  if (status === 'returned') {
+    // zurückgegeben: amber Akzentbalken — sticht hervor, ist dringend
+    return `${base} hover:bg-muted/50 border-l-4 border-l-amber-400`;
   }
   // open + in_progress: linker Akzentbalken
   return `${base} hover:bg-muted/50 border-l-4 border-l-primary`;

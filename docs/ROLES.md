@@ -3,7 +3,7 @@
 > Diese Datei klärt das **Wer** der Plattform — welche Rollen es gibt, was
 > sie dürfen, wie sie technisch erkannt werden, wo geprüft wird.
 > Ergänzt [INHALTSKONZEPT.md](INHALTSKONZEPT.md) (das **Was** der Inhalte).
-> Stand: 2026-05-28.
+> Stand: 2026-05-30.
 
 ## 1. Vier Rollen
 
@@ -73,8 +73,12 @@ liest oder schreibt, selbst wenn Code falsch ist.
 - `student_codes`: nur Codes eigener Klassen
 - `modules`: `is_published OR auth.uid() = created_by`
 - `materials`: ähnlich (öffentlich lesbar wenn nicht `is_teacher_only`)
-- `student_progress`: Schüler:in schreibt via Service-Role; Lehrer:in liest nur
-  Fortschritte eigener Klassen
+- `student_progress`: Schüler:in schreibt via Service-Role; Lehrer:in liest
+  Fortschritte eigener Klassen (`student_progress_select_own_classes`) **und**
+  darf seit Phase 16 für eigene Klassen schreiben (`student_progress_update_own_classes`,
+  Migration 0007) — Feedback geben + Modul zurückgeben (`completed_at` zurücksetzen).
+  Dieser Schreibzugriff läuft über den **User-Client + RLS**, NICHT Service-Role
+  (siehe `teacher-feedback-actions.ts`; ADR-0012).
 
 **Admin-Spezial:** Da Admin technisch eine Lehrer:in ist, gelten dieselben RLS-Policies.
 Admin-spezifische Aktionen (Modul-CRUD) laufen über den **Service-Role-Client**
@@ -110,7 +114,7 @@ Siehe ADR-0008 für die Architektur-Entscheidung.
 // lib/brand.ts
 export const BRAND = {
   // …
-  adminEmails: ['geoschlegel@gmail.com'] as const,
+  adminEmails: ['geoschlegel@gmail.com'] as readonly string[],
 } as const;
 ```
 
@@ -121,7 +125,8 @@ import { BRAND } from '@/lib/brand';
 
 export function isAdmin(email: string | null | undefined): boolean {
   if (!email) return false;
-  return BRAND.adminEmails.includes(email.toLowerCase() as never);
+  const normalized = email.toLowerCase();
+  return BRAND.adminEmails.some((a) => a.toLowerCase() === normalized);
 }
 
 export async function requireAdmin() {
@@ -171,7 +176,8 @@ Vorteile:
 - **2026-05-29** — Rollenabhängiger Header (Phase 14, ADR-0008): mittlerer
   Nav-Link wechselt je nach Rolle (Schüler:in → Mein Bereich, Lehrer:in →
   Mein Dashboard, Anonym → Schüler:innen-Login). „Mein Bereich" `/s` zeigt
-  Übersichts-Pille + 3-stufige Modul-Status-Badges.
+  Übersichts-Pille + Modul-Status-Badges (damals 3-stufig; seit Phase 16
+  4-stufig inkl. `returned`).
 - **2026-05-29** — Sicherheits-Sprint: Open-Redirect im Magic-Link-Callback
   geschlossen (ADR-0009 — `safeNext()`-Helper), Login + Logout in beide
   Richtungen symmetrisch (siehe `lib/auth/session-cleanup.ts`): wenn man
@@ -183,3 +189,11 @@ Vorteile:
   RLS-Policies `class_modules_all_own` und `student_progress_select_own_classes`
   erzwingen die Sicht auf eigene Klassen. Codenamen sind anonym — Lehrer:in
   sieht nur Status + Score, keine PII (DSGVO §6).
+- **2026-05-30** — Phase 16 (ADR-0011 + ADR-0012): Lehrer:innen sehen Abgaben
+  im Detail (`/lehrer/klassen/[id]/fortschritt/[studentCodeId]/[moduleId]`) und
+  können sie **mit Feedback zurückgeben** (4. Status `returned`). Neue RLS-
+  UPDATE-Policy `student_progress_update_own_classes` (Migration 0007) erlaubt
+  Lehrer:innen Schreibzugriff auf `student_progress` der eigenen Klassen —
+  über User-Client + RLS, **nie** Service-Role. Bestehens-Schwelle pro Zuweisung
+  (`class_modules.pass_threshold`). Schüler:innen-Status hat nun 4 Stufen
+  (offen / in Bearbeitung / zurückgegeben / erledigt).

@@ -1,7 +1,15 @@
-# ADR-0007: Modul-Status als 3-Stufen-Klassifizierung statt Boolean
+# ADR-0007: Modul-Status als mehrstufige Klassifizierung statt Boolean
 
-**Status:** accepted
+**Status:** accepted (in Phase 16 um die 4. Stufe `returned` erweitert, siehe ADR-0012)
 **Datum:** 2026-05-29
+
+> **Hinweis (seit Phase 16, ADR-0012):** Diese ADR beschreibt den ursprünglichen
+> **3-Stufen**-Entwurf (`open` / `in_progress` / `done`). Inzwischen gibt es eine
+> **4. Stufe `returned`** (von Lehrer:in zur Überarbeitung zurückgegeben). Das
+> Grundprinzip dieser ADR — Status aus `student_progress` **ableiten** statt als
+> Spalte zu speichern — gilt unverändert weiter; `deriveStatus()` prüft nur
+> zusätzlich `returned_at`. Die unten in „Verworfen" als „heute nicht nötig"
+> eingestufte 4. Stufe wurde also bewusst nachgezogen. Details: ADR-0012.
 
 ## Kontext
 

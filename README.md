@@ -6,7 +6,7 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 1. **Öffentliche Materialbibliothek** — frei zugängliche PDFs (Theorie,
    Arbeitsblätter, Stundenbilder), ohne Login.
 2. **Interaktive Modulplattform** — modulbasiertes Lernen mit Block-Engine
-   (Quiz, Drag-Drop, Lückentext, Reflexion), Lehrer:innen-Login und
+   (Quiz, Zuordnung, Lückentext, Reflexion), Lehrer:innen-Login und
    Klassencode-Login für Schüler:innen.
 
 **DSGVO-konform by design:** keine personenbezogenen Daten von Schüler:innen
@@ -20,10 +20,9 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 - **jose** (Schüler:innen-JWT, HS256, 8 h, HTTP-Only-Cookie) ·
   **bcryptjs** (PIN-Hash, SALT_ROUNDS=10)
 - **@react-pdf/renderer** (Lehrer:innen-PDF-Export, dynamischer Import)
-- **lucide-react** (Icons) · **react-hook-form + Zod**, **TanStack Query**,
-  **@dnd-kit**, **framer-motion**
+- **lucide-react** (Icons) · **react-hook-form + Zod** (Formulare/Validierung)
 - **Vitest** + **Testing Library** · **ESLint** (strict) + **Prettier** · **Husky** + **lint-staged** + **CommitLint**
-- Paketmanager: **pnpm** · Hosting: **Vercel**
+- Paketmanager: **pnpm** · Hosting: vorgesehen **Vercel** (noch nicht deployt)
 
 ### Lerninhalte
 
@@ -60,10 +59,10 @@ NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 ```
 
-Datenbank-Schema einspielen: die SQL-Dateien aus `supabase/migrations/`
-(`0001_initial_schema.sql`, `0002_rls_policies.sql`) im Supabase SQL-Editor
-ausführen. Für E-Mail-Versand (Magic Link) ist ein SMTP-Provider (z. B. Resend)
-in den Supabase-Auth-Einstellungen zu hinterlegen.
+Datenbank-Schema einspielen: **alle** SQL-Dateien aus `supabase/migrations/`
+der Reihe nach (`0001_initial_schema.sql` bis `0007_submissions_feedback.sql`)
+im Supabase SQL-Editor ausführen. Für E-Mail-Versand (Magic Link) ist ein
+SMTP-Provider (z. B. Resend) in den Supabase-Auth-Einstellungen zu hinterlegen.
 
 ## Befehle
 
@@ -112,7 +111,7 @@ supabase/
 docs/
   INHALTSKONZEPT.md  Inhalts-Begriffe (Material vs. Modul, Navigations-Hierarchie)
   ROLES.md           Rollen, Auth-Mechanismen, Zugriffsrechte
-  adr/               Architecture Decision Records (0001–0008)
+  adr/               Architecture Decision Records (0001–0012)
 proxy.ts          Auth-Token-Refresh + Routenschutz (Next-16-Konvention)
 CLAUDE.md         Session-Notizen für AI-Pair (Stolperfallen, Konventionen, Phasen)
 CHANGELOG.md      Phasen-Verlauf (reverse-chronologisch)

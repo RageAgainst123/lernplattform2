@@ -1,4 +1,4 @@
-import { CheckIcon, CircleIcon, PencilIcon } from 'lucide-react';
+import { CheckIcon, CircleIcon, PencilIcon, RotateCcwIcon } from 'lucide-react';
 import type { StatusCounts } from '@/lib/db/student-modules-status';
 
 // Übersichts-Pille oben auf dem Schüler:innen-Dashboard:
@@ -15,6 +15,12 @@ type Segment = {
 
 function buildSegments(counts: StatusCounts): Segment[] {
   return [
+    {
+      count: counts.returned,
+      label: 'zur Überarbeitung',
+      icon: RotateCcwIcon,
+      className: 'text-amber-900',
+    },
     {
       count: counts.in_progress,
       label: 'in Bearbeitung',

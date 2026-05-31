@@ -5,7 +5,7 @@
 > entwickelt wird. Ziel: in **45–90 Minuten** ein vollständiges Paket
 > aus Online-Modul + druckbarem Arbeitsblatt produzieren.
 >
-> Stand: 2026-05-29.
+> Stand: 2026-05-30.
 
 ## 1. Was du am Ende hast
 
@@ -18,10 +18,12 @@ denselben **Topic-Namen** teilen (z. B. „Suchen im Internet"):
 | **Druck-PDF**        | `arbeitsblaetter/*.pdf` (im Repo)                   | Python-Skript generiert                   |
 | **Material-Eintrag** | DB-Tabelle `materials` + Storage-Bucket `materials` | Admin lädt PDF hoch + verknüpft mit Modul |
 
-Auf der öffentlichen Seite `/dgb/<stufe>/<bereich>#<topic-slug>` erscheinen
-PDF-Download UND „Online ausfüllen"-Button.
+Auf der öffentlichen Seite `/dgb/<stufe>#<bereich>/<topic-slug>` erscheinen
+PDF-Download UND „Online ausfüllen"-Button. (Der Bereich ist ein Hash-Anker
+auf der Stufen-Seite, keine eigene Route — alte `/dgb/<stufe>/<bereich>`-URLs
+werden per 308 dorthin umgeleitet.)
 
-## 2. Der 7-Schritte-Prozess
+## 2. Der 8-Schritte-Prozess
 
 ### Schritt 1 — Thema und Lehrplan klären
 
@@ -106,7 +108,7 @@ PDF-Download UND „Online ausfüllen"-Button.
 
 ### Schritt 8 — Smoketesten
 
-1. **Anonyme Vorschau:** `/dgb/<stufe>/<bereich>#<topic-slug>` öffnen.
+1. **Anonyme Vorschau:** `/dgb/<stufe>#<bereich>/<topic-slug>` öffnen.
    PDF-Download muss sichtbar sein.
 2. **Schüler:innen-Test:** `/k` → `TEST00` → `5T-01` → PIN `0000` →
    Dashboard zeigt das Modul → öffnen → durchklicken → Abgeben.
@@ -269,7 +271,7 @@ Verordnung BGBl. II Nr. 267/2022 (Pflichtfach Digitale Grundbildung,
 Sekundarstufe I, 5.–8. SSt., je 1 Wochenstunde). RIS:
 <https://www.ris.bka.gv.at/Dokumente/BgblAuth/BGBLA_2022_II_267/BGBLA_2022_II_267.pdfsig>
 
-5 Kompetenzbereiche × 4 Schulstufen = 20 Sub-Bereiche. Frankfurt-Dreieck:
+5 Kompetenzbereiche × 4 Schulstufen (5.–8.) = 20 Sub-Bereiche. Frankfurt-Dreieck:
 **T**echnisch · **G**esellschaftlich · **I**nteraktion.
 
 ### 5. Schulstufe (1. Klasse Sek I)

@@ -3,7 +3,7 @@
 > Verbindliche Referenz für Farben, Spacing, Typografie und Layout-Bausteine
 > der Plattform. Gilt für Web (Schüler:innen-/Lehrer:innen-/Admin-UI)
 > **und** für druckbare Arbeitsblätter (PDF).
-> Stand: 2026-05-29.
+> Stand: 2026-05-30.
 
 ## 1. Quellen der Wahrheit
 
@@ -101,19 +101,21 @@ Die PDF-Bausteine leben in [`arbeitsblaetter/_styles.py`](../arbeitsblaetter/_st
 Jedes Generator-Skript (`gen_*.py`) komponiert nur noch aus diesen
 Bausteinen — KEINE eigenen Farben oder Spacing-Werte mehr.
 
-| Helper                                | Was es macht                                                           |
-| ------------------------------------- | ---------------------------------------------------------------------- |
-| `header(title, subtitle)`             | Titelzeile + dezenter Untertitel mit „Digitale Grundbildung · X. SSt." |
-| `lernziele_box(items)`                | Akzent-Box mit „Nach diesem Arbeitsblatt kannst du …" + Bullet-Liste   |
-| `theorie_box(text)`                   | Akzent-Box für Theorie-Erklärung                                       |
-| `merksatz_box(title, text)`           | Box mit Titel und Text — entspricht der Web-Infobox                    |
-| `aufgabe_header(nr, titel)`           | „Aufgabe N · Titel" als H2                                             |
-| `mc_checkboxes(options)`              | Multiple-Choice mit Kästchen zum Ankreuzen                             |
-| `wf_choices()`                        | „Wahr ☐ Falsch ☐"-Zeile                                                |
-| `lueckentext_lines(n)`                | n Schreiblinien für Lückentext-Antworten                               |
-| `match_table(pairs, categories)`      | Tabelle für Zuordnungsaufgaben                                         |
-| `reflexion_lines(n)`                  | n Schreiblinien für offene Reflexion                                   |
-| `footer(stufe, bereich, kompetenzen)` | Untere Footer-Zeile mit Lehrplan-Marker                                |
+| Helper                                         | Was es macht                                                           |
+| ---------------------------------------------- | ---------------------------------------------------------------------- |
+| `header(title, subtitle)`                      | Titelzeile + dezenter Untertitel mit „Digitale Grundbildung · X. SSt." |
+| `lernziele_box(items)`                         | Akzent-Box mit „Nach diesem Arbeitsblatt kannst du …" + Bullet-Liste   |
+| `theorie_box(text)`                            | Akzent-Box für Theorie-Erklärung                                       |
+| `merksatz_box(title, text)`                    | Box mit Titel und Text — entspricht der Web-Infobox                    |
+| `aufgabe_header(nr, titel)`                    | „Aufgabe N · Titel" als H2                                             |
+| `mc_checkboxes(question, options)`             | Multiple-Choice mit Kästchen zum Ankreuzen                             |
+| `wf_choices(question)`                         | „Wahr ☐ Falsch ☐"-Zeile                                                |
+| `lueckentext_lines(intro, n_lines=1)`          | Intro + n Schreiblinien für Lückentext-Antworten                       |
+| `write_lines(n)`                               | n nackte Schreiblinien                                                 |
+| `match_table(question, pairs, categories)`     | Tabelle für Zuordnungsaufgaben                                         |
+| `reflexion_lines(prompt, n_lines=4)`           | Prompt + n Schreiblinien für offene Reflexion                          |
+| `footer_lehrplan(stufe, bereich, kompetenzen)` | Untere Footer-Zeile mit Lehrplan-Marker                                |
+| `make_doc(out_path)` · `vspace(mm)`            | Dokument-Setup bzw. vertikaler Abstand                                 |
 
 ## 7. Wortmarke + Logo (Platzhalter)
 
@@ -121,7 +123,7 @@ Bausteinen — KEINE eigenen Farben oder Spacing-Werte mehr.
   „DGB Austria" als Platzhalter. Wird bei finaler Brand-Entscheidung
   ein-Stellen-getauscht.
 - **Bildmarke:** im Web als Lucide-Icon (`Logo.tsx`), im PDF aktuell **kein**
-  Bild — nur Wortmarke. Bei Logo-Datei einsetzen → `_styles.py.header()`
+  Bild — nur Wortmarke. Bei Logo-Datei einsetzen → `header()` in `_styles.py`
   um `Image()` erweitern, im Web `components/site/Logo.tsx` das Icon
   ersetzen.
 

@@ -8,6 +8,8 @@ import { getActiveSessionForClass } from '@/lib/db/live-sessions';
 // Service-Role + jose-Session (studentCodeId aus der Session, NIE aus Client).
 // Eine Stimme pro Kind/Frage (unique session_id,block_id,student_code_id);
 // Re-Vote überschreibt per upsert.
+// Lock-Guard: wenn current_block_locked=true, werden Stimmen serverseitig abgelehnt —
+// Schutz auch gegen manipulierte Clients.
 
 export type VoteState = { error: string | null };
 
@@ -19,6 +21,11 @@ export async function submitPollVote(blockId: string, optionId: string): Promise
   const live = await getActiveSessionForClass(session.classId);
   if (!live) {
     return { error: 'Gerade läuft keine Präsentation.' };
+  }
+  // Server-Guard: Abstimmung gesperrt → Stimme ablehnen, auch wenn der Client
+  // sie trotzdem schickt (manipulierter oder veralteter Client-State).
+  if (live.locked) {
+    return { error: 'Die Abstimmung ist bereits geschlossen.' };
   }
   const supabase = createServiceClient();
   const { error } = await supabase.from('live_votes').upsert(

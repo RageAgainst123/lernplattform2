@@ -43,6 +43,7 @@ describe('getActiveSessionForClass — Heartbeat-Tod', () => {
         id: 's1',
         module_id: 'm1',
         current_block_index: 2,
+        current_block_locked: false,
         created_at: '2026-05-31T11:59:30Z',
         updated_at: '2026-05-31T11:59:50Z', // 10 s alt → lebt
       },
@@ -51,6 +52,7 @@ describe('getActiveSessionForClass — Heartbeat-Tod', () => {
       id: 's1',
       moduleId: 'm1',
       currentBlockIndex: 2,
+      locked: false,
     });
   });
 

@@ -11,6 +11,7 @@ export type ActiveLiveSession = {
   id: string;
   moduleId: string;
   currentBlockIndex: number;
+  locked: boolean;
 };
 
 // Heartbeat-Tod: der Beamer frischt updated_at regelmäßig auf (heartbeat-Action,
@@ -32,7 +33,7 @@ export async function getActiveSessionForClass(classId: string): Promise<ActiveL
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('live_sessions')
-    .select('id, module_id, current_block_index, created_at, updated_at')
+    .select('id, module_id, current_block_index, current_block_locked, created_at, updated_at')
     .eq('class_id', classId)
     .eq('status', 'active')
     .maybeSingle();
@@ -52,6 +53,7 @@ export async function getActiveSessionForClass(classId: string): Promise<ActiveL
     id: data.id,
     moduleId: data.module_id,
     currentBlockIndex: data.current_block_index ?? 0,
+    locked: (data.current_block_locked as boolean | null) ?? false,
   };
 }
 

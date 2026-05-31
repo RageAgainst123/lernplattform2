@@ -45,6 +45,9 @@ function PollOverlay({ poll }: { poll: Poll }) {
     if (!res.error) setVoted(optionId);
   }
 
+  const isLocked = poll.locked;
+  const showButtons = !voted && !isLocked;
+
   return (
     <div
       className="bg-foreground/95 fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 p-6 text-center"
@@ -54,19 +57,23 @@ function PollOverlay({ poll }: { poll: Poll }) {
       <p className="text-background max-w-2xl text-2xl font-semibold">{poll.question}</p>
       {voted ? (
         <p className="text-background/80 text-lg">✓ Danke, deine Stimme zählt!</p>
+      ) : isLocked ? (
+        <p className="text-background/60 text-base">Abstimmung geschlossen.</p>
       ) : (
-        <div className="flex w-full max-w-md flex-col gap-3">
-          {poll.options.map((opt) => (
-            <Button
-              key={opt.id}
-              onClick={() => vote(opt.id)}
-              disabled={pending}
-              className="h-14 text-lg"
-            >
-              {opt.text}
-            </Button>
-          ))}
-        </div>
+        showButtons && (
+          <div className="flex w-full max-w-md flex-col gap-3">
+            {poll.options.map((opt) => (
+              <Button
+                key={opt.id}
+                onClick={() => vote(opt.id)}
+                disabled={pending || isLocked}
+                className="h-14 text-lg"
+              >
+                {opt.text}
+              </Button>
+            ))}
+          </div>
+        )
       )}
     </div>
   );

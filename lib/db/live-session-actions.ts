@@ -36,18 +36,56 @@ export async function startPresentation(
 
 // Setzt die aktuelle Folie/den aktuellen Block der laufenden Session. Wird bei
 // jedem Folienwechsel im Beamer aufgerufen — die Schüler:innen-Geräte pollen
-// diesen Wert. Kein revalidate (Beamer-State ist client-lokal, Geräte pollen).
+// diesen Wert. Reveal + Lock werden auf false zurückgesetzt: jede neue Folie
+// startet verborgen und offen. Kein revalidate (Beamer-State ist client-lokal).
 export async function setLiveBlock(classId: string, index: number): Promise<LiveActionState> {
   await requireUser();
   const safeIndex = Number.isInteger(index) && index >= 0 ? index : 0;
   const supabase = await createClient();
   const { error } = await supabase
     .from('live_sessions')
-    .update({ current_block_index: safeIndex })
+    .update({
+      current_block_index: safeIndex,
+      current_block_revealed: false,
+      current_block_locked: false,
+    })
     .eq('class_id', classId)
     .eq('status', 'active');
   if (error) {
     return { error: 'Folie konnte nicht aktualisiert werden.' };
+  }
+  return { error: null };
+}
+
+// Gibt das Ergebnis der aktuellen Poll-Folie auf dem Beamer frei. Einmal
+// aufgerufen, bleibt das Ergebnis sichtbar bis zur nächsten Folie.
+export async function revealResults(classId: string): Promise<LiveActionState> {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('live_sessions')
+    .update({ current_block_revealed: true })
+    .eq('class_id', classId)
+    .eq('status', 'active');
+  if (error) {
+    return { error: 'Ergebnis konnte nicht freigegeben werden.' };
+  }
+  return { error: null };
+}
+
+// Sperrt (locked=true) oder öffnet (locked=false) die Abstimmung für die
+// Schüler:innen. Bei locked=true können keine neuen Stimmen mehr abgegeben
+// werden (Client disabled + Server-Guard in submitPollVote).
+export async function setBlockLocked(classId: string, locked: boolean): Promise<LiveActionState> {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('live_sessions')
+    .update({ current_block_locked: locked })
+    .eq('class_id', classId)
+    .eq('status', 'active');
+  if (error) {
+    return { error: 'Abstimmungsstatus konnte nicht geändert werden.' };
   }
   return { error: null };
 }

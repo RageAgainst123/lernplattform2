@@ -8,6 +8,7 @@ import { createModule, updateModule } from '@/lib/db/module-actions';
 import { ModuleMetadataForm, type ModuleMetadata } from './ModuleMetadataForm';
 import { BlockList } from './BlockList';
 import { ImportJsonDialog } from './ImportJsonDialog';
+import { AddBlockDialog } from './AddBlockDialog';
 import { LivePreview } from './LivePreview';
 
 // Modul-Editor mit drei Spalten auf Desktop: Metadaten | Blöcke (+Import) | Vorschau.
@@ -93,15 +94,21 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
         </section>
 
         <section aria-labelledby="blocks-h" className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 id="blocks-h" className="text-sm font-semibold tracking-wide uppercase">
               Blöcke ({blocks.length})
             </h2>
-            <ImportJsonDialog
-              onImport={(imported, mode) => {
-                setBlocks((prev) => (mode === 'replace' ? imported : [...prev, ...imported]));
-              }}
-            />
+            <div className="flex items-center gap-2">
+              <AddBlockDialog
+                existingIds={blocks.map((b) => b.id)}
+                onAdd={(block) => setBlocks((prev) => [...prev, block])}
+              />
+              <ImportJsonDialog
+                onImport={(imported, mode) => {
+                  setBlocks((prev) => (mode === 'replace' ? imported : [...prev, ...imported]));
+                }}
+              />
+            </div>
           </div>
           <BlockList blocks={blocks} onChange={setBlocks} />
         </section>

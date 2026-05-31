@@ -46,7 +46,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Alle Pfade außer statischen Assets und Next.js-Internals.
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // Alle Pfade außer statischen Assets, Next.js-Internals UND dem Live-Polling-
+    // Endpunkt. `/api/live` wird von Schüler:innen-Geräten alle paar Sekunden
+    // gepollt — würde es durch updateSession() laufen, liefe pro Poll ein
+    // Supabase-Cookie-Refresh (unnötige Last). Der Handler prüft seine Auth
+    // (jose-Session) selbst.
+    '/((?!_next/static|_next/image|favicon.ico|api/live|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

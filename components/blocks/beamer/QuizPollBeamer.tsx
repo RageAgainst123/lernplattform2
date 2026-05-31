@@ -2,62 +2,34 @@
 
 import { useEffect, useState } from 'react';
 import type { QuizPollBlock } from '@/lib/schemas/blocks';
-import { getLiveResults, getQuizCorrectOptionsAction } from '@/lib/db/live-results-action';
+import { getQuizCorrectOptionsAction } from '@/lib/db/live-results-action';
 import { revealResults, setBlockLocked } from '@/lib/db/live-session-actions';
+import { useLiveResults } from '@/components/blocks/beamer/useLiveResults';
 import { Button } from '@/components/ui/button';
 
 // Beamer-Darstellung eines Quiz-Polls. Wie LivePollBeamer + „Auflösen"-Button
 // der nach Reveal die richtigen Antworten grün markiert.
 // correct-Flags kommen NICHT aus /api/live, sondern aus getQuizCorrectOptionsAction
-// (Lehrer-Action, serverseitig) — kein Leak an Schüler:innen-Geräte.
+// (Lehrer-Action, serverseitig — einmalig nach Reveal, kein Polling).
+// Stimmen-Polling über /api/live/results (API-Route, kein Dev-"Rendering...").
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
-const POLL_MS = 1000;
 
-type ResultState = {
-  counts: Record<string, number>;
-  revealed: boolean;
-  locked: boolean;
-  present: number;
-  voters: number;
-};
-
-function useQuizPoll(classId: string, blockId: string) {
-  const [result, setResult] = useState<ResultState>({
-    counts: {},
-    revealed: false,
-    locked: false,
-    present: 0,
-    voters: 0,
-  });
-  const [correctIds, setCorrectIds] = useState<string[]>([]);
-
+// Lädt die richtigen Antwort-IDs einmalig nach Reveal. Eigener Hook, weil
+// das nur ein Mal pro Reveal-Übergang nötig ist (nicht im Poll-Loop).
+function useCorrectIds(classId: string, blockId: string, revealed: boolean): string[] {
+  const [ids, setIds] = useState<string[]>([]);
   useEffect(() => {
+    if (!revealed || ids.length > 0) return;
     let cancelled = false;
-    async function poll() {
-      const res = await getLiveResults(classId, blockId);
-      if (!cancelled && 'counts' in res) {
-        setResult({
-          counts: res.counts,
-          revealed: res.revealed,
-          locked: res.locked,
-          present: res.present,
-          voters: res.voters,
-        });
-        if (res.revealed && correctIds.length === 0) {
-          const ids = await getQuizCorrectOptionsAction(classId, blockId);
-          if (!cancelled && Array.isArray(ids)) setCorrectIds(ids);
-        }
-      }
-    }
-    void poll();
-    const timer = setInterval(poll, POLL_MS);
+    void (async () => {
+      const result = await getQuizCorrectOptionsAction(classId, blockId);
+      if (!cancelled && Array.isArray(result)) setIds(result);
+    })();
     return () => {
       cancelled = true;
-      clearInterval(timer);
     };
-  }, [classId, blockId, correctIds.length]);
-
-  return { ...result, correctIds };
+  }, [classId, blockId, revealed, ids.length]);
+  return ids;
 }
 
 function QuizBar({
@@ -134,7 +106,8 @@ function QuizControls({
 }
 
 export function QuizPollBeamer({ block, classId }: { block: QuizPollBlock; classId: string }) {
-  const { counts, revealed, locked, present, voters, correctIds } = useQuizPoll(classId, block.id);
+  const { counts, revealed, locked, present, voters } = useLiveResults(classId, block.id);
+  const correctIds = useCorrectIds(classId, block.id, revealed);
   const max = Math.max(1, ...Object.values(counts));
   return (
     <div className="flex w-full max-w-4xl flex-col items-center gap-8">

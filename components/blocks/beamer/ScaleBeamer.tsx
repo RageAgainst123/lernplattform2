@@ -1,32 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import type { ScaleBlock } from '@/lib/schemas/blocks';
-import { getLiveResults } from '@/lib/db/live-results-action';
+import { useLiveResults } from '@/components/blocks/beamer/useLiveResults';
 
 // Beamer-Darstellung einer Skala-Abstimmung. Zeigt Durchschnitt + Balken pro Wert.
-const POLL_MS = 1000;
-
-type ScaleState = { counts: Record<string, number>; present: number; voters: number };
-
-function useScalePoll(classId: string, blockId: string): ScaleState {
-  const [state, setState] = useState<ScaleState>({ counts: {}, present: 0, voters: 0 });
-  useEffect(() => {
-    let cancelled = false;
-    async function poll() {
-      const res = await getLiveResults(classId, blockId);
-      if (!cancelled && 'counts' in res)
-        setState({ counts: res.counts, present: res.present, voters: res.voters });
-    }
-    void poll();
-    const timer = setInterval(poll, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [classId, blockId]);
-  return state;
-}
+// Polling über /api/live/results (API-Route, kein Server-Action-Overhead).
 
 function average(counts: Record<string, number>): number | null {
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
@@ -36,7 +14,7 @@ function average(counts: Record<string, number>): number | null {
 }
 
 export function ScaleBeamer({ block, classId }: { block: ScaleBlock; classId: string }) {
-  const { counts, present, voters } = useScalePoll(classId, block.id);
+  const { counts, present, voters } = useLiveResults(classId, block.id);
   const steps = Array.from({ length: block.max - block.min + 1 }, (_, i) => block.min + i);
   const max = Math.max(1, ...Object.values(counts));
   const avg = average(counts);

@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { LivePollBlock as LivePollBlockType } from '@/lib/schemas/blocks';
-import { getLiveResults, type AggregateResult } from '@/lib/db/live-results-action';
 import { revealResults, setBlockLocked } from '@/lib/db/live-session-actions';
+import { useLiveResults } from '@/components/blocks/beamer/useLiveResults';
 import { Button } from '@/components/ui/button';
 
 // Beamer-Darstellung einer Live-Abstimmung. Zeigt drei Phasen:
@@ -11,48 +11,10 @@ import { Button } from '@/components/ui/button';
 //      „Abstimmung schließen"-Button stoppt neue Stimmen (Kind: deaktiviert).
 //   2. Geschlossene Abstimmung: Balken noch verborgen. „Ergebnis zeigen"-Button.
 //   3. Ergebnis sichtbar: Balken sichtbar, Abstimmung endgültig geschlossen.
+//
+// Polling über /api/live/results (API-Route, nicht Server Action) → kein
+// Dev-Mode-"Rendering..."-Overlay und kein Server-Action-Wrapper-Overhead.
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
-const POLL_MS = 1000;
-
-type ResultState = Omit<AggregateResult & { error?: never }, 'error'> & {
-  counts: Record<string, number>;
-  revealed: boolean;
-  locked: boolean;
-  present: number;
-  voters: number;
-};
-
-function useLiveResultsPoll(classId: string, blockId: string): ResultState {
-  const [state, setState] = useState<ResultState>({
-    counts: {},
-    revealed: false,
-    locked: false,
-    present: 0,
-    voters: 0,
-  });
-  useEffect(() => {
-    let cancelled = false;
-    async function poll() {
-      const res = await getLiveResults(classId, blockId);
-      if (!cancelled && 'counts' in res) {
-        setState({
-          counts: res.counts,
-          revealed: res.revealed,
-          locked: res.locked,
-          present: res.present,
-          voters: res.voters,
-        });
-      }
-    }
-    void poll();
-    const timer = setInterval(poll, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [classId, blockId]);
-  return state;
-}
 
 function PollBar({
   letter,
@@ -126,7 +88,7 @@ function BeamerControls({
 }
 
 export function LivePollBeamer({ block, classId }: { block: LivePollBlockType; classId: string }) {
-  const { counts, revealed, locked, present, voters } = useLiveResultsPoll(classId, block.id);
+  const { counts, revealed, locked, present, voters } = useLiveResults(classId, block.id);
   const max = Math.max(1, ...Object.values(counts));
 
   return (
@@ -146,6 +108,11 @@ export function LivePollBeamer({ block, classId }: { block: LivePollBlockType; c
           />
         ))}
       </ul>
+      {!revealed && (
+        <p className="text-muted-foreground text-center text-sm">
+          Ergebnisse sind verborgen — Klicke „Ergebnis zeigen“ wenn alle abgestimmt haben.
+        </p>
+      )}
       <div className="text-muted-foreground flex items-center gap-4 text-sm">
         <span>🟢 {present} verbunden</span>
         <span>·</span>

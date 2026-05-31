@@ -2,28 +2,40 @@
 
 import { useEffect, useState } from 'react';
 import type { WordCloudBlock } from '@/lib/schemas/blocks';
-import { getWordCloudResults } from '@/lib/db/live-results-action';
+import type { WordCloudResponse } from '@/app/api/live/wordcloud/route';
 
-// Beamer-Darstellung einer Wortwolke. Pollt free_text-Stimmen und zeigt Wörter
-// als Flexbox-Liste — häufigere Wörter in größerer Schrift (1rem–3rem).
-// Keine externe Lib nötig.
-const POLL_MS = 1500;
+// Beamer-Darstellung einer Wortwolke. Pollt /api/live/wordcloud (API-Route,
+// kein Server-Action-Overhead/Dev-"Rendering..."-Overlay) und zeigt Wörter als
+// Flexbox-Liste — häufigere Wörter in größerer Schrift (1rem–3rem).
+// Pausiert bei verstecktem Tab.
+const POLL_MS = 2000;
 
-type WordEntry = { word: string; count: number };
-
-function useWordCloud(classId: string, blockId: string): WordEntry[] {
-  const [words, setWords] = useState<WordEntry[]>([]);
+function useWordCloud(classId: string, blockId: string): WordCloudResponse {
+  const [words, setWords] = useState<WordCloudResponse>([]);
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     async function poll() {
-      const res = await getWordCloudResults(classId, blockId);
-      if (!cancelled && Array.isArray(res)) setWords(res);
+      if (!document.hidden) {
+        try {
+          const res = await fetch(
+            `/api/live/wordcloud?classId=${encodeURIComponent(classId)}&blockId=${encodeURIComponent(blockId)}`,
+            { cache: 'no-store' }
+          );
+          if (res.ok) {
+            const next = (await res.json()) as WordCloudResponse;
+            if (!cancelled) setWords(next);
+          }
+        } catch {
+          // Netz-/Abbruchfehler ignorieren — der nächste Tick versucht es erneut.
+        }
+      }
+      if (!cancelled) timer = setTimeout(poll, POLL_MS);
     }
     void poll();
-    const timer = setInterval(poll, POLL_MS);
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      if (timer) clearTimeout(timer);
     };
   }, [classId, blockId]);
   return words;

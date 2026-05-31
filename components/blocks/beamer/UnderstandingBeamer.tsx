@@ -1,42 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import type { UnderstandingBlock } from '@/lib/schemas/blocks';
-import { getLiveResults } from '@/lib/db/live-results-action';
+import { useLiveResults } from '@/components/blocks/beamer/useLiveResults';
 
 // Beamer-Darstellung der Verständnis-Ampel. Drei feste Optionen
-// grün/gelb/rot, große Balken mit Prozent + Anzahl. Pollt getLiveResults
-// (option_id 'green'/'yellow'/'red'). Keine Reveal-Mechanik — Signale sind
-// für Lehrer:in immer sichtbar (das ist der Sinn der Ampel).
-const POLL_MS = 1000;
-
-type AmpelState = { counts: Record<string, number>; present: number; voters: number };
+// grün/gelb/rot, große Balken mit Prozent + Anzahl. Polling über
+// /api/live/results — option_id 'green'/'yellow'/'red'. Keine Reveal-Mechanik
+// (Signale sind für Lehrer:in immer sichtbar — das ist der Sinn der Ampel).
 
 const COLORS = [
   { id: 'green', label: 'Verstanden', emoji: '🟢', bar: 'bg-green-500' },
   { id: 'yellow', label: 'Unsicher', emoji: '🟡', bar: 'bg-yellow-400' },
   { id: 'red', label: 'Noch nicht', emoji: '🔴', bar: 'bg-red-500' },
 ] as const;
-
-function useAmpelPoll(classId: string, blockId: string): AmpelState {
-  const [state, setState] = useState<AmpelState>({ counts: {}, present: 0, voters: 0 });
-  useEffect(() => {
-    let cancelled = false;
-    async function poll() {
-      const res = await getLiveResults(classId, blockId);
-      if (!cancelled && 'counts' in res) {
-        setState({ counts: res.counts, present: res.present, voters: res.voters });
-      }
-    }
-    void poll();
-    const timer = setInterval(poll, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [classId, blockId]);
-  return state;
-}
 
 function AmpelRow({
   emoji,
@@ -79,7 +55,7 @@ export function UnderstandingBeamer({
   block: UnderstandingBlock;
   classId: string;
 }) {
-  const { counts, present, voters } = useAmpelPoll(classId, block.id);
+  const { counts, present, voters } = useLiveResults(classId, block.id);
   const total = (counts.green ?? 0) + (counts.yellow ?? 0) + (counts.red ?? 0);
   return (
     <div className="flex w-full max-w-4xl flex-col items-center gap-8">

@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getStudentSession } from '@/lib/auth/student-auth';
-import { getActiveSessionForClass, getActivePollForClass } from '@/lib/db/live-sessions';
+import {
+  getActiveSessionForClass,
+  getActivePollForClass,
+  type LiveInteraction,
+} from '@/lib/db/live-sessions';
 import { touchPresence } from '@/lib/db/live-presence';
 
 // Polling-Endpunkt für die Live-Präsentation. Das Schüler:innen-Gerät fragt hier
@@ -13,17 +17,14 @@ import { touchPresence } from '@/lib/db/live-presence';
 // force-dynamic + no-store: niemals cachen, jede Abfrage frisch.
 export const dynamic = 'force-dynamic';
 
-export type LivePollState = {
-  blockId: string;
-  question: string;
-  options: { id: string; text: string }[];
-  locked: boolean;
-};
+// LiveInteraction + locked — das bekommt das Kind-Gerät. correct-Flags sind
+// niemals drin (werden in getActivePollForClass entfernt).
+export type LiveInteractionState = LiveInteraction & { locked: boolean };
 
 export type LiveState =
   | { active: false }
   | { active: true; interactive: false }
-  | { active: true; interactive: true; poll: LivePollState };
+  | { active: true; interactive: true; interaction: LiveInteractionState };
 
 function noStore(state: LiveState): NextResponse {
   return NextResponse.json(state, { headers: { 'Cache-Control': 'no-store' } });
@@ -42,15 +43,15 @@ export async function GET() {
   // Fire-and-forget: kein await — Fehler hier sollen den Poll-Response nie blockieren.
   void touchPresence(live.id, session.studentCodeId);
 
-  // Nur wenn der aktuelle Block ein live_poll ist, kommt Inhalt (Frage +
-  // Optionen + locked-Status) ans Gerät — reine Folien liefern KEIN Modul-Inhalt.
-  const poll = await getActivePollForClass(live);
-  if (!poll) {
+  // Nur wenn der aktuelle Block interaktiv ist, kommt Inhalt ans Gerät.
+  // Reine Folien liefern KEIN Modul-Inhalt — nur Dimm-Overlay.
+  const interaction = await getActivePollForClass(live);
+  if (!interaction) {
     return noStore({ active: true, interactive: false });
   }
   return noStore({
     active: true,
     interactive: true,
-    poll: { ...poll, locked: live.locked ?? false },
+    interaction: { ...interaction, locked: live.locked },
   });
 }

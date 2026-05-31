@@ -76,17 +76,77 @@ export async function isPresentationLiveForTeacher(classId: string): Promise<boo
   return Date.now() - new Date(data.updated_at as string).getTime() <= HEARTBEAT_DEAD_MS;
 }
 
-export type LivePoll = {
-  blockId: string;
-  question: string;
-  options: { id: string; text: string }[];
-};
+// Diskriminierter Typ: was bekommt das Kind-Gerät bei einer interaktiven Folie?
+// correct-Flags werden hier NIEMALS durchgereicht — nur der Beamer kennt die Lösung.
+export type LiveInteraction =
+  | {
+      kind: 'live_poll';
+      blockId: string;
+      question: string;
+      options: { id: string; text: string }[];
+    }
+  | {
+      kind: 'quiz_poll';
+      blockId: string;
+      question: string;
+      options: { id: string; text: string }[];
+    }
+  | { kind: 'word_cloud'; blockId: string; question: string }
+  | {
+      kind: 'scale';
+      blockId: string;
+      question: string;
+      min: number;
+      max: number;
+      minLabel?: string;
+      maxLabel?: string;
+    }
+  | { kind: 'understanding'; blockId: string; question?: string };
 
-// Liefert den aktuellen Block der aktiven Session NUR, wenn er ein live_poll ist
-// — und dann ausschließlich die für die Abstimmung nötigen Felder. So gelangt
-// niemals Modul-Inhalt (Folientext, Lösungen anderer Blöcke) an die Geräte.
-// Reine Folien geben null zurück → das Gerät zeigt nur das Dimm-Overlay.
-export async function getActivePollForClass(session: ActiveLiveSession): Promise<LivePoll | null> {
+// Bildet einen Modul-Block auf die diskriminierte LiveInteraction ab. Bei
+// quiz_poll wird das correct-Flag ENTFERNT — Sicherheits-Garantie gegen Leaks.
+// Reine Folien (slide, text, …) → null (Aufrufer zeigt nur Dimm-Overlay).
+function blockToInteraction(block: import('@/lib/schemas/blocks').Block): LiveInteraction | null {
+  if (block.type === 'live_poll') {
+    return {
+      kind: 'live_poll',
+      blockId: block.id,
+      question: block.question,
+      options: block.options.map((o) => ({ id: o.id, text: o.text })),
+    };
+  }
+  if (block.type === 'quiz_poll') {
+    return {
+      kind: 'quiz_poll',
+      blockId: block.id,
+      question: block.question,
+      options: block.options.map((o) => ({ id: o.id, text: o.text })),
+    };
+  }
+  if (block.type === 'word_cloud') {
+    return { kind: 'word_cloud', blockId: block.id, question: block.question };
+  }
+  if (block.type === 'scale') {
+    return {
+      kind: 'scale',
+      blockId: block.id,
+      question: block.question,
+      min: block.min,
+      max: block.max,
+      minLabel: block.minLabel,
+      maxLabel: block.maxLabel,
+    };
+  }
+  if (block.type === 'understanding') {
+    return { kind: 'understanding', blockId: block.id, question: block.question };
+  }
+  return null;
+}
+
+// Liefert die Interaktions-Daten des aktuellen Blocks, falls interaktiv.
+export async function getActivePollForClass(
+  session: ActiveLiveSession
+): Promise<LiveInteraction | null> {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('modules')
@@ -94,21 +154,32 @@ export async function getActivePollForClass(session: ActiveLiveSession): Promise
     .eq('id', session.moduleId)
     .maybeSingle();
   const parsed = data ? moduleContentSchema.safeParse(data.content) : null;
-  if (!parsed?.success) {
-    return null;
-  }
+  if (!parsed?.success) return null;
   const block = parsed.data.blocks[session.currentBlockIndex];
-  if (!block || block.type !== 'live_poll') {
-    return null;
-  }
-  return {
-    blockId: block.id,
-    question: block.question,
-    options: block.options.map((o) => ({ id: o.id, text: o.text })),
-  };
+  if (!block) return null;
+  return blockToInteraction(block);
 }
 
-// Stimmen-Aggregat einer Live-Poll-Folie für den Beamer-Ergebnisbalken:
+// Liefert die IDs der richtigen Optionen eines quiz_poll-Blocks — NUR für den
+// Beamer (Lehrer:in). Nie an Schüler:innen-Geräte senden.
+export async function getQuizCorrectOptions(
+  session: ActiveLiveSession,
+  blockId: string
+): Promise<string[]> {
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from('modules')
+    .select('content')
+    .eq('id', session.moduleId)
+    .maybeSingle();
+  const parsed = data ? moduleContentSchema.safeParse(data.content) : null;
+  if (!parsed?.success) return [];
+  const block = parsed.data.blocks.find((b) => b.id === blockId);
+  if (!block || block.type !== 'quiz_poll') return [];
+  return block.options.filter((o) => o.correct).map((o) => o.id);
+}
+
+// Stimmen-Aggregat einer interaktiven Folie für den Beamer-Ergebnisbalken:
 // option_id → Anzahl. Service-Role (Lehrer:in pollt das vom Beamer über eine
 // Action; classId/blockId stammen aus dem aktiven Modul, kein Client-Leak).
 export async function getVoteAggregate(
@@ -120,7 +191,8 @@ export async function getVoteAggregate(
     .from('live_votes')
     .select('option_id')
     .eq('session_id', sessionId)
-    .eq('block_id', blockId);
+    .eq('block_id', blockId)
+    .not('option_id', 'is', null);
   const counts: Record<string, number> = {};
   for (const row of data ?? []) {
     const id = row.option_id as string;

@@ -9,6 +9,10 @@ import { useIdleEnd } from '@/components/blocks/useIdleEnd';
 import { Button } from '@/components/ui/button';
 import { BlockView } from '@/components/blocks/BlockView';
 import { LivePollBeamer } from '@/components/blocks/LivePollBeamer';
+import { QuizPollBeamer } from '@/components/blocks/beamer/QuizPollBeamer';
+import { WordCloudBeamer } from '@/components/blocks/beamer/WordCloudBeamer';
+import { ScaleBeamer } from '@/components/blocks/beamer/ScaleBeamer';
+import { UnderstandingBeamer } from '@/components/blocks/beamer/UnderstandingBeamer';
 import { usePresentationLive } from '@/components/blocks/usePresentationLive';
 import { EndPresentationButton } from '@/components/blocks/EndPresentationButton';
 
@@ -129,6 +133,21 @@ export function PresentationRunner({
   return <Stage block={blocks[index]} index={index} total={total} go={go} classId={classId} />;
 }
 
+// Beamer-Renderer-Dispatcher: gibt jeder interaktiven Folie ihren spezifischen
+// Beamer (mit Polling/Reveal/Lock). Reine Folien fallen zurück auf BlockView.
+// Im Vorschau-Modus (kein classId) gibt es kein Polling → ebenfalls BlockView.
+function BeamerBody({ block, classId }: { block: Block; classId?: string }) {
+  if (classId) {
+    if (block.type === 'live_poll') return <LivePollBeamer block={block} classId={classId} />;
+    if (block.type === 'quiz_poll') return <QuizPollBeamer block={block} classId={classId} />;
+    if (block.type === 'word_cloud') return <WordCloudBeamer block={block} classId={classId} />;
+    if (block.type === 'scale') return <ScaleBeamer block={block} classId={classId} />;
+    if (block.type === 'understanding')
+      return <UnderstandingBeamer block={block} classId={classId} />;
+  }
+  return <BlockView block={block} answer={undefined} checked={false} onAnswer={() => {}} />;
+}
+
 // Bühne: große Folien-Darstellung + Navigationsleiste. Ausgelagert, damit die
 // Runner-Funktion mit dem Live-Hook unter der Zeilen-Grenze bleibt.
 function Stage({
@@ -144,17 +163,11 @@ function Stage({
   go: (delta: number, max: number) => void;
   classId?: string;
 }) {
-  // Live-Poll-Folie + laufende Session → Beamer zeigt wachsende Ergebnisbalken.
-  // Sonst normale Block-Darstellung über BlockView.
-  const body =
-    block.type === 'live_poll' && classId ? (
-      <LivePollBeamer block={block} classId={classId} />
-    ) : (
-      <BlockView block={block} answer={undefined} checked={false} onAnswer={() => {}} />
-    );
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="flex flex-1 items-center justify-center p-8 sm:p-16">{body}</div>
+      <div className="flex flex-1 items-center justify-center p-8 sm:p-16">
+        <BeamerBody block={block} classId={classId} />
+      </div>
       <NavBar
         index={index}
         total={total}

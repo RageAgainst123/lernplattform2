@@ -20,8 +20,18 @@ export type BlockAnswer =
   | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
-// Präsentationsfolie oder unbenotete Live-Abstimmung).
-const NON_GRADED = new Set(['text', 'infobox', 'reflection', 'slide', 'live_poll']);
+// Präsentationsfolie oder unbenotete Live-Interaktion).
+const NON_GRADED = new Set([
+  'text',
+  'infobox',
+  'reflection',
+  'slide',
+  'live_poll',
+  'quiz_poll',
+  'word_cloud',
+  'scale',
+  'understanding',
+]);
 
 export function isGraded(block: Block): boolean {
   return !NON_GRADED.has(block.type);

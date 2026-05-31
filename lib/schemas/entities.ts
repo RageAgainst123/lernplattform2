@@ -46,7 +46,8 @@ export const studentCodeSchema = z.object({
 // --- modules ---------------------------------------------------------------
 // Quiz: Block-für-Block mit Sofort-Feedback (klassischer Drill). Worksheet:
 // alle Aufgaben auf einer Seite, definitiv abgeben, ohne Sofort-Bewertung.
-export const displayModeSchema = z.enum(['quiz', 'worksheet']);
+// Presentation: geführte Folien am Beamer (Stundeneinstieg, slide-Blöcke).
+export const displayModeSchema = z.enum(['quiz', 'worksheet', 'presentation']);
 
 export const moduleInsertSchema = z.object({
   title: z.string().min(1).max(200),

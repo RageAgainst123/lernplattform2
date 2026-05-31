@@ -75,6 +75,16 @@ export const reflectionBlockSchema = z.object({
   placeholder: z.string().optional(),
 });
 
+// Präsentationsfolie für den geführten Stundeneinstieg (display_mode
+// 'presentation'). Wird groß am Beamer gezeigt, nicht auto-bewertet.
+export const slideBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('slide'),
+  title: z.string(),
+  body: z.string().optional(),
+  imageUrl: z.string().url().optional(),
+});
+
 export const blockSchema = z.discriminatedUnion('type', [
   textBlockSchema,
   infoboxBlockSchema,
@@ -83,6 +93,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   fillBlankBlockSchema,
   matchBlockSchema,
   reflectionBlockSchema,
+  slideBlockSchema,
 ]);
 
 export const moduleContentSchema = z.object({
@@ -99,3 +110,4 @@ export type FillBlankBlock = z.infer<typeof fillBlankBlockSchema>;
 export type MatchBlock = z.infer<typeof matchBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;
+export type SlideBlock = z.infer<typeof slideBlockSchema>;

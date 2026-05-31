@@ -26,15 +26,16 @@ Prozent-Note), drei sind **nicht bewertbar** (reiner Inhalt bzw. freie Antwort).
 
 ## 2. Block-Typen auf einen Blick
 
-| `type`            | Zweck                       | Auto-bewertbar? | Wo die Lösung steht                          |
-| ----------------- | --------------------------- | --------------- | -------------------------------------------- |
-| `text`            | Erklärtext                  | ❌ nein         | — (kein Eingabefeld)                         |
-| `infobox`         | „Merke"-Kasten              | ❌ nein         | — (kein Eingabefeld)                         |
-| `multiple_choice` | Mehrfachauswahl             | ✅ ja           | `options[].correct: true`                    |
-| `true_false`      | Wahr/Falsch                 | ✅ ja           | `answer: true \| false`                      |
-| `fill_blank`      | Lückentext                  | ✅ ja           | `solutions[]` (Reihenfolge der `{0}`,`{1}`…) |
-| `match`           | Zuordnung Begriff→Kategorie | ✅ ja           | `pairs[].category`                           |
-| `reflection`      | Freie offene Antwort        | ❌ nein         | — (manuell von Lehrer:in beurteilt)          |
+| `type`            | Zweck                       | Auto-bewertbar? | Wo die Lösung steht                              |
+| ----------------- | --------------------------- | --------------- | ------------------------------------------------ |
+| `text`            | Erklärtext                  | ❌ nein         | — (kein Eingabefeld)                             |
+| `infobox`         | „Merke"-Kasten              | ❌ nein         | — (kein Eingabefeld)                             |
+| `multiple_choice` | Mehrfachauswahl             | ✅ ja           | `options[].correct: true`                        |
+| `true_false`      | Wahr/Falsch                 | ✅ ja           | `answer: true \| false`                          |
+| `fill_blank`      | Lückentext                  | ✅ ja           | `solutions[]` (Reihenfolge der `{0}`,`{1}`…)     |
+| `match`           | Zuordnung Begriff→Kategorie | ✅ ja           | `pairs[].category`                               |
+| `reflection`      | Freie offene Antwort        | ❌ nein         | — (manuell von Lehrer:in beurteilt)              |
+| `slide`           | Präsentationsfolie (Beamer) | ❌ nein         | — (reine Anzeige, `display_mode:'presentation'`) |
 
 > **Merksatz für die Bewertung:** `max_score` = **Anzahl der auto-bewertbaren
 > Blöcke** (jeder zählt 1 Punkt). `score` = Summe der korrekt gelösten. Hat ein

@@ -97,21 +97,27 @@ das Standard-Stundenbild bereits:
 → Wenn ein neues Thema unsicher ist: EVA Block für Block als Vorlage nehmen und
 denselben Rhythmus nachbauen.
 
-## 6. Ausblick: geführte (Live-)Präsentation
+## 6. Geführte Präsentation (Beamer-Stundeneinstieg)
 
-Eine **geführte Präsentation** (Beamer-Einstieg, Schüler:innen-Geräte sehen live
-die aktuelle Folie, optional Live-Poll) ist als **gestufte Roadmap** geplant —
-**noch nicht gebaut**. Architektur-konformer Weg (Polling statt Realtime, kein
-Phasen-Umbau, kein zweiter Auth-Pfad):
+Architektur-konformer Weg (Polling statt Realtime, kein Phasen-Umbau, kein
+zweiter Auth-Pfad), gestuft:
 
-- **Stufe 1:** statische geführte Präsentation (`display_mode='presentation'` +
-  `slide`-Block) — eigenes Tempo, kein Sync.
-- **Stufe 2:** Slide-Sync via Polling (`live_sessions` + `/api/live`) — MVP.
-- **Stufe 3:** Live-Poll (`live_poll`-Block + `live_votes`) — erst nach Bedarf.
+- **Stufe 1 — GEBAUT:** statische geführte Präsentation. `display_mode='presentation'`
+  - `slide`-Block; Lehrer:in blättert am Beamer durch
+    (`/lehrer/klassen/[id]/praesentation/[moduleId]`, Buttons + Tastatur ←/→).
+    Schüler:innen-Geräte bleiben dabei passiv (Default: „Schau nach vorne"). Kein
+    Sync, kein Backend. Referenz-Seed: `supabase/seeds/0003_praesentation_eva.sql`.
+- **Stufe 2 — geplant:** Slide-Sync via Polling (`live_sessions` + `/api/live`),
+  optionaler Geräte-Modus „Folie spiegeln". MVP für echtes Live.
+- **Stufe 3 — geplant:** Live-Poll (`live_poll`-Block + `live_votes`) — erst nach
+  echtem Unterrichts-Feedback.
 
-Details + Begründung (warum Polling, warum kein Realtime/Schema-Umbau): Plan-Datei
-`~/.claude/plans/...` bzw. die kommende `docs/adr/0013-…`-Entscheidung, sobald
-Stufe 1 gebaut wird. **Bis dahin gilt: ein Thema = Modul (+ optional PDF).**
+So baust du eine Präsentation: ein Modul mit `display_mode='presentation'` und
+`slide`-Blöcken anlegen (Folientitel + optional Body/Bild), wie ein normales Modul
+importieren/zuweisen, dann auf der Klassenseite bei dem Modul „Präsentieren".
+
+Architektur-Begründung für die späteren Live-Stufen (warum Polling statt Realtime,
+warum kein Phasen-Umbau): festgehalten in der Plan-Datei zur Präsentations-Roadmap.
 
 ## 7. Querverweise
 

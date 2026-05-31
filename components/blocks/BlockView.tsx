@@ -9,6 +9,7 @@ import { TrueFalseBlock } from '@/components/blocks/TrueFalseBlock';
 import { FillBlankBlock } from '@/components/blocks/FillBlankBlock';
 import { MatchBlock } from '@/components/blocks/MatchBlock';
 import { ReflectionBlock } from '@/components/blocks/ReflectionBlock';
+import { SlideBlock } from '@/components/blocks/SlideBlock';
 
 type CommonProps = {
   answer: BlockAnswer | undefined;
@@ -64,6 +65,8 @@ export function BlockView({ block, answer, checked, readOnly = false, onAnswer }
       return <TextBlock block={block} />;
     case 'infobox':
       return <InfoboxBlock block={block} />;
+    case 'slide':
+      return <SlideBlock block={block} />;
     case 'reflection':
       return (
         <ReflectionBlock

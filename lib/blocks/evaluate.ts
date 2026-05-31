@@ -19,8 +19,9 @@ export type BlockAnswer =
   | MatchAnswer
   | string;
 
-// Block-Typen ohne automatische Bewertung (reiner Inhalt bzw. freie Antwort).
-const NON_GRADED = new Set(['text', 'infobox', 'reflection']);
+// Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort oder
+// Präsentationsfolie).
+const NON_GRADED = new Set(['text', 'infobox', 'reflection', 'slide']);
 
 export function isGraded(block: Block): boolean {
   return !NON_GRADED.has(block.type);

@@ -7,11 +7,16 @@ import type { ActivityKind, Module } from '@/lib/schemas/entities';
 import { ACTIVITY_INFO } from '@/lib/activities';
 import { setModuleTopic, setTopicModuleOrder } from '@/lib/db/topic-actions';
 import { Button } from '@/components/ui/button';
-import type { ModuleOption } from '@/lib/db/modules';
+import type { ModuleOptionWithSource } from '@/lib/db/modules';
 
 // Bausteine-Sektion im Themen-Editor (Phase G). Zeigt pro Aktivitäts-Typ
 // (Präsentation, Lernmodul, Quiz, Abschlusstest) eine sortierbare Liste der
-// zugeordneten Module + ein „+ Hinzufügen"-Dropdown mit Modulen ohne Thema.
+// zugeordneten Module + ein „+ Hinzufügen"-Dropdown.
+//
+// Das Dropdown enthält auch Module die schon einem ANDEREN Thema zugeordnet
+// sind — beim Hinzufügen werden sie umgehängt. Visueller Hinweis im Label:
+// „… (aktuell in Thema X)". Wichtig nach der Migration 0013, wo alle Module
+// automatisch einem Bestand-Thema zugeordnet wurden.
 //
 // Sortierung via ↑↓-Buttons statt DnD — kommt mit max-lines-Limit hin und
 // reicht für 5-10 Bausteine pro Thema. Persistenz nach jedem Move via
@@ -20,7 +25,7 @@ import type { ModuleOption } from '@/lib/db/modules';
 type Props = {
   topicId: string;
   modulesByKind: Record<ActivityKind, Module[]>;
-  availableByKind: Record<ActivityKind, ModuleOption[]>;
+  availableByKind: Record<ActivityKind, ModuleOptionWithSource[]>;
 };
 
 const KIND_ORDER: ActivityKind[] = ['praesentation', 'lernmodul', 'quiz', 'abschlusstest'];
@@ -57,7 +62,7 @@ function KindSection({
   topicId: string;
   kind: ActivityKind;
   modules: Module[];
-  available: ModuleOption[];
+  available: ModuleOptionWithSource[];
 }) {
   const info = ACTIVITY_INFO[kind];
   const router = useRouter();
@@ -162,6 +167,7 @@ function KindSection({
             {available.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.title}
+                {o.currentTopicLabel ? ` (aktuell in: ${o.currentTopicLabel})` : ''}
               </option>
             ))}
           </select>

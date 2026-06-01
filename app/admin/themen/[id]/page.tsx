@@ -1,13 +1,13 @@
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { getTopicByIdForAdmin } from '@/lib/db/topics';
-import { getModulesForTopic, getModulesWithoutTopic } from '@/lib/db/modules';
+import { getAvailableModulesForTopic, getModulesForTopic } from '@/lib/db/modules';
 import type { ActivityKind, Module } from '@/lib/schemas/entities';
 import { ACTIVITY_KINDS } from '@/lib/activities';
 import { TopicEditor } from '@/components/admin/TopicEditor';
 import { TopicBausteine } from '@/components/admin/TopicBausteine';
 import type { TopicFormValue } from '@/components/admin/TopicForm';
-import type { ModuleOption } from '@/lib/db/modules';
+import type { ModuleOptionWithSource } from '@/lib/db/modules';
 
 // Themen-Detailseite (Phase G). Oben Metadaten-Editor (TopicEditor mit Save-
 // Header), darunter Bausteine-Zuordnung pro Aktivitäts-Typ.
@@ -22,13 +22,16 @@ export default async function EditTopicPage({ params }: { params: Promise<{ id: 
   const allTopicModules = await getModulesForTopic(id);
   const modulesByKind = groupByKind(allTopicModules);
 
-  // Verfügbare (unzugeordnete) Module pro Aktivität für das Add-Dropdown
+  // Verfügbare Module pro Aktivität für das Add-Dropdown — inklusive Module
+  // die schon einem ANDEREN Thema zugeordnet sind (werden beim Hinzufügen
+  // umgehängt, siehe setModuleTopic). Wichtig für Geos Workflow nach der
+  // Migration 0013, wo alle Module einem Bestand-Thema zugeordnet wurden.
   const availableEntries = await Promise.all(
-    ACTIVITY_KINDS.map(async (k) => [k, await getModulesWithoutTopic(k)] as const)
+    ACTIVITY_KINDS.map(async (k) => [k, await getAvailableModulesForTopic(id, k)] as const)
   );
   const availableByKind = Object.fromEntries(availableEntries) as Record<
     ActivityKind,
-    ModuleOption[]
+    ModuleOptionWithSource[]
   >;
 
   const formValue: TopicFormValue = {

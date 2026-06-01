@@ -144,6 +144,44 @@ export async function getModulesWithoutTopic(kind?: ActivityKind): Promise<Modul
   return (data as ModuleOption[]) ?? [];
 }
 
+// Phase G2-Fix: erweitertes Add-Dropdown im Themen-Editor. Zeigt zusätzlich
+// Module die schon einem ANDEREN Thema zugeordnet sind — beim Hinzufügen
+// werden sie umgehängt (setModuleTopic überschreibt topic_id). Wichtig
+// für Geos Workflow nach der Migration: alle EVA-Module sind automatisch
+// einem Bestand-Thema „eva" zugeordnet, müssen aber ins neue „EVA-Prinzip-
+// neu" umgehängt werden können.
+export type ModuleOptionWithSource = {
+  id: string;
+  title: string;
+  currentTopicLabel: string | null; // null = noch keinem Thema zugeordnet
+};
+
+export async function getAvailableModulesForTopic(
+  currentTopicId: string,
+  kind: ActivityKind
+): Promise<ModuleOptionWithSource[]> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from('modules')
+    .select('id, title, topic_id, topics(label)')
+    .eq('activity_kind', kind)
+    .order('title', { ascending: true });
+  if (error) throw new Error(`Modul-Liste konnte nicht geladen werden: ${error.message}`);
+  type Row = {
+    id: string;
+    title: string;
+    topic_id: string | null;
+    topics: { label: string } | null;
+  };
+  return ((data ?? []) as unknown as Row[])
+    .filter((r) => r.topic_id !== currentTopicId)
+    .map((r) => ({
+      id: r.id,
+      title: r.title,
+      currentTopicLabel: r.topics?.label ?? null,
+    }));
+}
+
 export type PublishedModuleOption = {
   id: string;
   title: string;

@@ -1,20 +1,24 @@
 import { notFound, redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { getModuleByIdForAdmin } from '@/lib/db/modules';
-import { ACTIVITY_INFO } from '@/lib/activities';
 import { ModuleEditor, type ModuleMetadata } from '@/components/admin/ModuleEditor';
 
-// Lernmodul bearbeiten (Phase E). Schutz: wenn jemand eine fremde-Aktivität-
-// ID auf dem Lernmodul-Pfad öffnet, redirect zur richtigen Route — macht
-// die URLs idiotensicher (z.B. bei vertauschten Bookmarks oder shared Links).
+// Quiz bearbeiten. Wenn jemand eine fremde ID auf dem Quiz-Pfad öffnet,
+// redirect zur korrekten Route je nach activity_kind.
 
-export default async function EditLernmodulPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditQuizPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
   const mod = await getModuleByIdForAdmin(id);
   if (!mod) notFound();
-  if (mod.activityKind !== 'lernmodul') {
-    redirect(`/admin/${ACTIVITY_INFO[mod.activityKind].urlSegment}/${id}`);
+  if (mod.activityKind !== 'quiz') {
+    const seg =
+      mod.activityKind === 'lernmodul'
+        ? 'lernmodule'
+        : mod.activityKind === 'praesentation'
+          ? 'praesentationen'
+          : 'abschlusstests';
+    redirect(`/admin/${seg}/${id}`);
   }
   const meta: ModuleMetadata = {
     title: mod.title,

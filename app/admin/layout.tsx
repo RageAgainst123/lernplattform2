@@ -25,6 +25,16 @@ const NAV = [
     emoji: ACTIVITY_INFO.lernmodul.iconEmoji,
   },
   {
+    href: '/admin/quizze',
+    label: ACTIVITY_INFO.quiz.plural,
+    emoji: ACTIVITY_INFO.quiz.iconEmoji,
+  },
+  {
+    href: '/admin/abschlusstests',
+    label: ACTIVITY_INFO.abschlusstest.plural,
+    emoji: ACTIVITY_INFO.abschlusstest.iconEmoji,
+  },
+  {
     href: '/admin/praesentationen',
     label: ACTIVITY_INFO.praesentation.plural,
     emoji: ACTIVITY_INFO.praesentation.iconEmoji,

@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { getModuleByIdForAdmin } from '@/lib/db/modules';
+import { ACTIVITY_INFO } from '@/lib/activities';
 import { ModuleEditor, type ModuleMetadata } from '@/components/admin/ModuleEditor';
 
 // Präsentation bearbeiten (Phase E). Schutz wie bei Lernmodulen: vertauschte
@@ -16,7 +17,7 @@ export default async function EditPraesentationPage({
   const mod = await getModuleByIdForAdmin(id);
   if (!mod) notFound();
   if (mod.activityKind !== 'praesentation') {
-    redirect(`/admin/lernmodule/${id}`);
+    redirect(`/admin/${ACTIVITY_INFO[mod.activityKind].urlSegment}/${id}`);
   }
   const meta: ModuleMetadata = {
     title: mod.title,

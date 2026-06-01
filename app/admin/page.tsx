@@ -54,12 +54,15 @@ function ActivityCard(props: ActivityCardProps) {
 
 export default async function AdminDashboard() {
   await requireAdmin();
-  const [lernmodule, praesentationen, materials, topics] = await Promise.all([
-    getModulesForAdminByKind('lernmodul'),
-    getModulesForAdminByKind('praesentation'),
-    getMaterialsForAdmin(),
-    getTopicsForAdmin(),
-  ]);
+  const [lernmodule, praesentationen, quizze, abschlusstests, materials, topics] =
+    await Promise.all([
+      getModulesForAdminByKind('lernmodul'),
+      getModulesForAdminByKind('praesentation'),
+      getModulesForAdminByKind('quiz'),
+      getModulesForAdminByKind('abschlusstest'),
+      getMaterialsForAdmin(),
+      getTopicsForAdmin(),
+    ]);
   const publishedTopics = topics.filter((t) => t.isPublished).length;
 
   return (
@@ -102,7 +105,7 @@ export default async function AdminDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <ActivityCard
           emoji={MATERIAL_AS_ACTIVITY.iconEmoji}
           label={MATERIAL_AS_ACTIVITY.label}
@@ -124,6 +127,28 @@ export default async function AdminDashboard() {
           listHref="/admin/lernmodule"
           newHref="/admin/lernmodule/neu"
           newLabel="+ Neues Lernmodul"
+        />
+        <ActivityCard
+          emoji={ACTIVITY_INFO.quiz.iconEmoji}
+          label={ACTIVITY_INFO.quiz.label}
+          plural={ACTIVITY_INFO.quiz.plural}
+          description={ACTIVITY_INFO.quiz.description}
+          count={quizze.length}
+          publishedCount={quizze.filter((m) => m.isPublished).length}
+          listHref="/admin/quizze"
+          newHref="/admin/quizze/neu"
+          newLabel="+ Neues Quiz"
+        />
+        <ActivityCard
+          emoji={ACTIVITY_INFO.abschlusstest.iconEmoji}
+          label={ACTIVITY_INFO.abschlusstest.label}
+          plural={ACTIVITY_INFO.abschlusstest.plural}
+          description={ACTIVITY_INFO.abschlusstest.description}
+          count={abschlusstests.length}
+          publishedCount={abschlusstests.filter((m) => m.isPublished).length}
+          listHref="/admin/abschlusstests"
+          newHref="/admin/abschlusstests/neu"
+          newLabel="+ Neuer Abschlusstest"
         />
         <ActivityCard
           emoji={ACTIVITY_INFO.praesentation.iconEmoji}

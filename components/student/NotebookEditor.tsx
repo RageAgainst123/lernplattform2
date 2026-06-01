@@ -1,14 +1,17 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
+import Image from '@tiptap/extension-image';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useDebouncedCallback } from '@/components/blocks/useDebouncedCallback';
 import { updatePortfolioEntry, deletePortfolioEntry } from '@/lib/db/portfolio-actions';
 import { NotebookToolbar } from './NotebookToolbar';
+import { ImagePickerDialog } from './ImagePickerDialog';
+import type { PexelsImage } from '@/lib/pexels';
 
 // Tiptap-basierter Heft-Editor (Phase H1). Minimale Toolbar: Fett, Kursiv,
 // Liste, Highlight, Undo/Redo. Auto-Save via useDebouncedCallback (1500ms
@@ -44,7 +47,7 @@ function useNotebookEditor(entryId: string, initialContent: Record<string, unkno
   );
 
   const editor = useEditor({
-    extensions: [StarterKit, Highlight],
+    extensions: [StarterKit, Highlight, Image.configure({ inline: false, allowBase64: false })],
     content: hasContent(initialContent) ? initialContent : '',
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
@@ -61,10 +64,26 @@ function useNotebookEditor(entryId: string, initialContent: Record<string, unkno
   return { editor, status, saveTitle };
 }
 
+// Pexels-Bild in den Editor einsetzen. Pexels-Photographer-Info im title-
+// Attribut (Hover-Tooltip), damit Attribution rekonstruierbar bleibt.
+function insertImage(editor: Editor | null, image: PexelsImage) {
+  if (!editor) return;
+  editor
+    .chain()
+    .focus()
+    .setImage({
+      src: image.full,
+      alt: image.alt || `Foto von ${image.photographer} (Pexels)`,
+      title: `© ${image.photographer} via Pexels`,
+    })
+    .run();
+}
+
 export function NotebookEditor({ entryId, initialTitle, initialContent }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [pending, startTransition] = useTransition();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const { editor, status, saveTitle } = useNotebookEditor(entryId, initialContent);
 
   function handleTitleChange(v: string) {
@@ -83,12 +102,22 @@ export function NotebookEditor({ entryId, initialTitle, initialContent }: Props)
     });
   }
 
+  function handlePickImage(image: PexelsImage) {
+    insertImage(editor, image);
+    setPickerOpen(false);
+  }
+
   return (
     <div className="space-y-3">
       <TitleRow title={title} onChange={handleTitleChange} status={status} />
-      <NotebookToolbar editor={editor} />
+      <NotebookToolbar editor={editor} onPickImage={() => setPickerOpen(true)} />
       <EditorContent editor={editor} />
       <ActionBar pending={pending} onBack={() => router.push('/s/heft')} onDelete={handleDelete} />
+      <ImagePickerDialog
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={handlePickImage}
+      />
     </div>
   );
 }

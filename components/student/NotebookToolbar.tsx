@@ -68,7 +68,16 @@ function historyToolbarSpecs(editor: Editor): ToolbarSpec[] {
   ];
 }
 
-export function NotebookToolbar({ editor }: { editor: Editor | null }) {
+// onPickImage öffnet den Pexels-Picker. Wenn nicht gesetzt, wird der
+// Bild-Button ausgeblendet (z.B. wenn der Editor ohne Bild-Support
+// gebraucht wird).
+export function NotebookToolbar({
+  editor,
+  onPickImage,
+}: {
+  editor: Editor | null;
+  onPickImage?: () => void;
+}) {
   if (!editor) return null;
   const format = formatToolbarSpecs(editor);
   const history = historyToolbarSpecs(editor);
@@ -79,6 +88,14 @@ export function NotebookToolbar({ editor }: { editor: Editor | null }) {
           {s.icon}
         </ToolbarButton>
       ))}
+      {onPickImage && (
+        <>
+          <div className="bg-border mx-1 h-5 w-px" />
+          <ToolbarButton active={false} onClick={onPickImage} label="Bild einfügen">
+            📷
+          </ToolbarButton>
+        </>
+      )}
       <div className="bg-border mx-1 h-5 w-px" />
       {history.map((s) => (
         <ToolbarButton key={s.label} {...s}>

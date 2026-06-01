@@ -4,8 +4,8 @@ import { useState } from 'react';
 import type { Editor } from '@tiptap/react';
 
 // Wiederverwendbare Toolbar-Bausteine: Button, Divider, ColorPicker,
-// LinkButton. In eigene Datei extrahiert damit NotebookToolbar unter
-// max-lines bleibt.
+// LinkButton, Select. In eigene Datei extrahiert damit NotebookToolbar
+// unter max-lines bleibt.
 
 export type ToolbarSpec = {
   active: boolean;
@@ -35,7 +35,7 @@ export function ToolbarButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`h-8 min-w-8 rounded px-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`flex h-9 min-w-9 items-center justify-center rounded px-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
         active ? 'bg-primary text-primary-foreground' : 'hover:bg-background'
       }`}
     >
@@ -57,7 +57,39 @@ export function ToolbarGroup({ specs }: { specs: ToolbarSpec[] }) {
 }
 
 export function Divider() {
-  return <div className="bg-border mx-1 h-5 w-px" />;
+  return <div className="bg-border mx-1 h-6 w-px" />;
+}
+
+// Mini-Select für FontFamily / FontSize. Klein, kompakt, scrollbar im
+// Native-Dropdown.
+export function ToolbarSelect({
+  value,
+  options,
+  onChange,
+  label,
+  width = 'w-28',
+}: {
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+  label: string;
+  width?: string;
+}) {
+  return (
+    <select
+      aria-label={label}
+      title={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`border-input bg-background hover:bg-muted h-9 ${width} rounded border px-2 text-xs`}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 // Mini-Farbpicker: Knopf öffnet Popover mit Farbpalette. Klick auf eine
@@ -80,7 +112,7 @@ export function ColorPicker({
         {icon}
       </ToolbarButton>
       {open && (
-        <div className="bg-background absolute top-9 left-0 z-20 flex gap-1 rounded-md border p-1 shadow-md">
+        <div className="bg-background absolute top-10 left-0 z-20 flex gap-1 rounded-md border p-1.5 shadow-md">
           {colors.map((c) => (
             <button
               key={c.label}
@@ -113,7 +145,6 @@ export function LinkButton({ editor }: { editor: Editor }) {
     }
     const url = window.prompt('Link-URL (z.B. https://wikipedia.org):');
     if (!url) return;
-    // Sicherheit: nur https/http erlauben, kein javascript:
     const safe = /^https?:\/\//i.test(url) ? url : `https://${url}`;
     editor.chain().focus().setLink({ href: safe }).run();
   }
@@ -127,3 +158,6 @@ export function LinkButton({ editor }: { editor: Editor }) {
     </ToolbarButton>
   );
 }
+
+// TableButton: in eigene Datei TableButton.tsx ausgelagert.
+export { TableButton } from './TableButton';

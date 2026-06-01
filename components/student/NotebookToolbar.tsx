@@ -5,134 +5,32 @@ import {
   ColorPicker,
   Divider,
   LinkButton,
+  TableButton,
   ToolbarButton,
   ToolbarGroup,
-  type ToolbarSpec,
+  ToolbarSelect,
 } from './NotebookToolbarParts';
+import {
+  FONT_FAMILIES,
+  FONT_SIZES,
+  HIGHLIGHT_COLORS,
+  TEXT_COLORS,
+  alignSpecs,
+  blockSpecs,
+  currentFontFamily,
+  currentFontSize,
+  formatSpecs,
+  historySpecs,
+} from './notebook-toolbar-config';
 
-// Erweiterte Toolbar für den Tiptap-Editor (Phase H+ Sub-B/C). Gruppen:
-//   - Format: Fett, Kursiv, Unterstrichen, Durchgestrichen
-//   - Block: Überschrift, Liste, Nummerierung
+// Word-Ribbon-Toolbar (Phase H+ Vollausbau). Gruppen:
+//   - Schrift: FontFamily-Select, FontSize-Select
+//   - Format: B, I, U, S
+//   - Block: H1/H2, Aufzählung, Nummerierung
 //   - Color: Textfarbe + Markierungsfarbe (Pop-Picker)
 //   - Align: Links / Mitte / Rechts
-//   - Link + Bild
+//   - Insert: Link, Bild, Tabelle
 //   - History: Undo / Redo
-//
-// Bilder können nach Einfügen via tiptap-extension-resize-image per Eck-
-// Handles vergrößert/verkleinert werden — Tiptap rendert die Resize-Handles
-// automatisch, kein Toolbar-Button nötig.
-
-const TEXT_COLORS = [
-  { value: '', label: 'Standard' },
-  { value: '#dc2626', label: 'Rot' },
-  { value: '#ea580c', label: 'Orange' },
-  { value: '#ca8a04', label: 'Gelb' },
-  { value: '#16a34a', label: 'Grün' },
-  { value: '#2563eb', label: 'Blau' },
-  { value: '#9333ea', label: 'Lila' },
-];
-
-const HIGHLIGHT_COLORS = [
-  { value: '', label: 'Aus' },
-  { value: '#fef08a', label: 'Gelb' },
-  { value: '#bbf7d0', label: 'Grün' },
-  { value: '#bfdbfe', label: 'Blau' },
-  { value: '#fbcfe8', label: 'Pink' },
-];
-
-function formatSpecs(editor: Editor): ToolbarSpec[] {
-  return [
-    {
-      active: editor.isActive('bold'),
-      label: 'Fett',
-      onClick: () => editor.chain().focus().toggleBold().run(),
-      icon: <strong>B</strong>,
-    },
-    {
-      active: editor.isActive('italic'),
-      label: 'Kursiv',
-      onClick: () => editor.chain().focus().toggleItalic().run(),
-      icon: <em>I</em>,
-    },
-    {
-      active: editor.isActive('underline'),
-      label: 'Unterstrichen',
-      onClick: () => editor.chain().focus().toggleUnderline().run(),
-      icon: <span className="underline">U</span>,
-    },
-    {
-      active: editor.isActive('strike'),
-      label: 'Durchgestrichen',
-      onClick: () => editor.chain().focus().toggleStrike().run(),
-      icon: <span className="line-through">S</span>,
-    },
-  ];
-}
-
-function blockSpecs(editor: Editor): ToolbarSpec[] {
-  return [
-    {
-      active: editor.isActive('heading', { level: 2 }),
-      label: 'Überschrift',
-      onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-      icon: 'H',
-    },
-    {
-      active: editor.isActive('bulletList'),
-      label: 'Aufzählung',
-      onClick: () => editor.chain().focus().toggleBulletList().run(),
-      icon: '•',
-    },
-    {
-      active: editor.isActive('orderedList'),
-      label: 'Nummerierte Liste',
-      onClick: () => editor.chain().focus().toggleOrderedList().run(),
-      icon: '1.',
-    },
-  ];
-}
-
-function alignSpecs(editor: Editor): ToolbarSpec[] {
-  return [
-    {
-      active: editor.isActive({ textAlign: 'left' }),
-      label: 'Links',
-      onClick: () => editor.chain().focus().setTextAlign('left').run(),
-      icon: '⬅',
-    },
-    {
-      active: editor.isActive({ textAlign: 'center' }),
-      label: 'Mitte',
-      onClick: () => editor.chain().focus().setTextAlign('center').run(),
-      icon: '↔',
-    },
-    {
-      active: editor.isActive({ textAlign: 'right' }),
-      label: 'Rechts',
-      onClick: () => editor.chain().focus().setTextAlign('right').run(),
-      icon: '➡',
-    },
-  ];
-}
-
-function historySpecs(editor: Editor): ToolbarSpec[] {
-  return [
-    {
-      active: false,
-      label: 'Rückgängig',
-      onClick: () => editor.chain().focus().undo().run(),
-      disabled: !editor.can().undo(),
-      icon: '↶',
-    },
-    {
-      active: false,
-      label: 'Wiederholen',
-      onClick: () => editor.chain().focus().redo().run(),
-      disabled: !editor.can().redo(),
-      icon: '↷',
-    },
-  ];
-}
 
 export function NotebookToolbar({
   editor,
@@ -143,11 +41,54 @@ export function NotebookToolbar({
 }) {
   if (!editor) return null;
   return (
-    <div className="bg-muted/40 flex flex-wrap items-center gap-1 rounded-md border p-1">
+    <div className="bg-muted/40 sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-md border p-1.5 shadow-sm">
+      <FontControls editor={editor} />
+      <Divider />
       <ToolbarGroup specs={formatSpecs(editor)} />
       <Divider />
       <ToolbarGroup specs={blockSpecs(editor)} />
       <Divider />
+      <ColorControls editor={editor} />
+      <Divider />
+      <ToolbarGroup specs={alignSpecs(editor)} />
+      <Divider />
+      <InsertControls editor={editor} onPickImage={onPickImage} />
+      <Divider />
+      <ToolbarGroup specs={historySpecs(editor)} />
+    </div>
+  );
+}
+
+function FontControls({ editor }: { editor: Editor }) {
+  return (
+    <>
+      <ToolbarSelect
+        value={currentFontFamily(editor)}
+        options={FONT_FAMILIES}
+        label="Schriftart"
+        width="w-32"
+        onChange={(v) => {
+          if (v) editor.chain().focus().setFontFamily(v).run();
+          else editor.chain().focus().unsetFontFamily().run();
+        }}
+      />
+      <ToolbarSelect
+        value={currentFontSize(editor)}
+        options={FONT_SIZES}
+        label="Schriftgröße"
+        width="w-20"
+        onChange={(v) => {
+          if (v) editor.chain().focus().setFontSize(v).run();
+          else editor.chain().focus().unsetFontSize().run();
+        }}
+      />
+    </>
+  );
+}
+
+function ColorControls({ editor }: { editor: Editor }) {
+  return (
+    <>
       <ColorPicker
         colors={TEXT_COLORS}
         label="Textfarbe"
@@ -166,17 +107,20 @@ export function NotebookToolbar({
           else editor.chain().focus().unsetHighlight().run();
         }}
       />
-      <Divider />
-      <ToolbarGroup specs={alignSpecs(editor)} />
-      <Divider />
+    </>
+  );
+}
+
+function InsertControls({ editor, onPickImage }: { editor: Editor; onPickImage?: () => void }) {
+  return (
+    <>
       <LinkButton editor={editor} />
       {onPickImage && (
         <ToolbarButton active={false} onClick={onPickImage} label="Bild einfügen">
           📷
         </ToolbarButton>
       )}
-      <Divider />
-      <ToolbarGroup specs={historySpecs(editor)} />
-    </div>
+      <TableButton editor={editor} />
+    </>
   );
 }

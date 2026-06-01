@@ -1,14 +1,6 @@
 'use client';
 
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Highlight from '@tiptap/extension-highlight';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
-import { Color } from '@tiptap/extension-color';
-import Link from '@tiptap/extension-link';
-import ResizeImage from 'tiptap-extension-resize-image';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -16,6 +8,7 @@ import { useDebouncedCallback } from '@/components/blocks/useDebouncedCallback';
 import { updatePortfolioEntry, deletePortfolioEntry } from '@/lib/db/portfolio-actions';
 import { NotebookToolbar } from './NotebookToolbar';
 import { ImagePickerDialog } from './ImagePickerDialog';
+import { notebookExtensions } from './editor-extensions/notebook-extensions';
 import type { PexelsImage } from '@/lib/pexels';
 
 // Tiptap-basierter Heft-Editor (Phase H1). Minimale Toolbar: Fett, Kursiv,
@@ -52,16 +45,7 @@ function useNotebookEditor(entryId: string, initialContent: Record<string, unkno
   );
 
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      Highlight.configure({ multicolor: true }),
-      TextStyle,
-      Color,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      Link.configure({ openOnClick: false, autolink: true }),
-      ResizeImage,
-    ],
+    extensions: notebookExtensions,
     content: hasContent(initialContent) ? initialContent : '',
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
@@ -70,7 +54,7 @@ function useNotebookEditor(entryId: string, initialContent: Record<string, unkno
     editorProps: {
       attributes: {
         class:
-          'prose prose-sm max-w-none focus:outline-none min-h-[300px] rounded-md border border-input bg-background p-3',
+          'prose prose-sm max-w-none focus:outline-none min-h-[400px] rounded-md border border-input bg-background p-4',
       },
     },
   });

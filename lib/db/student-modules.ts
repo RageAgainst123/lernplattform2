@@ -2,7 +2,7 @@ import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { moduleContentSchema, type ModuleContent } from '@/lib/schemas/blocks';
 import type { BlockAnswer } from '@/lib/blocks/evaluate';
-import type { DisplayMode } from '@/lib/schemas/entities';
+import type { ActivityKind, DisplayMode } from '@/lib/schemas/entities';
 import { progressStatusMap, type ModuleStatus, type ProgressRow } from './student-modules-status';
 
 // Re-export der reinen Status-Helper, damit Aufrufer wie Komponenten nur eine
@@ -14,6 +14,8 @@ export type StudentModule = {
   title: string;
   content: ModuleContent;
   displayMode: DisplayMode;
+  activityKind: ActivityKind;
+  topicId: string | null;
 };
 
 export type ModuleProgress = {
@@ -40,10 +42,12 @@ async function isAssigned(moduleId: string, classId: string): Promise<boolean> {
 // zugewiesen (Zugriffsschutz für Schüler:innen).
 //
 // Phase E: Präsentationen werden NICHT geliefert — sie sind für den Beamer
-// gedacht, nicht für die Schüler:innen-Selbstbearbeitung. Vor Phase E ging
-// eine Präsentations-ID stillschweigend in den Quiz-Runner; jetzt → null →
-// page.tsx ruft notFound(). Schüler:innen sehen Präsentations-Folien nur
-// während einer laufenden live_session via LiveOverlay (separate Polling-API).
+// gedacht. Phase G5: Lernmodul + Quiz + Abschlusstest sind alle für die
+// Schüler:in zugänglich (Abschlusstest mit zusätzlichem Voraussetzungs-
+// Check in der Page-Schicht, nicht hier — sonst kommt der page-Schutz nicht
+// mehr zum Zug). Präsentationen weiterhin null → notFound().
+const STUDENT_MODULE_KINDS: ActivityKind[] = ['lernmodul', 'quiz', 'abschlusstest'];
+
 export async function getStudentModule(
   moduleId: string,
   classId: string
@@ -54,9 +58,9 @@ export async function getStudentModule(
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('modules')
-    .select('id, title, content, is_published, activity_kind, display_mode')
+    .select('id, title, content, is_published, activity_kind, display_mode, topic_id')
     .eq('id', moduleId)
-    .eq('activity_kind', 'lernmodul')
+    .in('activity_kind', STUDENT_MODULE_KINDS)
     .maybeSingle();
   if (!data || !data.is_published) {
     return null;
@@ -67,6 +71,8 @@ export async function getStudentModule(
     title: data.title,
     content: parsed.success ? parsed.data : { blocks: [] },
     displayMode: (data.display_mode as DisplayMode | null) ?? 'quiz',
+    activityKind: data.activity_kind as ActivityKind,
+    topicId: (data.topic_id as string | null) ?? null,
   };
 }
 

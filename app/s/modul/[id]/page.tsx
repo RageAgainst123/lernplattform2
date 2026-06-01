@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireStudentSession } from '@/lib/auth/student-auth';
 import {
   getProgress,
@@ -7,6 +7,8 @@ import {
   type StudentModule,
   type ModuleProgress,
 } from '@/lib/db/student-modules';
+import { getAssignedTopicsForStudent } from '@/lib/db/student-topics';
+import { getAbschlusstestUnlock } from '@/lib/db/student-topics-status';
 import { saveProgress, saveWorksheetDraft, submitWorksheet } from '@/lib/db/progress-action';
 import type { BlockAnswer } from '@/lib/blocks/evaluate';
 import { ModuleRunner } from '@/components/blocks/ModuleRunner';
@@ -63,6 +65,38 @@ function renderQuiz(id: string, moduleData: StudentModule, progress: ModuleProgr
   );
 }
 
+// Phase G5: Abschlusstest-Schutz. Wenn das Modul ein Abschlusstest ist,
+// muss vor dem Render geprüft werden ob die Schüler:in alle Lernmodule des
+// Themas erledigt hat. Sonst Redirect zur Themen-Detailseite — dort sieht
+// sie welche Module noch offen sind. URL-Rate-Schutz: niemand kann sich
+// am Abschlusstest vorbeischmuggeln.
+async function guardAbschlusstest(
+  moduleData: StudentModule,
+  classId: string,
+  studentCodeId: string
+): Promise<void> {
+  if (moduleData.activityKind !== 'abschlusstest') return;
+  if (!moduleData.topicId) {
+    // Abschlusstest ohne Thema: ungewöhnlich, Sperre standardmäßig
+    notFound();
+  }
+  const topics = await getAssignedTopicsForStudent(classId, studentCodeId);
+  const topic = topics.find((t) => t.topicId === moduleData.topicId);
+  if (!topic) {
+    notFound();
+  }
+  const unlock = getAbschlusstestUnlock(
+    topic.modules.map((m) => ({
+      title: m.title,
+      status: m.status,
+      activityKind: m.activityKind,
+    }))
+  );
+  if (!unlock.allowed) {
+    redirect(`/s/thema/${topic.slug}`);
+  }
+}
+
 export default async function ModulePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireStudentSession();
   const { id } = await params;
@@ -70,6 +104,7 @@ export default async function ModulePage({ params }: { params: Promise<{ id: str
   if (!moduleData) {
     notFound();
   }
+  await guardAbschlusstest(moduleData, session.classId, session.studentCodeId);
   const progress = await getProgress(session.studentCodeId, id);
   return moduleData.displayMode === 'worksheet'
     ? renderWorksheet(id, moduleData, progress)

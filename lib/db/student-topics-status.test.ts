@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateTopicStatus } from './student-topics-status';
+import { aggregateTopicStatus, canStartAbschlusstest } from './student-topics-status';
 import type { ModuleStatus } from './student-modules-status';
 
 describe('aggregateTopicStatus', () => {
@@ -60,5 +60,49 @@ describe('aggregateTopicStatus', () => {
   it('returned blockiert done — Themen-Status bleibt in_progress', () => {
     const stati: ModuleStatus[] = ['done', 'done', 'returned'];
     expect(aggregateTopicStatus(stati).status).toBe('in_progress');
+  });
+});
+
+describe('canStartAbschlusstest', () => {
+  it('verboten wenn keine Lernmodule existieren (leerer Pfad)', () => {
+    // Schutz vor falscher Freischaltung: ein Thema mit nur einem Abschlusstest
+    // und keinen Lernmodulen darf den Test NICHT erlauben.
+    expect(canStartAbschlusstest([])).toEqual({ allowed: false, missingTitles: [] });
+  });
+
+  it('verboten wenn ein Lernmodul noch nicht done ist', () => {
+    const result = canStartAbschlusstest([
+      { title: 'Grundlagen', status: 'done' },
+      { title: 'Vertiefung', status: 'in_progress' },
+    ]);
+    expect(result.allowed).toBe(false);
+    expect(result.missingTitles).toEqual(['Vertiefung']);
+  });
+
+  it('verboten bei returned (Lehrer:in hat zurückgegeben)', () => {
+    const result = canStartAbschlusstest([
+      { title: 'Grundlagen', status: 'done' },
+      { title: 'Vertiefung', status: 'returned' },
+    ]);
+    expect(result.allowed).toBe(false);
+    expect(result.missingTitles).toContain('Vertiefung');
+  });
+
+  it('erlaubt wenn alle Lernmodule done', () => {
+    const result = canStartAbschlusstest([
+      { title: 'Grundlagen', status: 'done' },
+      { title: 'Vertiefung', status: 'done' },
+    ]);
+    expect(result.allowed).toBe(true);
+    expect(result.missingTitles).toEqual([]);
+  });
+
+  it('liefert mehrere fehlende Titel in originaler Reihenfolge', () => {
+    const result = canStartAbschlusstest([
+      { title: 'A', status: 'open' },
+      { title: 'B', status: 'done' },
+      { title: 'C', status: 'in_progress' },
+    ]);
+    expect(result.missingTitles).toEqual(['A', 'C']);
   });
 });

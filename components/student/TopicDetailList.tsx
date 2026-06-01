@@ -2,11 +2,13 @@ import Link from 'next/link';
 import type { StudentTopic, StudentTopicModule } from '@/lib/db/student-topics';
 import { ACTIVITY_INFO } from '@/lib/activities';
 import type { ModuleStatus } from '@/lib/db/student-modules-status';
+import { getAbschlusstestUnlock } from '@/lib/db/student-topics-status';
 
-// Lernpfad-Liste auf der Themen-Detailseite (Phase G4). Ein Item pro Modul
-// mit Nummer, Icon, Titel, Status-Badge und Aktion-Button. Abschlusstest
-// wird visuell abgesetzt — die Sperr-Logik (canStartAbschlusstest) kommt
-// in Phase G5 dazu.
+// Lernpfad-Liste auf der Themen-Detailseite (Phase G4 + G5). Ein Item pro
+// Modul mit Nummer, Icon, Titel, Status-Badge und Aktion-Button.
+// Abschlusstest visuell abgesetzt; bei nicht erfüllten Voraussetzungen
+// wird statt des Aktion-Buttons ein Schloss + Hinweis welche Lernmodule
+// noch offen sind angezeigt.
 
 type Props = {
   topic: StudentTopic;
@@ -41,16 +43,33 @@ export function TopicDetailList({ topic }: Props) {
       </p>
     );
   }
+  // Phase G5: Abschlusstest-Voraussetzung einmal pro Render berechnen — die
+  // Liste der fehlenden Lernmodul-Titel wird im Sperr-Hinweis angezeigt.
+  const unlock = getAbschlusstestUnlock(
+    topic.modules.map((m) => ({
+      title: m.title,
+      status: m.status,
+      activityKind: m.activityKind,
+    }))
+  );
   return (
     <ol className="space-y-2">
       {topic.modules.map((m, i) => (
-        <PathItem key={m.moduleId} module={m} index={i + 1} />
+        <PathItem key={m.moduleId} module={m} index={i + 1} unlock={unlock} />
       ))}
     </ol>
   );
 }
 
-function PathItem({ module: m, index }: { module: StudentTopicModule; index: number }) {
+function PathItem({
+  module: m,
+  index,
+  unlock,
+}: {
+  module: StudentTopicModule;
+  index: number;
+  unlock: { allowed: boolean; missingTitles: string[] };
+}) {
   const info = ACTIVITY_INFO[m.activityKind];
   const isAbschlusstest = m.activityKind === 'abschlusstest';
   const wrapperClass = isAbschlusstest
@@ -66,6 +85,36 @@ function PathItem({ module: m, index }: { module: StudentTopicModule; index: num
         <p className="truncate text-sm font-medium">{m.title}</p>
         <p className="text-muted-foreground text-xs">{info.label}</p>
       </div>
+      <PathItemAction module={m} unlock={unlock} />
+    </li>
+  );
+}
+
+// Rechte Hälfte des Listen-Items: Status-Badge + Aktion oder Sperr-Hinweis.
+// Eigene Komponente um die ESLint-max-lines-per-function-Grenze einzuhalten.
+function PathItemAction({
+  module: m,
+  unlock,
+}: {
+  module: StudentTopicModule;
+  unlock: { allowed: boolean; missingTitles: string[] };
+}) {
+  const isAbschlusstest = m.activityKind === 'abschlusstest';
+  if (isAbschlusstest && !unlock.allowed) {
+    const remaining = unlock.missingTitles.length;
+    return (
+      <div className="text-right">
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">
+          🔒 Gesperrt
+        </span>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Noch {remaining} {remaining === 1 ? 'Lernmodul' : 'Lernmodule'} offen
+        </p>
+      </div>
+    );
+  }
+  return (
+    <>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${STATUS_BADGE[m.status]}`}>
         {STATUS_LABEL[m.status]}
       </span>
@@ -75,6 +124,6 @@ function PathItem({ module: m, index }: { module: StudentTopicModule; index: num
       >
         {ACTION_LABEL[m.status]}
       </Link>
-    </li>
+    </>
   );
 }

@@ -101,6 +101,24 @@ export const moduleSchema = moduleInsertSchema.extend({
   updatedAt: z.string(),
 });
 
+// --- portfolio_entries (Phase H1: Schulheft) --------------------------------
+// Tiptap-Doc als JSON. Wir validieren nur die äußere Hülle — die Block-
+// Struktur intern ist ProseMirror-Standard und wird vom Editor beim Render
+// validiert. content_json bleibt ein z.record für Flexibilität (neue Tiptap-
+// Extensions sollen kein Schema-Update auslösen).
+export const portfolioEntryInsertSchema = z.object({
+  topicId: z.uuid().nullable().optional(),
+  title: z.string().max(200).optional(),
+  contentJson: z.record(z.string(), z.unknown()).default({}),
+});
+
+export const portfolioEntrySchema = portfolioEntryInsertSchema.extend({
+  id: z.uuid(),
+  studentCodeId: z.uuid(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 // --- materials -------------------------------------------------------------
 export const materialSchema = z.object({
   id: z.uuid(),
@@ -127,3 +145,5 @@ export type DisplayMode = z.infer<typeof displayModeSchema>;
 export type TopicInsert = z.infer<typeof topicInsertSchema>;
 export type Topic = z.infer<typeof topicSchema>;
 export type Material = z.infer<typeof materialSchema>;
+export type PortfolioEntryInsert = z.infer<typeof portfolioEntryInsertSchema>;
+export type PortfolioEntry = z.infer<typeof portfolioEntrySchema>;

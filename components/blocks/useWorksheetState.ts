@@ -29,7 +29,7 @@ function useAutoSave(onSaveDraft: SaveDraftFn) {
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const saveDraft = useDebouncedCallback<Record<string, BlockAnswer>>(async (next) => {
+  const [saveDraft] = useDebouncedCallback<Record<string, BlockAnswer>>(async (next) => {
     setSaveState('saving');
     try {
       await onSaveDraft(next);

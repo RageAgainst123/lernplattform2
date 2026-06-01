@@ -1,20 +1,46 @@
 'use client';
 
 import type { Editor } from '@tiptap/react';
+import {
+  ColorPicker,
+  Divider,
+  LinkButton,
+  ToolbarButton,
+  ToolbarGroup,
+  type ToolbarSpec,
+} from './NotebookToolbarParts';
 
-// Toolbar für den Tiptap-Editor (Phase H1). In eigene Datei extrahiert
-// damit der NotebookEditor unter max-lines bleibt. Bei Pexels-Bild-Picker
-// (Phase H2) kommt ein weiteres Item dazu.
+// Erweiterte Toolbar für den Tiptap-Editor (Phase H+ Sub-B/C). Gruppen:
+//   - Format: Fett, Kursiv, Unterstrichen, Durchgestrichen
+//   - Block: Überschrift, Liste, Nummerierung
+//   - Color: Textfarbe + Markierungsfarbe (Pop-Picker)
+//   - Align: Links / Mitte / Rechts
+//   - Link + Bild
+//   - History: Undo / Redo
+//
+// Bilder können nach Einfügen via tiptap-extension-resize-image per Eck-
+// Handles vergrößert/verkleinert werden — Tiptap rendert die Resize-Handles
+// automatisch, kein Toolbar-Button nötig.
 
-type ToolbarSpec = {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  icon: React.ReactNode;
-};
+const TEXT_COLORS = [
+  { value: '', label: 'Standard' },
+  { value: '#dc2626', label: 'Rot' },
+  { value: '#ea580c', label: 'Orange' },
+  { value: '#ca8a04', label: 'Gelb' },
+  { value: '#16a34a', label: 'Grün' },
+  { value: '#2563eb', label: 'Blau' },
+  { value: '#9333ea', label: 'Lila' },
+];
 
-function formatToolbarSpecs(editor: Editor): ToolbarSpec[] {
+const HIGHLIGHT_COLORS = [
+  { value: '', label: 'Aus' },
+  { value: '#fef08a', label: 'Gelb' },
+  { value: '#bbf7d0', label: 'Grün' },
+  { value: '#bfdbfe', label: 'Blau' },
+  { value: '#fbcfe8', label: 'Pink' },
+];
+
+function formatSpecs(editor: Editor): ToolbarSpec[] {
   return [
     {
       active: editor.isActive('bold'),
@@ -29,11 +55,22 @@ function formatToolbarSpecs(editor: Editor): ToolbarSpec[] {
       icon: <em>I</em>,
     },
     {
-      active: editor.isActive('bulletList'),
-      label: 'Liste',
-      onClick: () => editor.chain().focus().toggleBulletList().run(),
-      icon: '•',
+      active: editor.isActive('underline'),
+      label: 'Unterstrichen',
+      onClick: () => editor.chain().focus().toggleUnderline().run(),
+      icon: <span className="underline">U</span>,
     },
+    {
+      active: editor.isActive('strike'),
+      label: 'Durchgestrichen',
+      onClick: () => editor.chain().focus().toggleStrike().run(),
+      icon: <span className="line-through">S</span>,
+    },
+  ];
+}
+
+function blockSpecs(editor: Editor): ToolbarSpec[] {
+  return [
     {
       active: editor.isActive('heading', { level: 2 }),
       label: 'Überschrift',
@@ -41,15 +78,44 @@ function formatToolbarSpecs(editor: Editor): ToolbarSpec[] {
       icon: 'H',
     },
     {
-      active: editor.isActive('highlight'),
-      label: 'Markieren',
-      onClick: () => editor.chain().focus().toggleHighlight().run(),
-      icon: '🖍',
+      active: editor.isActive('bulletList'),
+      label: 'Aufzählung',
+      onClick: () => editor.chain().focus().toggleBulletList().run(),
+      icon: '•',
+    },
+    {
+      active: editor.isActive('orderedList'),
+      label: 'Nummerierte Liste',
+      onClick: () => editor.chain().focus().toggleOrderedList().run(),
+      icon: '1.',
     },
   ];
 }
 
-function historyToolbarSpecs(editor: Editor): ToolbarSpec[] {
+function alignSpecs(editor: Editor): ToolbarSpec[] {
+  return [
+    {
+      active: editor.isActive({ textAlign: 'left' }),
+      label: 'Links',
+      onClick: () => editor.chain().focus().setTextAlign('left').run(),
+      icon: '⬅',
+    },
+    {
+      active: editor.isActive({ textAlign: 'center' }),
+      label: 'Mitte',
+      onClick: () => editor.chain().focus().setTextAlign('center').run(),
+      icon: '↔',
+    },
+    {
+      active: editor.isActive({ textAlign: 'right' }),
+      label: 'Rechts',
+      onClick: () => editor.chain().focus().setTextAlign('right').run(),
+      icon: '➡',
+    },
+  ];
+}
+
+function historySpecs(editor: Editor): ToolbarSpec[] {
   return [
     {
       active: false,
@@ -68,9 +134,6 @@ function historyToolbarSpecs(editor: Editor): ToolbarSpec[] {
   ];
 }
 
-// onPickImage öffnet den Pexels-Picker. Wenn nicht gesetzt, wird der
-// Bild-Button ausgeblendet (z.B. wenn der Editor ohne Bild-Support
-// gebraucht wird).
 export function NotebookToolbar({
   editor,
   onPickImage,
@@ -79,58 +142,41 @@ export function NotebookToolbar({
   onPickImage?: () => void;
 }) {
   if (!editor) return null;
-  const format = formatToolbarSpecs(editor);
-  const history = historyToolbarSpecs(editor);
   return (
     <div className="bg-muted/40 flex flex-wrap items-center gap-1 rounded-md border p-1">
-      {format.map((s) => (
-        <ToolbarButton key={s.label} {...s}>
-          {s.icon}
-        </ToolbarButton>
-      ))}
+      <ToolbarGroup specs={formatSpecs(editor)} />
+      <Divider />
+      <ToolbarGroup specs={blockSpecs(editor)} />
+      <Divider />
+      <ColorPicker
+        colors={TEXT_COLORS}
+        label="Textfarbe"
+        icon="A"
+        onPick={(c) => {
+          if (c) editor.chain().focus().setColor(c).run();
+          else editor.chain().focus().unsetColor().run();
+        }}
+      />
+      <ColorPicker
+        colors={HIGHLIGHT_COLORS}
+        label="Markieren"
+        icon="🖍"
+        onPick={(c) => {
+          if (c) editor.chain().focus().toggleHighlight({ color: c }).run();
+          else editor.chain().focus().unsetHighlight().run();
+        }}
+      />
+      <Divider />
+      <ToolbarGroup specs={alignSpecs(editor)} />
+      <Divider />
+      <LinkButton editor={editor} />
       {onPickImage && (
-        <>
-          <div className="bg-border mx-1 h-5 w-px" />
-          <ToolbarButton active={false} onClick={onPickImage} label="Bild einfügen">
-            📷
-          </ToolbarButton>
-        </>
-      )}
-      <div className="bg-border mx-1 h-5 w-px" />
-      {history.map((s) => (
-        <ToolbarButton key={s.label} {...s}>
-          {s.icon}
+        <ToolbarButton active={false} onClick={onPickImage} label="Bild einfügen">
+          📷
         </ToolbarButton>
-      ))}
+      )}
+      <Divider />
+      <ToolbarGroup specs={historySpecs(editor)} />
     </div>
-  );
-}
-
-function ToolbarButton({
-  active,
-  onClick,
-  label,
-  disabled,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  disabled?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      className={`h-8 min-w-8 rounded px-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
-        active ? 'bg-primary text-primary-foreground' : 'hover:bg-background'
-      }`}
-    >
-      {children}
-    </button>
   );
 }

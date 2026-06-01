@@ -3,7 +3,12 @@
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
-import Image from '@tiptap/extension-image';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import Link from '@tiptap/extension-link';
+import ResizeImage from 'tiptap-extension-resize-image';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -40,14 +45,23 @@ function useNotebookEditor(entryId: string, initialContent: Record<string, unkno
     setStatus(result.error ? 'error' : 'saved');
   }
 
-  const saveTitle = useDebouncedCallback<string>((v) => persist({ title: v }), 1500);
-  const saveContent = useDebouncedCallback<Record<string, unknown>>(
+  const [saveTitle] = useDebouncedCallback<string>((v) => persist({ title: v }), 1500);
+  const [saveContent, flushContent] = useDebouncedCallback<Record<string, unknown>>(
     (c) => persist({ contentJson: c }),
     1500
   );
 
   const editor = useEditor({
-    extensions: [StarterKit, Highlight, Image.configure({ inline: false, allowBase64: false })],
+    extensions: [
+      StarterKit,
+      Underline,
+      Highlight.configure({ multicolor: true }),
+      TextStyle,
+      Color,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Link.configure({ openOnClick: false, autolink: true }),
+      ResizeImage,
+    ],
     content: hasContent(initialContent) ? initialContent : '',
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
@@ -61,7 +75,7 @@ function useNotebookEditor(entryId: string, initialContent: Record<string, unkno
     },
   });
 
-  return { editor, status, saveTitle };
+  return { editor, status, saveTitle, flushContent };
 }
 
 // Pexels-Bild in den Editor einsetzen. Pexels-Photographer-Info im title-
@@ -84,7 +98,7 @@ export function NotebookEditor({ entryId, initialTitle, initialContent }: Props)
   const [title, setTitle] = useState(initialTitle);
   const [pending, startTransition] = useTransition();
   const [pickerOpen, setPickerOpen] = useState(false);
-  const { editor, status, saveTitle } = useNotebookEditor(entryId, initialContent);
+  const { editor, status, saveTitle, flushContent } = useNotebookEditor(entryId, initialContent);
 
   function handleTitleChange(v: string) {
     setTitle(v);
@@ -102,9 +116,17 @@ export function NotebookEditor({ entryId, initialTitle, initialContent }: Props)
     });
   }
 
-  function handlePickImage(image: PexelsImage) {
+  // H+ Sub-A: Bild-Speicher-Bug-Fix. setImage triggert zwar onUpdate →
+  // saveContent, aber der 1500ms-Debounce kann verloren gehen wenn der
+  // User direkt nach dem Einfügen navigiert. flushContent() persistiert
+  // sofort statt zu warten.
+  async function handlePickImage(image: PexelsImage) {
     insertImage(editor, image);
     setPickerOpen(false);
+    // Kurz warten bis Tiptap's onUpdate gefeuert hat (microtask + nächster
+    // tick), dann flushen.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await flushContent();
   }
 
   return (

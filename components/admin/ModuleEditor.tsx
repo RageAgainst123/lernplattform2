@@ -3,24 +3,24 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { moduleContentSchema, type Block } from '@/lib/schemas/blocks';
-import { Button } from '@/components/ui/button';
 import { createModule, updateModule } from '@/lib/db/module-actions';
 import { ACTIVITY_INFO } from '@/lib/activities';
-import { ModuleMetadataForm, type ModuleMetadata } from './ModuleMetadataForm';
-import { BlockList } from './BlockList';
-import { ImportJsonDialog } from './ImportJsonDialog';
-import { AddBlockDialog } from './AddBlockDialog';
-import { LivePreview } from './LivePreview';
+import { type ModuleMetadata } from './ModuleMetadataForm';
+import { ContentPanel, EditorHeader, MetadataPanel, type EditorTab } from './ModuleEditorPanels';
 
-// Aktivitäts-bewusster Editor — der gleiche Code dient Lernmodulen UND
-// Präsentationen (kommt aus initialMeta.activityKind). Unterschiede:
+// Aktivitäts-bewusster Editor mit Tab-Layout (Phase F).
+//
+// Vorher 3 gleich breite Spalten — Vorschau leer = Platzverschwendung, Header
+// drängelten in mehrere Zeilen. Jetzt:
+//   - Sticky Header oben mit Save-Button (immer erreichbar beim Scrollen)
+//   - 2-Spalten-Hauptbereich: Metadaten (~35%) | Inhalt mit Tabs „Blöcke ↔ Vorschau" (~65%)
+//   - mehr vertikales Spacing, klarere Sektion-Trennung
+//
+// Aktivitäts-Unterschiede (lernmodul vs praesentation):
 //   - Header-Titel + Subtitel
 //   - AddBlockDialog filtert auf passende Block-Typen (siehe lib/activities.ts)
 //   - Routing nach „Speichern": zur passenden Aktivitäts-Liste
 //   - ModuleMetadataForm zeigt das Display-Mode-Select nur für Lernmodule
-//
-// Drei Spalten auf Desktop: Metadaten | Blöcke (+Import) | Vorschau. Auf Mobile
-// gestapelt. Keine eigene State-Library — useState + Server-Actions reichen.
 
 type Props = {
   moduleId?: string;
@@ -33,9 +33,13 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
   const [meta, setMeta] = useState<ModuleMetadata>(initialMeta);
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<EditorTab>('blocks');
   const [pending, startTransition] = useTransition();
 
   const info = ACTIVITY_INFO[meta.activityKind];
+  const headerLabel = moduleId
+    ? `${info.label} bearbeiten`
+    : `${info.label.endsWith('e') ? 'Neue' : 'Neues'} ${info.label}`;
 
   function handleSave() {
     setError(null);
@@ -76,63 +80,26 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {moduleId
-              ? `${info.label} bearbeiten`
-              : `Neue${info.label.endsWith('e') ? '' : 's'} ${info.label}`}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Tippe Metadaten und Blöcke. Live-Vorschau zeigt, wie Schüler:innen es sehen.
-          </p>
-        </div>
-        <Button onClick={handleSave} disabled={pending}>
-          {pending ? 'Speichere…' : 'Speichern'}
-        </Button>
-      </header>
-
+      <EditorHeader
+        label={headerLabel}
+        emoji={info.iconEmoji}
+        pending={pending}
+        onSave={handleSave}
+      />
       {error && (
         <div role="alert" className="text-destructive bg-destructive/10 rounded-md p-3 text-sm">
           {error}
         </div>
       )}
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr_1fr]">
-        <section aria-labelledby="meta-h">
-          <h2 id="meta-h" className="mb-3 text-sm font-semibold tracking-wide uppercase">
-            Metadaten
-          </h2>
-          <ModuleMetadataForm value={meta} onChange={setMeta} />
-        </section>
-
-        <section aria-labelledby="blocks-h" className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="blocks-h" className="text-sm font-semibold tracking-wide uppercase">
-              Blöcke ({blocks.length})
-            </h2>
-            <div className="flex items-center gap-2">
-              <AddBlockDialog
-                existingIds={blocks.map((b) => b.id)}
-                allowedKind={meta.activityKind}
-                onAdd={(block) => setBlocks((prev) => [...prev, block])}
-              />
-              <ImportJsonDialog
-                onImport={(imported, mode) => {
-                  setBlocks((prev) => (mode === 'replace' ? imported : [...prev, ...imported]));
-                }}
-              />
-            </div>
-          </div>
-          <BlockList blocks={blocks} onChange={setBlocks} />
-        </section>
-
-        <section aria-labelledby="preview-h">
-          <h2 id="preview-h" className="mb-3 text-sm font-semibold tracking-wide uppercase">
-            Vorschau
-          </h2>
-          <LivePreview blocks={blocks} />
-        </section>
+      <div className="grid gap-6 lg:grid-cols-[minmax(280px,_1fr)_minmax(0,_1.8fr)]">
+        <MetadataPanel meta={meta} setMeta={setMeta} />
+        <ContentPanel
+          tab={tab}
+          setTab={setTab}
+          blocks={blocks}
+          setBlocks={setBlocks}
+          activityKind={meta.activityKind}
+        />
       </div>
     </div>
   );

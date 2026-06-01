@@ -2,19 +2,35 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { BRAND } from '@/lib/brand';
+import { ACTIVITY_INFO, MATERIAL_AS_ACTIVITY } from '@/lib/activities';
+import { AdminNav } from '@/components/admin/AdminNav';
 
 export const metadata: Metadata = {
   title: 'Admin',
   robots: { index: false, follow: false },
 };
 
-// Drei Aktivitäten + Übersicht (Phase E). Sprache und URL-Segmente kommen aus
-// lib/activities.ts — wenn sich da was ändert, hier ebenfalls anpassen.
+// Vier Nav-Einträge: Übersicht + 3 Aktivitäts-Listen. Labels + URLs + Emojis
+// kommen aus lib/activities.ts (Single Source of Truth). Aktive Route bekommt
+// im Client (AdminNav) eine visuelle Hervorhebung — usePathname() funktioniert
+// nur in Client Components.
 const NAV = [
-  { href: '/admin', label: 'Übersicht' },
-  { href: '/admin/lernmodule', label: 'Lernmodule' },
-  { href: '/admin/praesentationen', label: 'Präsentationen' },
-  { href: '/admin/material', label: 'Arbeitsblätter' },
+  { href: '/admin', label: 'Übersicht', emoji: '🏠' },
+  {
+    href: '/admin/lernmodule',
+    label: ACTIVITY_INFO.lernmodul.plural,
+    emoji: ACTIVITY_INFO.lernmodul.iconEmoji,
+  },
+  {
+    href: '/admin/praesentationen',
+    label: ACTIVITY_INFO.praesentation.plural,
+    emoji: ACTIVITY_INFO.praesentation.iconEmoji,
+  },
+  {
+    href: '/admin/material',
+    label: MATERIAL_AS_ACTIVITY.plural,
+    emoji: MATERIAL_AS_ACTIVITY.iconEmoji,
+  },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -26,20 +42,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-muted-foreground text-xs tracking-wide uppercase">Admin</p>
           <p className="text-sm font-medium">{user.email}</p>
         </div>
-        <nav
-          className="flex flex-row gap-2 overflow-x-auto md:flex-col"
-          aria-label="Admin-Navigation"
-        >
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="hover:bg-muted shrink-0 rounded-md px-3 py-2 text-sm"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        <AdminNav items={NAV} />
         <div className="text-muted-foreground mt-6 hidden text-xs md:block">
           <p>Du bist als Admin von {BRAND.name} angemeldet.</p>
           <p className="mt-2">

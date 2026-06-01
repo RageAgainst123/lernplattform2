@@ -114,6 +114,36 @@ export async function getModulesForLink(
   return (data as ModuleOption[]) ?? [];
 }
 
+// Phase G: Module eines Themas (für Admin-Themen-Editor + Schüler-Themen-
+// Detailseite). Sortiert nach sort_order — die Reihenfolge im Lernpfad.
+export async function getModulesForTopic(topicId: string): Promise<Module[]> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from('modules')
+    .select('*')
+    .eq('topic_id', topicId)
+    .order('sort_order', { ascending: true })
+    .order('title', { ascending: true });
+  if (error) throw new Error(`Module konnten nicht geladen werden: ${error.message}`);
+  return (data as ModuleRow[]).map(toModule);
+}
+
+// Phase G: Module ohne Themen-Zuordnung — für das „+ Baustein hinzufügen"-
+// Dropdown im Themen-Editor. Optional gefiltert auf eine Aktivität, damit
+// das Dropdown nicht alle Module mischt.
+export async function getModulesWithoutTopic(kind?: ActivityKind): Promise<ModuleOption[]> {
+  const supabase = createServiceClient();
+  let query = supabase
+    .from('modules')
+    .select('id, title')
+    .is('topic_id', null)
+    .order('title', { ascending: true });
+  if (kind) query = query.eq('activity_kind', kind);
+  const { data, error } = await query;
+  if (error) throw new Error(`Modul-Liste konnte nicht geladen werden: ${error.message}`);
+  return (data as ModuleOption[]) ?? [];
+}
+
 export type PublishedModuleOption = {
   id: string;
   title: string;

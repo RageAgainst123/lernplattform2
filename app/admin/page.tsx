@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { getModulesForAdminByKind } from '@/lib/db/modules';
 import { getMaterialsForAdmin } from '@/lib/db/materials';
+import { getTopicsForAdmin } from '@/lib/db/topics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { ACTIVITY_INFO, MATERIAL_AS_ACTIVITY } from '@/lib/activities';
@@ -53,20 +54,53 @@ function ActivityCard(props: ActivityCardProps) {
 
 export default async function AdminDashboard() {
   await requireAdmin();
-  const [lernmodule, praesentationen, materials] = await Promise.all([
+  const [lernmodule, praesentationen, materials, topics] = await Promise.all([
     getModulesForAdminByKind('lernmodul'),
     getModulesForAdminByKind('praesentation'),
     getMaterialsForAdmin(),
+    getTopicsForAdmin(),
   ]);
+  const publishedTopics = topics.filter((t) => t.isPublished).length;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Admin-Übersicht</h1>
         <p className="text-muted-foreground text-sm">
-          Drei Wege Inhalte zu erstellen — wähle den passenden Typ für deinen Unterricht.
+          Themen bündeln Aktivitäten zu Lernpfaden. Pro Aktivitäts-Typ gibt es daneben eine eigene
+          Liste für die Detail-Bearbeitung.
         </p>
       </header>
+
+      {/* Themen-Hero (Phase G): empfohlener Einstiegspunkt — ein Thema kann mehrere
+          Aktivitäten enthalten und Schüler:innen sehen den Lernpfad als Karte. */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardHeader className="pb-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <span className="text-2xl" aria-hidden>
+                📚
+              </span>
+              Themen
+            </CardTitle>
+            <span className="text-muted-foreground text-sm tabular-nums">
+              {topics.length} · {publishedTopics} live
+            </span>
+          </div>
+          <CardDescription className="text-sm leading-relaxed">
+            Bündeln Lernmodule, Präsentationen, Quiz und einen Abschlusstest zu einem Lernpfad.
+            Empfohlener Einstieg — Schüler:innen sehen Themen-Karten mit Fortschritt im Dashboard.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="mt-auto flex flex-wrap gap-2 pt-3">
+          <Link href="/admin/themen" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            Themen ansehen
+          </Link>
+          <Link href="/admin/themen/neu" className={buttonVariants({ size: 'sm' })}>
+            + Neues Thema
+          </Link>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <ActivityCard

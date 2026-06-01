@@ -16,6 +16,9 @@ export const metadata: Metadata = {
 // nur in Client Components.
 const NAV = [
   { href: '/admin', label: 'Übersicht', emoji: '🏠' },
+  // Themen sind ab Phase G der empfohlene Einstiegspunkt — sie bündeln
+  // Lernmodule + Präsentationen + Quiz + Abschlusstest zu einem Lernpfad.
+  { href: '/admin/themen', label: 'Themen', emoji: '📚' },
   {
     href: '/admin/lernmodule',
     label: ACTIVITY_INFO.lernmodul.plural,

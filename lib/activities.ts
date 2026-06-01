@@ -16,8 +16,10 @@ import type { BlockType } from '@/lib/schemas/blocks';
 // wird im UI aber als gleichberechtigte dritte Aktivität dargestellt — siehe
 // MATERIAL_AS_ACTIVITY unten.
 
-// ─── DB-seitige Diskriminator-Werte (CHECK constraint in Migration 0012) ──
-export const ACTIVITY_KINDS = ['lernmodul', 'praesentation'] as const;
+// ─── DB-seitige Diskriminator-Werte (CHECK constraint in Migration 0012/0013) ──
+// Phase G erweitert die Union um 'quiz' (Live-Quiz ohne Konsequenzen) und
+// 'abschlusstest' (Themen-Abschluss mit Voraussetzungs-Check).
+export const ACTIVITY_KINDS = ['lernmodul', 'praesentation', 'quiz', 'abschlusstest'] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
 // ─── Anzeige-Informationen pro Aktivität ──────────────────────────────────
@@ -47,6 +49,24 @@ export const ACTIVITY_INFO: Record<ActivityKind, ActivityInfo> = {
       'Live am Beamer mit Schüler:innen-Geräten — Folien, Live-Umfragen, Quiz, Wortwolken, ' +
       'Verständnis-Ampel. Lehrer:in steuert, Kinder stimmen am Handy/Tablet ab.',
     iconEmoji: '🎬',
+  },
+  quiz: {
+    label: 'Quiz',
+    plural: 'Quizze',
+    urlSegment: 'quizze',
+    description:
+      'Test-Wissen ohne Konsequenzen — Block-für-Block mit Sofort-Feedback, kein Score zählt. ' +
+      'Zwischen Lernmodulen einsetzbar für lockere Selbstkontrolle.',
+    iconEmoji: '🧠',
+  },
+  abschlusstest: {
+    label: 'Abschlusstest',
+    plural: 'Abschlusstests',
+    urlSegment: 'abschlusstests',
+    description:
+      'Themen-Abschluss — alle Lernmodule des Themas müssen vorher erledigt sein. ' +
+      'Pro Thema maximal einer. Schaltet sich automatisch frei.',
+    iconEmoji: '🏆',
   },
 };
 
@@ -94,9 +114,22 @@ const PRAESENTATION_BLOCKS: ReadonlySet<BlockType> = new Set([
   'understanding',
 ]);
 
+// Quiz und Abschlusstest erlauben nur Aufgaben-Blöcke (keine Theorie, kein
+// Live-Interaktion). Dieselbe Menge — Unterschied liegt in der Semantik
+// (Quiz = ohne Konsequenz, Abschlusstest = Themen-Abschluss mit Voraussetzungen),
+// nicht in den erlaubten Blöcken.
+const TEST_BLOCKS: ReadonlySet<BlockType> = new Set([
+  'multiple_choice',
+  'true_false',
+  'fill_blank',
+  'match',
+]);
+
 const ALLOWED_BLOCKS_BY_KIND: Record<ActivityKind, ReadonlySet<BlockType>> = {
   lernmodul: LERNMODUL_BLOCKS,
   praesentation: PRAESENTATION_BLOCKS,
+  quiz: TEST_BLOCKS,
+  abschlusstest: TEST_BLOCKS,
 };
 
 export function isBlockAllowedFor(blockType: BlockType, activity: ActivityKind): boolean {

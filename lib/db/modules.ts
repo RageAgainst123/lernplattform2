@@ -13,6 +13,8 @@ type ModuleRow = {
   schulstufe: number | null;
   kompetenzbereich: Kompetenzbereich | null;
   topic: string | null;
+  topic_id: string | null;
+  sort_order: number;
   content: unknown;
   estimated_minutes: number | null;
   is_published: boolean;
@@ -31,6 +33,8 @@ function toModule(row: ModuleRow): Module {
     schulstufe: row.schulstufe ?? undefined,
     kompetenzbereich: row.kompetenzbereich ?? undefined,
     topic: row.topic ?? undefined,
+    topicId: row.topic_id,
+    sortOrder: row.sort_order,
     content: row.content as Module['content'],
     estimatedMinutes: row.estimated_minutes ?? undefined,
     isPublished: row.is_published,

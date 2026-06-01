@@ -25,6 +25,8 @@ function rowFromInsert(input: z.infer<typeof moduleFormSchema>, createdBy: strin
     schulstufe: input.schulstufe ?? null,
     kompetenzbereich: input.kompetenzbereich ?? null,
     topic: input.topic ?? null,
+    topic_id: input.topicId ?? null,
+    sort_order: input.sortOrder ?? 0,
     content: input.content,
     estimated_minutes: input.estimatedMinutes ?? null,
     is_published: input.isPublished,

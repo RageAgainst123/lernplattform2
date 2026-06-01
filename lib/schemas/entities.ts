@@ -43,13 +43,35 @@ export const studentCodeSchema = z.object({
   lastActiveAt: z.string().nullable(),
 });
 
+// --- topics ----------------------------------------------------------------
+// Phase G: Themen sind eigene Entitäten (vorher nur loser topic-String).
+// Ein Thema bündelt mehrere Bausteine (Lernmodule, Präsentationen, Quiz,
+// Abschlusstest) in einer Reihenfolge zu einem Lernpfad.
+export const topicInsertSchema = z.object({
+  slug: z
+    .string()
+    .min(1)
+    .max(120)
+    .regex(/^[a-z0-9-]+$/, 'Nur Kleinbuchstaben, Zahlen und Bindestriche.'),
+  label: z.string().min(1).max(200),
+  description: z.string().optional(),
+  schulstufe: schulstufeSchema.optional(),
+  kompetenzbereich: kompetenzbereichSchema.optional(),
+  isPublished: z.boolean().default(false),
+  sortOrder: z.number().int().default(0),
+});
+
+export const topicSchema = topicInsertSchema.extend({
+  id: z.uuid(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 // --- modules ---------------------------------------------------------------
-// activityKind ist der primäre Diskriminator (seit Migration 0012, Phase E):
-// 'lernmodul' = online für eingeloggte Schüler:innen (display_mode wird genutzt:
-// quiz mit Sofort-Feedback oder worksheet mit Abgabe-am-Ende);
-// 'praesentation' = live am Beamer mit Schüler:innen-Geräten (display_mode
-// irrelevant). Siehe lib/activities.ts für UI-Labels und Block-Filter.
-export const activityKindSchema = z.enum(['lernmodul', 'praesentation']);
+// activityKind ist der primäre Diskriminator. Phase G erweitert die Union
+// um 'quiz' (Kahoot-Style Live-Quiz, später) und 'abschlusstest' (Test mit
+// Voraussetzungen). 'lernmodul' und 'praesentation' aus Phase E bleiben.
+export const activityKindSchema = z.enum(['lernmodul', 'praesentation', 'quiz', 'abschlusstest']);
 
 // Display-Sub-Variante NUR für Lernmodule. Quiz: Block-für-Block mit Sofort-
 // Feedback. Worksheet: alle Aufgaben auf einer Seite, Abgabe am Ende.
@@ -63,6 +85,8 @@ export const moduleInsertSchema = z.object({
   schulstufe: schulstufeSchema.optional(),
   kompetenzbereich: kompetenzbereichSchema.optional(),
   topic: z.string().optional(),
+  topicId: z.uuid().nullable().optional(),
+  sortOrder: z.number().int().default(0),
   content: moduleContentSchema,
   estimatedMinutes: z.number().int().positive().optional(),
   isPublished: z.boolean().default(false),
@@ -100,4 +124,6 @@ export type ModuleInsert = z.infer<typeof moduleInsertSchema>;
 export type Module = z.infer<typeof moduleSchema>;
 export type ActivityKind = z.infer<typeof activityKindSchema>;
 export type DisplayMode = z.infer<typeof displayModeSchema>;
+export type TopicInsert = z.infer<typeof topicInsertSchema>;
+export type Topic = z.infer<typeof topicSchema>;
 export type Material = z.infer<typeof materialSchema>;

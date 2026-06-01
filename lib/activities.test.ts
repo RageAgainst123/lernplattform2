@@ -12,9 +12,13 @@ import {
 // (Schüler im Lernmodul sollen keine Live-Polls sehen, Beamer keine Lückentexte).
 
 describe('ACTIVITY_KINDS', () => {
-  it('hat genau zwei Werte', () => {
-    expect(ACTIVITY_KINDS).toHaveLength(2);
-    expect(new Set(ACTIVITY_KINDS).size).toBe(2);
+  it('hat genau vier Werte (lernmodul, praesentation, quiz, abschlusstest)', () => {
+    expect(ACTIVITY_KINDS).toHaveLength(4);
+    expect(new Set(ACTIVITY_KINDS).size).toBe(4);
+    expect(ACTIVITY_KINDS).toContain('lernmodul');
+    expect(ACTIVITY_KINDS).toContain('praesentation');
+    expect(ACTIVITY_KINDS).toContain('quiz');
+    expect(ACTIVITY_KINDS).toContain('abschlusstest');
   });
 
   it('hat zu jeder ActivityKind einen ACTIVITY_INFO-Eintrag', () => {
@@ -78,5 +82,19 @@ describe('isBlockAllowedFor', () => {
   it('praesentation: verbietet alle Worksheet-Aufgaben', () => {
     const no: BlockType[] = ['multiple_choice', 'true_false', 'fill_blank', 'match', 'reflection'];
     for (const t of no) expect(isBlockAllowedFor(t, 'praesentation')).toBe(false);
+  });
+
+  it('quiz: erlaubt nur reine Aufgaben-Blöcke (mc, tf, fill, match)', () => {
+    const yes: BlockType[] = ['multiple_choice', 'true_false', 'fill_blank', 'match'];
+    for (const t of yes) expect(isBlockAllowedFor(t, 'quiz')).toBe(true);
+    const no: BlockType[] = ['text', 'infobox', 'slide', 'reflection', 'live_poll'];
+    for (const t of no) expect(isBlockAllowedFor(t, 'quiz')).toBe(false);
+  });
+
+  it('abschlusstest: erlaubt nur reine Aufgaben-Blöcke (wie quiz)', () => {
+    const yes: BlockType[] = ['multiple_choice', 'true_false', 'fill_blank', 'match'];
+    for (const t of yes) expect(isBlockAllowedFor(t, 'abschlusstest')).toBe(true);
+    const no: BlockType[] = ['text', 'infobox', 'slide', 'reflection', 'live_poll'];
+    for (const t of no) expect(isBlockAllowedFor(t, 'abschlusstest')).toBe(false);
   });
 });

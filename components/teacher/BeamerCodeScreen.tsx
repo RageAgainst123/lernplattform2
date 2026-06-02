@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
@@ -9,10 +10,19 @@ import { Button } from '@/components/ui/button';
 //   - Klassen-Code RIESIG in der Mitte (font-mono, monospaced)
 //   - Klassenname als Beschriftung
 //   - Schließen-Button oben rechts (klein, dezent)
+//
+// Hydration-Schutz: window.location.origin existiert nur im Browser. Wir
+// lesen es via useSyncExternalStore (Server-Snapshot "/k", Client-Snapshot
+// volle URL) — React tauscht es nach Hydration sauber aus, ohne Mismatch-
+// Warning und ohne setState-in-Effect-Lint-Fehler.
+
+const subscribeNoop = () => () => {};
+const getClientLoginUrl = () => `${window.location.origin}/k`;
+const getServerLoginUrl = () => '/k';
 
 export function BeamerCodeScreen({ className, joinCode }: { className: string; joinCode: string }) {
   const router = useRouter();
-  const loginUrl = typeof window !== 'undefined' ? `${window.location.origin}/k` : '/k';
+  const loginUrl = useSyncExternalStore(subscribeNoop, getClientLoginUrl, getServerLoginUrl);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center px-8 py-12 text-center">

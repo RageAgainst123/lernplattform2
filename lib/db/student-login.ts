@@ -69,6 +69,15 @@ export async function getStudentIdentityById(
   };
 }
 
+// Holt den Klassennamen zu einer class-id über den Service-Role-Client.
+// Wird im Schüler:innen-Header + Dashboard genutzt — Schüler:innen haben
+// kein auth.uid() und können classes nicht via RLS lesen.
+export async function getClassNameForStudent(classId: string): Promise<string | null> {
+  const supabase = createServiceClient();
+  const { data } = await supabase.from('classes').select('name').eq('id', classId).maybeSingle();
+  return data ? (data.name as string) : null;
+}
+
 // Holt id + pin_hash eines Codenamens innerhalb einer Klasse (für die PIN-Prüfung).
 export async function getStudentCodeForLogin(
   classId: string,

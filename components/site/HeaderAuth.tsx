@@ -5,8 +5,8 @@ import { isAdmin } from '@/lib/auth/admin-auth';
 import { getStudentIdentityById } from '@/lib/db/student-login';
 import { studentDisplayName } from '@/lib/db/student-display-name';
 import { signOut } from '@/lib/auth/actions';
-import { studentLogout } from '@/lib/auth/student-actions';
 import { buttonVariants } from '@/components/ui/button';
+import { StudentSettingsMenu } from '@/components/student/StudentSettingsMenu';
 
 // Server-Komponente: ermittelt den aktuellen Login-Status (Lehrer:in,
 // Schüler:in oder ausgeloggt) und rendert den rechten Bereich des Headers
@@ -44,11 +44,10 @@ export async function fetchAuthSlot(): Promise<AuthSlotInfo> {
   return { userLabel: null, userKind: null, isAdminUser: false };
 }
 
-// Logout-Form (mit Server-Action). Klein, sekundärer Button.
-function LogoutForm({ kind }: { kind: 'teacher' | 'student' }) {
-  const action = kind === 'teacher' ? signOut : studentLogout;
+// Logout-Form für Lehrer:innen. Schüler:innen nutzen das Settings-Menü.
+function TeacherLogoutForm() {
   return (
-    <form action={action}>
+    <form action={signOut}>
       <button type="submit" className="hover:bg-muted rounded-md border px-3 py-1.5 text-sm">
         Abmelden
       </button>
@@ -56,9 +55,16 @@ function LogoutForm({ kind }: { kind: 'teacher' | 'student' }) {
   );
 }
 
-// Eingeloggter Zustand für Desktop. Zeigt Status + Abmelden, bei Admins
-// zusätzlich einen kleinen „Admin"-Link.
+// Eingeloggter Zustand für Desktop. Lehrer:innen sehen Status + Abmelden,
+// Schüler:innen ein Settings-Dropdown (Klasse verlassen / Abmelden).
 function LoggedInSlot({ info }: { info: AuthSlotInfo }) {
+  if (info.userKind === 'student') {
+    return (
+      <div className="hidden items-center gap-3 md:flex">
+        <StudentSettingsMenu displayName={info.userLabel ?? 'Schüler:in'} />
+      </div>
+    );
+  }
   return (
     <div className="hidden items-center gap-3 md:flex">
       {info.isAdminUser && (
@@ -67,10 +73,9 @@ function LoggedInSlot({ info }: { info: AuthSlotInfo }) {
         </Link>
       )}
       <span className="text-muted-foreground text-sm">
-        {info.userKind === 'student' ? 'Angemeldet als ' : ''}
         <strong className="text-foreground">{info.userLabel}</strong>
       </span>
-      <LogoutForm kind={info.userKind!} />
+      <TeacherLogoutForm />
     </div>
   );
 }

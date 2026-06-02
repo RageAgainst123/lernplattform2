@@ -39,6 +39,12 @@ function joinErrorMessage(result: Extract<JoinClassResult, { ok: false }>): stri
   if (result.error === 'invalid_code') {
     return 'Klassen-Code unbekannt. Frag deine Lehrer:in.';
   }
+  if (result.error === 'domain_not_allowed') {
+    return (
+      'Diese Klasse erlaubt nur bestimmte Schul-E-Mail-Adressen. ' +
+      'Frag deine Lehrer:in ob sie deine E-Mail-Domain freigibt.'
+    );
+  }
   return (
     'Beitritt fehlgeschlagen. Bitte erneut versuchen oder Lehrer:in fragen.' +
     (result.message ? ` (${result.message})` : '')

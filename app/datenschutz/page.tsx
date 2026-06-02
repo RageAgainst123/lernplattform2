@@ -1,5 +1,11 @@
 import type { Metadata } from 'next';
 import { BRAND } from '@/lib/brand';
+import {
+  PublicBrowsingPart,
+  TeacherLoginPart,
+  StudentCodePinPart,
+  StudentSsoPart,
+} from './DataPartials';
 
 export const metadata: Metadata = {
   title: 'Datenschutz',
@@ -30,32 +36,10 @@ function EmailLink() {
 function DataSection() {
   return (
     <Section title="Welche Daten werden verarbeitet?">
-      <h3 className="text-lg font-medium">Beim Besuch der öffentlichen Seiten</h3>
-      <p>
-        Beim Aufruf jeder Seite werden technisch notwendige Daten verarbeitet: IP-Adresse,
-        Datum/Uhrzeit, abgerufene URL, User-Agent. Diese Server-Logs werden ausschließlich zur
-        Sicherstellung des Betriebs und zur Abwehr von Angriffen verarbeitet, getrennt von allen
-        anderen Daten gespeichert und nach <strong>30 Tagen automatisch gelöscht</strong>.
-        Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am stabilen Betrieb).
-      </p>
-      <h3 className="text-lg font-medium">Bei der Lehrer:innen-Anmeldung</h3>
-      <p>
-        Lehrkräfte melden sich per Magic-Link an (E-Mail-Adresse, kein Passwort). Erhoben und
-        gespeichert wird die E-Mail-Adresse und optional ein selbstgewählter Anzeigename. Die
-        Authentifizierung übernimmt Supabase Auth. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO
-        (Vertragserfüllung — Nutzung des Lehrer:innen-Bereichs).
-      </p>
-      <h3 className="text-lg font-medium">Bei Schüler:innen-Zugängen</h3>
-      <p>
-        Schüler:innen melden sich mit einem <strong>pseudonymen Klassencode</strong> (z. B.
-        &bdquo;5A-01&ldquo;) und einer 4-stelligen PIN an. Es werden{' '}
-        <strong>keine Klarnamen</strong>, keine E-Mail-Adressen und keine sonstigen
-        personenbezogenen Daten erhoben. Die PIN wird ausschließlich als bcrypt-Hash gespeichert.
-        Zusätzlich werden Modul-Fortschritte (Score, Zeitstempel, abgegebene Antworten in
-        pseudonymer Form) gespeichert. Diese Daten sind nur für die jeweilige Lehrkraft und das
-        pseudonyme Konto einsehbar. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO i. V. m. dem
-        schulischen Auftrag der Lehrkraft.
-      </p>
+      <PublicBrowsingPart />
+      <TeacherLoginPart />
+      <StudentCodePinPart />
+      <StudentSsoPart />
     </Section>
   );
 }
@@ -73,8 +57,28 @@ function ProcessorsSection() {
           <strong>Resend</strong> (E-Mail-Versand der Magic-Links für Lehrer:innen) — Verarbeitung
           in der EU.
         </li>
+        <li>
+          <strong>Microsoft Ireland Operations Ltd.</strong> (Microsoft Entra ID / Azure AD,
+          Identitäts-Prüfung beim O365-Login der Schüler:innen) — Verarbeitung primär in der EU
+          (Rechenzentren Dublin / Amsterdam). Vertragliche Grundlage: Microsoft Online Services DPA
+          mit Standardvertragsklauseln nach Art. 46 DSGVO. Datenfluss: beim Login leitet die
+          Plattform den Browser zu Microsoft weiter, Microsoft prüft das Passwort und schickt
+          Vorname/Nachname/E-Mail zurück. Bei der Microsoft-Verarbeitung selbst können vereinzelt
+          Telemetrie-Daten in die USA fließen (Microsoft-eigene Datenschutzrichtlinie).
+        </li>
+        <li>
+          <strong>Pexels (NV)</strong> (kuratierter Bild-Bestand für das Schulheft) — die App ruft
+          beim Bild-Picker Suchergebnisse der Pexels-API ab. Bilder werden direkt vom Pexels-CDN
+          eingebunden, nicht in unserer Datenbank gespeichert. Keine personenbezogenen Daten der
+          Schüler:innen werden an Pexels übertragen.
+        </li>
       </ul>
-      <p>Es findet kein Daten-Transfer in Drittstaaten außerhalb der EU statt.</p>
+      <p>
+        Es findet bei Supabase und Resend{' '}
+        <strong>kein Daten-Transfer in Drittstaaten außerhalb der EU</strong> statt.
+        Microsoft-Telemetrie kann in die USA fließen — abgesichert über Standardvertragsklauseln.
+        Schüler:innen die das vermeiden möchten, nutzen den pseudonymen Code+PIN-Login.
+      </p>
     </Section>
   );
 }
@@ -89,8 +93,9 @@ function RetentionSection() {
           die oben genannte Adresse).
         </li>
         <li>
-          Schüler:innen-Codes + Fortschritte: bis die Lehrkraft die zugehörige Klasse löscht,
-          spätestens am Ende des Schuljahres.
+          Schüler:innen-Codes + Fortschritte (egal ob Code+PIN oder O365-SSO): bis die Lehrkraft die
+          zugehörige Klasse löscht, die Schüler:in selbst die Klasse verlässt, oder spätestens am
+          Ende des Schuljahres.
         </li>
         <li>Hochgeladene Materialien (PDFs): bis zur Löschung durch die Lehrkraft.</li>
       </ul>
@@ -122,7 +127,7 @@ function HeaderBlock() {
     <header>
       <h1 className="text-3xl font-semibold tracking-tight">Datenschutzerklärung</h1>
       <p className="text-muted-foreground mt-2">
-        Stand: Mai 2026. Diese Erklärung beschreibt, welche Daten beim Besuch und bei der Nutzung
+        Stand: Juni 2026. Diese Erklärung beschreibt, welche Daten beim Besuch und bei der Nutzung
         von {BRAND.name} verarbeitet werden, auf welcher Rechtsgrundlage, wie lange und mit welchen
         Auftragsverarbeitern.
       </p>
@@ -150,7 +155,9 @@ function CookiesSection() {
       <p>
         {BRAND.name} verwendet ausschließlich <strong>technisch notwendige</strong> Cookies: ein
         Auth-Cookie von Supabase (Lehrer:innen-Session) bzw. ein HTTP-Only-Cookie mit signierter
-        JWT-Session (Schüler:innen-Session, bis zu 1 Jahr Gültigkeit). Keine Tracker, keine
+        JWT-Session (Schüler:innen-Session, bis zu 1 Jahr Gültigkeit). Beim Microsoft-Login der
+        Schüler:innen wird kurzzeitig (10 Minuten) ein zweiter HTTP-Only-Cookie gesetzt, der die
+        Microsoft-Identität bis zur Klassen-Code-Eingabe trägt. Keine Tracker, keine
         Marketing-Cookies, keine externen Analyse-Dienste. Daher kein Cookie-Banner notwendig.
       </p>
     </Section>

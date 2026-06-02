@@ -7,12 +7,12 @@
 
 ## 1. Vier Rollen
 
-| Rolle             | Wer                      | Auth-Mechanismus                                    | Session                           |
-| ----------------- | ------------------------ | --------------------------------------------------- | --------------------------------- |
-| **Öffentlich**    | jede:r ohne Login        | kein Auth                                           | keine                             |
-| **Schüler:in**    | Kinder im Klassenverband | Klassencode + 4-stellige PIN                        | jose-JWT, HTTP-Only Cookie (1 J.) |
-| **Lehrer:in**     | Lehrkräfte               | Magic-Link via Supabase Auth                        | Supabase Session-Cookie (Refresh) |
-| **Admin (Autor)** | aktuell nur Geo          | Lehrer:in-Login **+** E-Mail in `BRAND.adminEmails` | wie Lehrer:in                     |
+| Rolle             | Wer                      | Auth-Mechanismus                                         | Session                           |
+| ----------------- | ------------------------ | -------------------------------------------------------- | --------------------------------- |
+| **Öffentlich**    | jede:r ohne Login        | kein Auth                                                | keine                             |
+| **Schüler:in**    | Kinder im Klassenverband | Klassencode + 4-stellige PIN **oder** O365-SSO (Phase O) | jose-JWT, HTTP-Only Cookie (1 J.) |
+| **Lehrer:in**     | Lehrkräfte               | Magic-Link via Supabase Auth                             | Supabase Session-Cookie (Refresh) |
+| **Admin (Autor)** | aktuell nur Geo          | Lehrer:in-Login **+** E-Mail in `BRAND.adminEmails`      | wie Lehrer:in                     |
 
 **Wichtig:** Admin ist eine **erweiterte Lehrer:in-Rolle** — kein zweites Login-System.
 Geo loggt sich genauso ein wie jede andere Lehrkraft; die Allowlist hebt ihn ab.
@@ -93,12 +93,12 @@ zeigt Login-Status oder Login-CTA. Quelle der Wahrheit ist
 `fetchAuthSlot()` aus `HeaderAuth.tsx` (paralleler `getUser` +
 `getStudentSession`, ein Request, kein doppelter DB-Roundtrip).
 
-| Rolle          | Mittlerer Nav-Link           | Rechter Slot                                                   |
-| -------------- | ---------------------------- | -------------------------------------------------------------- |
-| **Öffentlich** | „Schüler:innen-Login" → `/k` | Button „Lehrer:innen-Login" → `/login`                         |
-| **Schüler:in** | „Mein Bereich" → `/s`        | „Angemeldet als 5A-01" + Abmelden-Form (`studentLogout`)       |
-| **Lehrer:in**  | „Mein Dashboard" → `/lehrer` | E-Mail (max 24 Zeichen, sonst „…") + Abmelden-Form (`signOut`) |
-| **Admin**      | „Mein Dashboard" → `/lehrer` | Zusätzlich „Admin"-Link → `/admin`, sonst wie Lehrer:in        |
+| Rolle          | Mittlerer Nav-Link           | Rechter Slot                                                                                                |
+| -------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Öffentlich** | „Schüler:innen-Login" → `/k` | Button „Lehrer:innen-Login" → `/login`                                                                      |
+| **Schüler:in** | „Mein Bereich" → `/s`        | Anzeigename (Vorname Nachname bei SSO, Codename bei Code+PIN) + ⚙️-Dropdown („Klasse verlassen" + Abmelden) |
+| **Lehrer:in**  | „Mein Dashboard" → `/lehrer` | E-Mail (max 24 Zeichen, sonst „…") + Abmelden-Form (`signOut`)                                              |
+| **Admin**      | „Mein Dashboard" → `/lehrer` | Zusätzlich „Admin"-Link → `/admin`, sonst wie Lehrer:in                                                     |
 
 **Materialien** (`/dgb`) ist für alle Rollen sichtbar — als zweiter Link
 links neben dem rollenabhängigen Nav-Link.
@@ -167,6 +167,31 @@ Vorteile:
 - `proxy.ts` — Edge-Schutz
 - `supabase/migrations/0002_rls_policies.sql` — DB-Policies
 
+## 6a. Schüler:innen-Identität: zwei parallele Pfade (Phase O)
+
+Seit Phase O kann eine Schüler:in auf zwei Wegen Mitglied einer Klasse werden:
+
+| Login-Pfad     | Erforderlich              | `student_codes`-Felder                                                         | PII-Status                                                  |
+| -------------- | ------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| **Code + PIN** | Klassencode + 4-st. PIN   | `codename`, `pin_hash`; alle O365-Felder NULL                                  | pseudonym (keine PII)                                       |
+| **O365-SSO**   | Microsoft-365-Schul-Konto | `codename`, `o365_oid`, `o365_email`, `given_name`, `surname`; `pin_hash` NULL | Vorname/Nachname/E-Mail sind PII — Datenschutz §3 erweitert |
+
+Beide Pfade landen am Ende im **gleichen jose-Cookie** — alle bestehenden
+Helper (`getStudentSession`, `requireStudentSession`, RLS-Policies) sind
+unverändert. Multi-Klassen-Mitgliedschaft eines O365-Users = mehrere Rows
+mit gleicher `o365_oid` (partial unique index auf `(o365_oid, class_id)`).
+
+**Optionale Domain-Allowlist pro Klasse:** `classes.allowed_email_domains text[]`
+(Migration 0017). NULL = alle Domains erlaubt. Bei gesetzter Liste prüft
+`joinClassWithO365` vor dem Insert (`isEmailDomainAllowed`-Helper, getestet).
+Code+PIN-Schüler:innen sind nicht betroffen.
+
+**Schüler:innen können selbst austreten:** Settings-Menü oben rechts →
+„Klasse verlassen" löscht die `student_codes`-Row (Cascade räumt Progress,
+Hefte, Streak), beendet die Session, redirected nach `/k`.
+
+Siehe ADR-0014 für die Architektur-Entscheidung, `docs/adr/0014-o365-sso-fuer-schueler-innen.md`.
+
 ## 7. Änderungs-Protokoll
 
 - **2026-05-28** — Datei angelegt; Admin-Rolle als E-Mail-Allowlist eingeführt,
@@ -189,6 +214,16 @@ Vorteile:
   RLS-Policies `class_modules_all_own` und `student_progress_select_own_classes`
   erzwingen die Sicht auf eigene Klassen. Codenamen sind anonym — Lehrer:in
   sieht nur Status + Score, keine PII (DSGVO §6).
+- **2026-06-02** — Phase O (ADR-0014): O365-SSO als zweiter Login-Pfad für
+  Schüler:innen, parallel zu Code+PIN. Erweitert `student_codes` um
+  `o365_oid`/`o365_email`/`given_name`/`surname`/`sso_first_login_at`
+  (Migration 0015). Optionale E-Mail-Domain-Allowlist pro Klasse
+  (Migration 0017). Tinkercad-Pattern für Klassen-Beitritt via Code.
+  Schüler:innen-Header bekommt Settings-Dropdown („Klasse verlassen" +
+  Abmelden), Klassenname wird im `/s`-Dashboard angezeigt. Lehrer:innen
+  können Klassen löschen (Cascade) und Klassen-Code via Beamer-Modus
+  groß zeigen. Datenschutz §3 spiegelt die neue PII-Situation für
+  SSO-Schüler:innen wider. Siehe §6a.
 - **2026-05-30** — Phase 16 (ADR-0011 + ADR-0012): Lehrer:innen sehen Abgaben
   im Detail (`/lehrer/klassen/[id]/fortschritt/[studentCodeId]/[moduleId]`) und
   können sie **mit Feedback zurückgeben** (4. Status `returned`). Neue RLS-

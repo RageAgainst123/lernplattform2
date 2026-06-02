@@ -63,10 +63,29 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
   `name`-Fallback + Email-Lokalteil-Ableitung. Migration 0016 repariert
   Bestand.
 
+### Phase O4 — Datenschutz-Update + optionale Domain-Allowlist
+
+- **Migration 0017** ergänzt `classes.allowed_email_domains text[]`. Optionale
+  Whitelist von E-Mail-Domains für den O365-Beitritt. NULL/leer = alle erlaubt.
+- **`isEmailDomainAllowed`-Helper** (pure, getestet) prüft die Domain vor dem
+  Insert in `joinClassWithO365`. Neuer `domain_not_allowed`-Fehler-Discriminator
+  im `JoinClassResult`.
+- **Datenschutz-Seite** (`app/datenschutz/page.tsx`) erweitert:
+  - Schüler:innen-Bereich hat jetzt zwei Sub-Abschnitte (Code+PIN pseudonym
+    vs. O365-SSO mit Vorname/Nachname/Email).
+  - Microsoft Ireland als zusätzlicher Auftragsverarbeiter dokumentiert
+    (mit Standardvertragsklauseln nach Art. 46 DSGVO).
+  - Pexels als Auftragsverarbeiter ergänzt (war seit Schulheft-Phase fällig).
+  - Cookie-Sektion erwähnt den temporären `sso_pending`-Cookie (10 Min TTL).
+  - Retention-Block erwähnt das selbstständige Klassen-Verlassen.
+- **`docs/ROLES.md`** hat neuen §6a, der die zwei Schüler:innen-Identitäts-Pfade
+  beschreibt (Code+PIN vs. O365-SSO) und auf ADR-0014 verweist.
+
 ### STOP-Punkte (User-Aktionen)
 
 - **Migration 0015** im Supabase-Dashboard ausführen
 - **Migration 0016** im Supabase-Dashboard ausführen (repariert defekte SSO-Rows)
+- **Migration 0017** im Supabase-Dashboard ausführen (optionale Domain-Allowlist)
 - **Azure-App-Registrierung** + Supabase-Azure-Provider aktivieren (Phase O0)
 
 ### Nicht enthalten

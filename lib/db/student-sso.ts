@@ -2,6 +2,7 @@ import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { normalizeJoinCode } from '@/lib/db/join-code';
 import { buildCodenameBase } from '@/lib/db/sso-codename';
+import { isEmailDomainAllowed } from '@/lib/db/email-domain';
 
 // Phase O2: O365-SSO-Schüler:innen-DB-Helpers.
 //
@@ -57,7 +58,11 @@ export async function findStudentMembershipsByO365Oid(
 // damit der Page-Handler nicht raten muss.
 export type JoinClassResult =
   | { ok: true; studentCodeId: string; classId: string }
-  | { ok: false; error: 'invalid_code' | 'already_in_class' | 'internal_error'; message?: string };
+  | {
+      ok: false;
+      error: 'invalid_code' | 'already_in_class' | 'domain_not_allowed' | 'internal_error';
+      message?: string;
+    };
 
 // Generiert einen eindeutigen Codename für den SSO-Eintrag.
 // Basis via buildCodenameBase (pure, in sso-codename.ts getestet),
@@ -82,13 +87,15 @@ async function uniqueCodename(
   return `${base}-${n}`;
 }
 
-async function findClassByJoinCode(
-  code: string
-): Promise<{ ok: true; classId: string } | { ok: false; result: JoinClassResult }> {
+type ClassLookup =
+  | { ok: true; classId: string; allowedEmailDomains: string[] | null }
+  | { ok: false; result: JoinClassResult };
+
+async function findClassByJoinCode(code: string): Promise<ClassLookup> {
   const supabase = createServiceClient();
   const { data: cls, error } = await supabase
     .from('classes')
-    .select('id')
+    .select('id, allowed_email_domains')
     .eq('join_code', code)
     .maybeSingle();
   if (error) {
@@ -97,7 +104,11 @@ async function findClassByJoinCode(
   if (!cls) {
     return { ok: false, result: { ok: false, error: 'invalid_code' } };
   }
-  return { ok: true, classId: cls.id as string };
+  return {
+    ok: true,
+    classId: cls.id as string,
+    allowedEmailDomains: (cls.allowed_email_domains as string[] | null) ?? null,
+  };
 }
 
 async function insertSsoMembership(args: {
@@ -147,6 +158,10 @@ export async function joinClassWithO365(args: {
   const classLookup = await findClassByJoinCode(normalizeJoinCode(args.joinCode));
   if (!classLookup.ok) return classLookup.result;
   const classId = classLookup.classId;
+
+  if (!isEmailDomainAllowed(args.email, classLookup.allowedEmailDomains)) {
+    return { ok: false, error: 'domain_not_allowed' };
+  }
 
   const { data: existing } = await supabase
     .from('student_codes')

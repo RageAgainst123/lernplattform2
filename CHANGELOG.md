@@ -8,6 +8,76 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase O — O365-SSO für Schüler:innen
+
+**2026-06-02** · Commits `36512e0` (O1+O2+O3) + `87e8de3` (Bug-Fixes) + `6f19128` (Folge-Bugs) (Branch `feature/thema-workflow`)
+
+### Hinzugefügt
+
+- **Multi-Tenant Azure-App-Registrierung** + Supabase-Azure-Provider — eine
+  App-Registrierung deckt alle NÖ-Schulen ab. Schüler:innen melden sich mit
+  ihrem Schul-Microsoft-Konto an.
+- **Tinkercad-Pattern für Klassen-Beitritt:** nach OAuth-Callback ohne
+  Mitgliedschaft → `/k/join` zeigt Begrüßung + Klassen-Code-Form → Beitritt.
+  Folge-Logins führen direkt zu `/s`.
+- **Migration 0015** erweitert `student_codes` um `o365_oid`, `o365_email`,
+  `given_name`, `surname`, `sso_first_login_at`. `pin_hash` wurde nullable,
+  Check-Constraint erzwingt „pin_hash OR o365_oid". Partial Unique Index auf
+  `(o365_oid, class_id)` erlaubt Multi-Class-Mitgliedschaft.
+- **`/auth/student-callback`-Route** tauscht OAuth-Code, extrahiert Microsoft
+  Object ID, verwirft Supabase-Session danach wieder (jose-Cookie bleibt
+  alleiniger Session-Träger) und routet je nach Mitgliedschaft.
+- **`lib/auth/sso-pending-session.ts`** für temp jose-Cookie (10 Min TTL) das
+  die O365-Identität zwischen Callback und Klassen-Code-Eingabe trägt.
+- **`/k`-Landing-Page** mit „Mit Microsoft anmelden"-Button als bevorzugtem
+  Weg + Code+PIN-Form als Fallback (für Volksschule, Vertretung).
+- **`StudentSettingsMenu`** im Header (⚙️-Dropdown): „Klasse verlassen" +
+  „Abmelden". Mobile-Menü hat zusätzlich „🚪 Klasse verlassen"-Zeile.
+- **`leaveClass`-Server-Action** löscht die eigene `student_codes`-Row,
+  Cascade räumt Progress + Hefte + Streak auf.
+- **Klassen-Löschen für Lehrer:innen** mit Bestätigungs-Dialog (exakter
+  Klassenname als Eingabe-Schutz). Cascade-FKs räumen alles auf.
+- **Beamer-Code-Screen** `/lehrer/klassen/[id]/beamer` — eigene Route ohne
+  Header, riesiger Klassen-Code, Login-URL für Schüler:innen-Geräte. Prominent
+  verlinkt von der Klassen-Detail-Seite.
+- **`studentDisplayName`-Helper** mit Fallback-Kette: Vorname Nachname →
+  Email-Lokalteil → Codename → „Schüler:in". Kapselt die Anzeige-Logik für
+  Header, Codes-Liste, Dashboard.
+- **Klassenname im Schüler-Dashboard** über `getClassNameForStudent`-Helper
+  (Service-Role-Client, weil Schüler:innen kein `auth.uid()` haben).
+- **ADR-0014** dokumentiert die Architektur-Entscheidung (multi-tenant,
+  jose-Cookie als Single-Source-of-Truth, Tinkercad-Pattern).
+
+### Geändert
+
+- **`student_codes`-Schema** erweitert um O365-Felder (Phase O1).
+- **`StudentCodeRow`** zeigt Anzeigenamen statt Codename für SSO-User,
+  Microsoft-Badge statt PIN-Button.
+- **HeaderAuth** Schüler:in-Variante: Settings-Dropdown statt nur Label+Abmelden.
+
+### Behoben
+
+- **Hydration-Mismatch im Beamer-Code-Screen** (`window.location.origin` im
+  SSR vs. Client) — gelöst mit `useSyncExternalStore`.
+- **Codename `"."` bei leeren Namens-Feldern** — Callback nutzt jetzt
+  `name`-Fallback + Email-Lokalteil-Ableitung. Migration 0016 repariert
+  Bestand.
+
+### STOP-Punkte (User-Aktionen)
+
+- **Migration 0015** im Supabase-Dashboard ausführen
+- **Migration 0016** im Supabase-Dashboard ausführen (repariert defekte SSO-Rows)
+- **Azure-App-Registrierung** + Supabase-Azure-Provider aktivieren (Phase O0)
+
+### Nicht enthalten
+
+- Lehrer:innen-SSO via O365 (Phase O5, später — Magic-Link reicht heute)
+- Domain-Whitelist pro Klasse (Phase O4, optional)
+- Microsoft-Education-API-Roster-Sync (Vision, später wenn echter Bedarf)
+- QR-Code auf Beamer-Screen (würde neue Dependency erfordern)
+
+---
+
 ## Phase E — Drei Aktivitäten sauber trennen
 
 **2026-05-31** · Commits `8e07368` + (E2/E3 dieser Commit, folgt) (Branch

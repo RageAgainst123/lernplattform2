@@ -1,6 +1,7 @@
 import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { normalizeJoinCode } from '@/lib/db/join-code';
+import { buildCodenameBase } from '@/lib/db/sso-codename';
 
 // Phase O2: O365-SSO-Schüler:innen-DB-Helpers.
 //
@@ -58,34 +59,9 @@ export type JoinClassResult =
   | { ok: true; studentCodeId: string; classId: string }
   | { ok: false; error: 'invalid_code' | 'already_in_class' | 'internal_error'; message?: string };
 
-// Erzeugt einen sauberen Slug aus (vorname, nachname, email). Reihenfolge:
-//   1. "vorname.nachname" wenn beides gesetzt
-//   2. nur vorname / nur nachname
-//   3. email-Lokalteil ("max.muster" aus "max.muster@x.at")
-//   4. Fallback "sso-user"
-// Nur Lowercase a-z 0-9 . - sind erlaubt, max 80 Zeichen.
-function buildCodenameBase(givenName: string, surname: string, email: string): string {
-  const slug = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9.-]/g, '')
-      .replace(/\.+/g, '.')
-      .replace(/^[.-]+|[.-]+$/g, '');
-
-  const given = slug(givenName);
-  const sur = slug(surname);
-  if (given && sur) return `${given}.${sur}`.slice(0, 80);
-  if (given) return given.slice(0, 80);
-  if (sur) return sur.slice(0, 80);
-
-  const local = email.includes('@') ? (email.split('@')[0] ?? '') : email;
-  const emailSlug = slug(local);
-  if (emailSlug) return emailSlug.slice(0, 80);
-
-  return 'sso-user';
-}
-
 // Generiert einen eindeutigen Codename für den SSO-Eintrag.
+// Basis via buildCodenameBase (pure, in sso-codename.ts getestet),
+// Kollisions-Suffix per DB-Lookup.
 async function uniqueCodename(
   classId: string,
   givenName: string,

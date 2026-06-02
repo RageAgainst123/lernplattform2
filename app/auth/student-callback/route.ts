@@ -43,9 +43,52 @@ type O365Identity = {
 function readMetaString(meta: Record<string, unknown>, ...keys: string[]): string {
   for (const k of keys) {
     const v = meta[k];
-    if (typeof v === 'string' && v.length > 0) return v;
+    if (typeof v === 'string' && v.trim().length > 0) return v.trim();
   }
   return '';
+}
+
+// Microsoft schickt Vorname/Nachname je nach Tenant inkonsistent. Mögliche
+// Quellen (in Reihenfolge der Verlässlichkeit):
+//   1. user_metadata.given_name / family_name (Standard-OIDC-Claims)
+//   2. user_metadata.name (vollständiger Anzeigename → split am ersten Space)
+//   3. Email-Lokalteil als allerletzter Fallback (z.B. "max.mustermann"
+//      → "Max" "Mustermann")
+// Die jeweils ersten beiden Felder befüllen, was vorhanden ist. Wenn alles
+// leer bleibt: leerer String — die Anzeige-Helper greifen dann auf email zurück.
+function deriveNames(
+  meta: Record<string, unknown>,
+  email: string
+): {
+  givenName: string;
+  surname: string;
+} {
+  const given = readMetaString(meta, 'given_name');
+  const family = readMetaString(meta, 'family_name', 'surname');
+  if (given || family) return { givenName: given, surname: family };
+
+  const fullName = readMetaString(meta, 'name', 'full_name');
+  if (fullName) {
+    const parts = fullName.split(/\s+/);
+    return {
+      givenName: parts[0] ?? '',
+      surname: parts.slice(1).join(' '),
+    };
+  }
+
+  const local = email.split('@')[0] ?? '';
+  if (local.includes('.')) {
+    const parts = local.split('.');
+    return {
+      givenName: capitalize(parts[0] ?? ''),
+      surname: parts.slice(1).map(capitalize).join(' '),
+    };
+  }
+  return { givenName: capitalize(local), surname: '' };
+}
+
+function capitalize(s: string): string {
+  return s.length === 0 ? s : s[0]!.toUpperCase() + s.slice(1);
 }
 
 function extractO365Identity(user: User): O365Identity | null {
@@ -54,12 +97,8 @@ function extractO365Identity(user: User): O365Identity | null {
   const email = user.email ?? '';
   if (!oid || !email) return null;
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-  return {
-    oid,
-    email,
-    givenName: readMetaString(meta, 'given_name'),
-    surname: readMetaString(meta, 'family_name', 'surname'),
-  };
+  const { givenName, surname } = deriveNames(meta, email);
+  return { oid, email, givenName, surname };
 }
 
 async function setPendingAndRedirect(identity: O365Identity, origin: string) {

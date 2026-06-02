@@ -58,20 +58,42 @@ export type JoinClassResult =
   | { ok: true; studentCodeId: string; classId: string }
   | { ok: false; error: 'invalid_code' | 'already_in_class' | 'internal_error'; message?: string };
 
+// Erzeugt einen sauberen Slug aus (vorname, nachname, email). Reihenfolge:
+//   1. "vorname.nachname" wenn beides gesetzt
+//   2. nur vorname / nur nachname
+//   3. email-Lokalteil ("max.muster" aus "max.muster@x.at")
+//   4. Fallback "sso-user"
+// Nur Lowercase a-z 0-9 . - sind erlaubt, max 80 Zeichen.
+function buildCodenameBase(givenName: string, surname: string, email: string): string {
+  const slug = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]/g, '')
+      .replace(/\.+/g, '.')
+      .replace(/^[.-]+|[.-]+$/g, '');
+
+  const given = slug(givenName);
+  const sur = slug(surname);
+  if (given && sur) return `${given}.${sur}`.slice(0, 80);
+  if (given) return given.slice(0, 80);
+  if (sur) return sur.slice(0, 80);
+
+  const local = email.includes('@') ? (email.split('@')[0] ?? '') : email;
+  const emailSlug = slug(local);
+  if (emailSlug) return emailSlug.slice(0, 80);
+
+  return 'sso-user';
+}
+
 // Generiert einen eindeutigen Codename für den SSO-Eintrag.
-// Pattern: "vorname.nachname" lowercase, bei Kollision mit -2, -3, ...
 async function uniqueCodename(
   classId: string,
   givenName: string,
-  surname: string
+  surname: string,
+  email: string
 ): Promise<string> {
   const supabase = createServiceClient();
-  const base =
-    `${givenName}.${surname}`
-      .toLowerCase()
-      .replace(/[^a-z0-9.-]/g, '')
-      .slice(0, 80) || 'sso-user';
-  // Bestehende Codenamen in der Klasse mit demselben Prefix laden
+  const base = buildCodenameBase(givenName, surname, email);
   const { data } = await supabase
     .from('student_codes')
     .select('codename')
@@ -110,7 +132,7 @@ async function insertSsoMembership(args: {
   surname: string;
 }): Promise<JoinClassResult> {
   const supabase = createServiceClient();
-  const codename = await uniqueCodename(args.classId, args.givenName, args.surname);
+  const codename = await uniqueCodename(args.classId, args.givenName, args.surname, args.email);
   const { data: inserted, error: insertError } = await supabase
     .from('student_codes')
     .insert({

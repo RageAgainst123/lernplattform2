@@ -60,3 +60,49 @@ export async function createClass(
   revalidatePath('/lehrer/klassen');
   redirect('/lehrer/klassen');
 }
+
+// Klasse löschen (Phase nach Phase O):
+// Lehrer:in löscht eine eigene Klasse. ON DELETE CASCADE in der DB räumt
+// student_codes, class_modules, assigned_topics, live_sessions etc.
+// automatisch auf.
+//
+// Sicherheits-Schutz:
+//   - requireUser() erzwingt Lehrer:in-Login
+//   - RLS-Policy classes_all_own erlaubt DELETE nur eigene Klassen
+//     (teacher_id = auth.uid()) → fremde Klassen sind unreachable
+//   - confirmName muss EXAKT mit dem Klassennamen übereinstimmen (Schutz vor
+//     Fehlklick)
+
+export type DeleteClassState = { error: string | null };
+
+export async function deleteClass(classId: string, confirmName: string): Promise<DeleteClassState> {
+  await requireUser();
+  const supabase = await createClient();
+
+  // Klassennamen zur Verifikation lesen — RLS sorgt dafür, dass nur eigene
+  // Klassen sichtbar sind. Wenn die Klasse fehlt → fremde oder gelöscht.
+  const { data: cls, error: readError } = await supabase
+    .from('classes')
+    .select('name')
+    .eq('id', classId)
+    .maybeSingle();
+  if (readError) {
+    return { error: 'Klasse konnte nicht gelesen werden.' };
+  }
+  if (!cls) {
+    return { error: 'Klasse nicht gefunden.' };
+  }
+  if (confirmName.trim() !== (cls.name as string)) {
+    return {
+      error: `Zur Bestätigung den Klassennamen exakt eingeben: „${cls.name}".`,
+    };
+  }
+
+  const { error } = await supabase.from('classes').delete().eq('id', classId);
+  if (error) {
+    return { error: `Löschen fehlgeschlagen: ${error.message}` };
+  }
+
+  revalidatePath('/lehrer/klassen');
+  redirect('/lehrer/klassen');
+}

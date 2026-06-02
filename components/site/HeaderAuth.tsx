@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { getUser } from '@/lib/auth/teacher-auth';
 import { getStudentSession } from '@/lib/auth/student-auth';
 import { isAdmin } from '@/lib/auth/admin-auth';
-import { getCodenameById } from '@/lib/db/student-login';
+import { getStudentIdentityById } from '@/lib/db/student-login';
+import { studentDisplayName } from '@/lib/db/student-display-name';
 import { signOut } from '@/lib/auth/actions';
 import { studentLogout } from '@/lib/auth/student-actions';
 import { buttonVariants } from '@/components/ui/button';
@@ -33,9 +34,9 @@ export async function fetchAuthSlot(): Promise<AuthSlotInfo> {
     };
   }
   if (session) {
-    const codename = await getCodenameById(session.studentCodeId);
+    const identity = await getStudentIdentityById(session.studentCodeId);
     return {
-      userLabel: codename ?? 'Schüler:in',
+      userLabel: identity ? studentDisplayName(identity) : 'Schüler:in',
       userKind: 'student',
       isAdminUser: false,
     };

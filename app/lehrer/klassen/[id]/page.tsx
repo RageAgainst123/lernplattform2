@@ -23,6 +23,7 @@ import { ModuleAssignmentPanel } from '@/components/teacher/ModuleAssignmentPane
 import { LiveSessionBanner } from '@/components/teacher/LiveSessionBanner';
 import { TopicCard } from '@/components/teacher/TopicCard';
 import { TopicAssignmentPanel } from '@/components/teacher/TopicAssignmentPanel';
+import { DeleteClassButton } from '@/components/teacher/DeleteClassButton';
 
 export const metadata: Metadata = {
   title: 'Klasse — Lernplattform',
@@ -42,8 +43,17 @@ function ClassHeader({ schoolClass }: { schoolClass: Class }) {
             : 'Keine Schulstufe angegeben'}
         </p>
       </div>
-      <JoinCodeHint joinCode={schoolClass.joinCode} />
+      <JoinCodeHint joinCode={schoolClass.joinCode} classId={schoolClass.id} />
     </>
+  );
+}
+
+function DangerZone({ classId, className }: { classId: string; className: string }) {
+  return (
+    <section className="border-destructive/30 mt-12 rounded-md border border-dashed p-4">
+      <h2 className="text-muted-foreground mb-2 text-sm font-medium">Gefahrenzone</h2>
+      <DeleteClassButton classId={classId} className={className} />
+    </section>
   );
 }
 
@@ -186,6 +196,7 @@ export default async function KlasseDetailPage({ params }: { params: Promise<{ i
         available={availableModules}
         fullAssigned={orphanFullAssigned}
       />
+      <DangerZone classId={schoolClass.id} className={schoolClass.name} />
     </div>
   );
 }

@@ -41,6 +41,10 @@ export const studentCodeSchema = z.object({
   codename: z.string().min(1),
   createdAt: z.string(),
   lastActiveAt: z.string().nullable(),
+  // Phase O: O365-SSO-Felder. NULL bei Code+PIN-Schüler:innen.
+  givenName: z.string().nullable().optional(),
+  surname: z.string().nullable().optional(),
+  o365Email: z.string().nullable().optional(),
 });
 
 // --- topics ----------------------------------------------------------------

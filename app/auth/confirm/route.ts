@@ -42,38 +42,57 @@ export function safeNext(raw: string | null): string {
   }
 }
 
+// Nach erfolgreich gesetzter Session: Profil anlegen, Schüler-Session löschen,
+// zum Ziel weiterleiten. Gemeinsamer Pfad für Magic-Link UND OAuth-Login.
+async function finalizeTeacherLogin(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  request: NextRequest,
+  next: string
+): Promise<NextResponse> {
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.redirect(new URL('/login?error=profil_fehler', request.url));
+    }
+    await ensureTeacherProfile(user);
+    // Falls parallel eine Schüler:innen-Session existiert: beenden.
+    await clearStudentSession();
+  } catch {
+    return NextResponse.redirect(new URL('/login?error=profil_fehler', request.url));
+  }
+  return NextResponse.redirect(new URL(next, request.url));
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
+  // Phase O5: OAuth-Code aus Microsoft-Login. Magic-Link nutzt token_hash,
+  // OAuth nutzt code. Beide enden im selben Confirm-Endpoint.
+  const oauthCode = searchParams.get('code');
   const next = safeNext(searchParams.get('next'));
 
+  // Magic-Link-Pfad (token_hash + type)
   if (tokenHash && type) {
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-
     if (!error) {
-      // Profil-Anlage + Session-Cleanup können bei DB-/RLS-Problemen werfen.
-      // Ohne Schutz wäre die Folge eine harte 500-Fehlerseite. Stattdessen
-      // sauber auf /login mit verständlichem Fehler weiterleiten.
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-        if (userError || !user) {
-          return NextResponse.redirect(new URL('/login?error=profil_fehler', request.url));
-        }
-        await ensureTeacherProfile(user);
-        // Falls parallel eine Schüler:innen-Session existiert: beenden, damit
-        // es nie zwei aktive Rollen-Cookies gleichzeitig gibt (siehe
-        // session-cleanup.ts).
-        await clearStudentSession();
-      } catch {
-        return NextResponse.redirect(new URL('/login?error=profil_fehler', request.url));
-      }
-      return NextResponse.redirect(new URL(next, request.url));
+      return finalizeTeacherLogin(supabase, request, next);
     }
+    return NextResponse.redirect(new URL('/login?error=link_ungueltig', request.url));
+  }
+
+  // OAuth-Pfad (Microsoft / Azure): ?code=…
+  if (oauthCode) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(oauthCode);
+    if (!error) {
+      return finalizeTeacherLogin(supabase, request, next);
+    }
+    return NextResponse.redirect(new URL('/login?error=oauth_fehler', request.url));
   }
 
   return NextResponse.redirect(new URL('/login?error=link_ungueltig', request.url));

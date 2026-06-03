@@ -49,3 +49,4 @@ Was kostet/bringt die Entscheidung? Welche Folge-Entscheidungen hängen daran?
 | [0012](0012-feedback-rueckgabe-zyklus.md)        | Lehrer:innen-Feedback & Rückgabe-Zyklus (ohne KI) | 2026-05-30 |
 | [0013](0013-live-praesentation-polling.md)       | Live-Präsentation via Polling (kein Realtime)     | 2026-05-30 |
 | [0014](0014-o365-sso-fuer-schueler-innen.md)     | O365-SSO für Schüler:innen, parallel zu Code+PIN  | 2026-06-02 |
+| [0015](0015-word-via-sharing-link.md)            | Word-Heft via OneDrive-Sharing-Link, kein API     | 2026-06-03 |

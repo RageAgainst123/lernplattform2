@@ -151,3 +151,28 @@ export type Topic = z.infer<typeof topicSchema>;
 export type Material = z.infer<typeof materialSchema>;
 export type PortfolioEntryInsert = z.infer<typeof portfolioEntryInsertSchema>;
 export type PortfolioEntry = z.infer<typeof portfolioEntrySchema>;
+
+// --- word_heft_links (Phase Q: OneDrive-Sharing-Link) ---------------------
+// O365-Schüler:innen verlinken ihr Word-Heft im eigenen OneDrive. Wir
+// speichern NUR die URL, keine Datei-Inhalte. Siehe ADR-0015.
+export const validationStatusSchema = z.enum(['pending', 'ok', 'broken', 'unverified']);
+
+export const wordHeftLinkInsertSchema = z.object({
+  topicId: z.uuid().nullable().optional(),
+  oneDriveUrl: z.string().min(1).max(2000),
+  displayName: z.string().max(200).optional().nullable(),
+});
+
+export const wordHeftLinkSchema = wordHeftLinkInsertSchema.extend({
+  id: z.uuid(),
+  studentCodeId: z.uuid(),
+  validationStatus: validationStatusSchema,
+  lastValidatedAt: z.string().nullable(),
+  lastOpenedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type ValidationStatus = z.infer<typeof validationStatusSchema>;
+export type WordHeftLinkInsert = z.infer<typeof wordHeftLinkInsertSchema>;
+export type WordHeftLink = z.infer<typeof wordHeftLinkSchema>;

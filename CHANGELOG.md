@@ -8,6 +8,37 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase Q — Word-Heft via OneDrive-Sharing-Link (geplant)
+
+**Geplant 2026-06-03** · noch nicht implementiert · Plan-Datei: `docs/PHASE-Q-WORD-SHARING-LINK.md`
+
+### Geplant
+
+- **Word-Heft-Modus für O365-Schüler:innen.** Statt Tiptap sehen sie ein
+  Word-Heft-Slot pro Thema. Sie legen die Datei selbst in ihrem OneDrive an
+  (Word-Web), klicken „Freigeben → Personen in [Schule] mit Link", kopieren
+  den Link in unser Eingabefeld.
+- **Modal-Anleitung mit 4 Screenshots** beim ersten Heft-Anlegen — soll die
+  Permission-Falle (Default „Bestimmte Personen") abfangen.
+- **Server-Side-Link-Validierung** via HEAD-Request — gibt Live-Feedback ob
+  der Link funktioniert.
+- **Lehrer:innen-Klassen-Heft-Matrix** erweitert um Word-Sektion. Klick öffnet
+  Sharing-URL in Word-Web (neuer Tab). Cross-Tenant funktioniert nur mit
+  O365-Lehrer-Login (Hinweis auf Phase O5).
+- **ADR-0015** dokumentiert Begründung (warum kein WOPI, warum kein
+  Graph-API, warum kein eigener Storage).
+- **Migration 0018**: Tabelle `word_heft_links (student_code_id, topic_id,
+one_drive_url, validation_status, last_validated_at, ...)`.
+
+### Bewusst NICHT enthalten
+
+- Auto-Anlage der Word-Datei via Graph-API (Microsoft-Consent-Hürde)
+- Eigener Storage für Word-Dateien (Kosten + AV-Scan + Backup)
+- Word inline als iframe (CSPP-Vertrag mit Microsoft nötig)
+- Tiptap-Heft wird NICHT ersetzt — bleibt für Code+PIN-Schüler:innen
+
+---
+
 ## Phase O — O365-SSO für Schüler:innen
 
 **2026-06-02** · Commits `36512e0` (O1+O2+O3) + `87e8de3` (Bug-Fixes) + `6f19128` (Folge-Bugs) (Branch `feature/thema-workflow`)

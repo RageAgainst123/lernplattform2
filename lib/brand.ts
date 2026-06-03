@@ -16,7 +16,11 @@ export const BRAND = {
   hostingRegion: 'Frankfurt (eu-central-1)',
   // Admin-Allowlist: nur diese E-Mail-Adressen haben Zugriff auf /admin
   // (zusätzlich zum Lehrer:innen-Login). Siehe docs/ROLES.md.
-  adminEmails: ['geoschlegel@gmail.com'] as readonly string[],
+  // Match ist case-insensitive (siehe isAdmin in lib/auth/admin-auth.ts).
+  adminEmails: [
+    'geoschlegel@gmail.com',
+    'georg.schlegel@nms-pitten.ac.at', // Schul-O365-Konto Geo
+  ] as readonly string[],
 } as const;
 
 // Copyright-Jahr für den Footer. Wird zur Modul-Lade-Zeit (also einmal pro

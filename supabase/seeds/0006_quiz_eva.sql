@@ -16,7 +16,7 @@ insert into public.modules (
   estimated_minutes, is_published, activity_kind, display_mode
 )
 values (
-  '00000000-0000-4000-8000-00000000quiz',
+  '00000000-0000-4000-8000-00000000eva1',
   'EVA-Quiz',
   'Teste dein Wissen zum EVA-Prinzip — 5 Fragen, kommt aus dem Lernmodul.',
   5,
@@ -88,7 +88,7 @@ on conflict (id) do nothing;
 -- doch sofort zuweisen gewünscht: die folgenden 5 Zeilen entkommentieren.
 --
 -- insert into public.class_modules (class_id, module_id)
--- select c.id, '00000000-0000-4000-8000-00000000quiz'
+-- select c.id, '00000000-0000-4000-8000-00000000eva1'
 -- from public.classes c
 -- order by c.created_at
 -- limit 1

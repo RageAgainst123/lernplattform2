@@ -15,6 +15,22 @@ import { loadSoloRunResult, type SoloRunResult } from '@/lib/blocks/solo-run-res
 // Lint-Warnung. Server-Snapshot ist null (kein sessionStorage in SSR);
 // Client-Snapshot ist das tatsächliche Ergebnis.
 
+// Snapshot-Cache pro Modul-ID. useSyncExternalStore erwartet, dass
+// getSnapshot() bei wiederholten Aufrufen DIESELBE Referenz liefert
+// (sonst infinite-loop, weil React per Identity vergleicht). Da
+// sessionStorage sich während der Endseiten-Lifetime nicht ändert,
+// reicht ein einmaliges Lesen pro moduleId.
+const snapshotCache = new Map<string, SoloRunResult | null>();
+
+function getCachedSnapshot(moduleId: string): SoloRunResult | null {
+  if (snapshotCache.has(moduleId)) {
+    return snapshotCache.get(moduleId) ?? null;
+  }
+  const fresh = loadSoloRunResult(moduleId);
+  snapshotCache.set(moduleId, fresh);
+  return fresh;
+}
+
 function noopSubscribe(): () => void {
   // sessionStorage feuert kein Browser-Event innerhalb desselben Tabs —
   // ein no-op-Subscribe reicht, weil wir den Wert nur einmal beim Mount
@@ -25,7 +41,7 @@ function noopSubscribe(): () => void {
 export function SoloRunSummary({ moduleId }: { moduleId: string }) {
   const result = useSyncExternalStore<SoloRunResult | null>(
     noopSubscribe,
-    () => loadSoloRunResult(moduleId),
+    () => getCachedSnapshot(moduleId),
     () => null
   );
 

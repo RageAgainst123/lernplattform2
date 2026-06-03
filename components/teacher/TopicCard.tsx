@@ -10,10 +10,18 @@ import { TopicRemoveButton } from './TopicRemoveButton';
 // Karte: Präsentationen (oben, abgesetzt — nur für die Lehrer:in zum
 // Stundeneinstieg), Lernpfad (Lernmodule + Quiz + Abschlusstest in
 // Reihenfolge, das was Schüler:innen sehen), Entfernen-Aktion ganz unten.
+//
+// Quiz + Abschlusstest bekommen zusätzlich einen „🎮 Live starten"-Button
+// für den Kahoot-Stil-Modus (Phase S). Bis S1.D fertig ist, zeigt der Button
+// einen „Demnächst"-Hinweis statt einem toten Link.
 
 // Reihenfolge im Lernpfad: Lernmodule → Quiz → Abschlusstest.
 // Präsentationen sind kein Teil des Schüler-Pfades.
 const STUDENT_PATH_ORDER: ActivityKind[] = ['lernmodul', 'quiz', 'abschlusstest'];
+
+// Activity-Kinds, die als Live-Klassen-Quiz gestartet werden können
+// (Spec §3 — Quiz/Abschlusstest als interaktive Live-Variante).
+const LIVE_QUIZ_KINDS: ActivityKind[] = ['quiz', 'abschlusstest'];
 
 type Props = {
   classId: string;
@@ -114,6 +122,7 @@ function StudentPathSection({ entries }: { entries: TopicModuleEntry[] }) {
 
 function StudentPathItem({ entry, index }: { entry: TopicModuleEntry; index: number }) {
   const info = ACTIVITY_INFO[entry.activityKind];
+  const canLiveStart = LIVE_QUIZ_KINDS.includes(entry.activityKind);
   return (
     <li className="hover:bg-muted/40 flex items-center gap-3 rounded-md border px-3 py-2">
       <span className="text-muted-foreground w-5 text-right text-xs tabular-nums">{index}.</span>
@@ -126,6 +135,23 @@ function StudentPathItem({ entry, index }: { entry: TopicModuleEntry; index: num
           fällig {entry.dueDate}
         </span>
       )}
+      {canLiveStart && <LiveQuizStartButton />}
     </li>
+  );
+}
+
+// Placeholder für „Live starten" — die echte Setup-Seite kommt in S1.D.
+// Bis dahin: disabled-Button mit Tooltip, damit Geo im UI sieht WO der
+// Live-Quiz-Start später sitzt, ohne dass es einen 404-Link gibt.
+function LiveQuizStartButton() {
+  return (
+    <button
+      type="button"
+      disabled
+      title="Live-Klassen-Quiz im Kahoot-Stil — Setup-UI kommt in Sprint S1.D"
+      className="shrink-0 cursor-not-allowed rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 opacity-60"
+    >
+      🎮 Live starten (bald)
+    </button>
   );
 }

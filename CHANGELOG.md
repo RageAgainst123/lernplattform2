@@ -8,27 +8,59 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
-## Phase Q — Word-Heft via OneDrive-Sharing-Link (geplant)
+## Phase Q — Word-Heft via OneDrive-Sharing-Link
 
-**Geplant 2026-06-03** · noch nicht implementiert · Plan-Datei: `docs/PHASE-Q-WORD-SHARING-LINK.md`
+**2026-06-03** · Commits `36512e0` → `2236414` (Branch `feature/thema-workflow`) · ADR-0015
 
-### Geplant
+### Hinzugefügt
 
-- **Word-Heft-Modus für O365-Schüler:innen.** Statt Tiptap sehen sie ein
-  Word-Heft-Slot pro Thema. Sie legen die Datei selbst in ihrem OneDrive an
-  (Word-Web), klicken „Freigeben → Personen in [Schule] mit Link", kopieren
-  den Link in unser Eingabefeld.
-- **Modal-Anleitung mit 4 Screenshots** beim ersten Heft-Anlegen — soll die
-  Permission-Falle (Default „Bestimmte Personen") abfangen.
-- **Server-Side-Link-Validierung** via HEAD-Request — gibt Live-Feedback ob
-  der Link funktioniert.
-- **Lehrer:innen-Klassen-Heft-Matrix** erweitert um Word-Sektion. Klick öffnet
-  Sharing-URL in Word-Web (neuer Tab). Cross-Tenant funktioniert nur mit
-  O365-Lehrer-Login (Hinweis auf Phase O5).
-- **ADR-0015** dokumentiert Begründung (warum kein WOPI, warum kein
-  Graph-API, warum kein eigener Storage).
+- **Generelles Word-Schulübungsheft** für O365-SSO-Schüler:innen. EINS pro
+  Schüler:in (nicht pro Thema), liegt im eigenen OneDrive. Wird in allen
+  Themen-Lernpfaden als zusätzliches Werkzeug angeboten — für Notizen,
+  Übungen oder Vorbereitung auf den Abschlusstest.
 - **Migration 0018**: Tabelle `word_heft_links (student_code_id, topic_id,
-one_drive_url, validation_status, last_validated_at, ...)`.
+one_drive_url, validation_status, last_validated_at, last_opened_at)`
+  mit RLS für Lehrer:innen-Lese-Zugriff auf eigene Klassen.
+- **Migration 0019**: Schema-Korrektur — `unique(student_code_id)` als echte
+  Constraint (statt partial-Index) damit Upsert/ON-CONFLICT funktioniert.
+- **`/s/heft/word`-Route** für Schüler:innen mit `WordHeftSlot`-Component
+  (Empty/Existing-Dispatcher).
+- **Header-Knopf „📓 Mein Heft"** nur für SSO-Schüler:innen sichtbar
+  (`AuthSlotInfo.isSsoStudent`).
+- **`WordHeftHint`-Card** auf jeder Themen-Detail-Seite — kompakter
+  pädagogischer Hinweis mit „Heft öffnen" oder „Heft einrichten".
+- **`WordHeftMatrix`** in `/lehrer/klassen/[id]` — Klassen-Übersicht aller
+  Word-Hefte mit Status-Badge + Direkt-Link zu Word-Web.
+- **`MagicLinkHint`** in der Lehrer:in-Matrix — wenn die Lehrer:in nur per
+  Magic-Link eingeloggt ist, Hinweis dass für Cross-Tenant-Zugriff O365-
+  Login nötig ist.
+- **`WordHeftInstructionsModal`** mit 7-Schritt-Anleitung (an die echte
+  Word-Web-UI angepasst: Teilen → Teilen → ⚙️ neben Link kopieren →
+  „Personen in [Schule]" → Übernehmen → Link kopieren → einfügen).
+- **`validateOneDriveLink`** Pure Helper (12 Tests): URL-Form-Check gegen
+  Microsoft-Domain-Whitelist (`*.sharepoint.com`, `*-my.sharepoint.com`,
+  `onedrive.live.com`, `1drv.ms`), Phishing-Schutz, https-Pflicht, max 2000
+  Zeichen.
+- **Server-Side HEAD-Request-Validierung** (`probeOneDriveUrl`) — ehrliche
+  Statuslogik: 404 → broken, Login-Redirect/401/403 → unverified (statt
+  fälschlich „broken"), 200 ohne Redirect → ok.
+- **Lehrer:innen-Heft-Sicht hat Detail-Reaktion auf SSO-Status** via
+  `isAzureLogin(user)` (Identities-Liste-Check).
+- **ADR-0015** dokumentiert Begründung: warum kein WOPI (CSPP-Vertrag mit
+  Microsoft nötig), warum kein Graph-API (Admin-Consent-Hürde seit Juli
+  2025), warum kein eigener Storage (Kosten + AV-Scan + Backup).
+- **Datenschutz-Seite + ROLES.md §6b** dokumentieren das neue Modell:
+  Datei liegt bei Microsoft im Schul-Tenant, wir speichern nur die URL.
+
+### Geändert
+
+- `app/lehrer/klassen/[id]/page.tsx` refactored: Sub-Komponenten in
+  `KlasseDetailSections.tsx` ausgelagert um Datei-Limit einzuhalten.
+
+### STOP-Punkte (User-Aktionen)
+
+- **Migration 0018** im Supabase-Dashboard ausführen
+- **Migration 0019** im Supabase-Dashboard ausführen
 
 ### Bewusst NICHT enthalten
 
@@ -36,6 +68,8 @@ one_drive_url, validation_status, last_validated_at, ...)`.
 - Eigener Storage für Word-Dateien (Kosten + AV-Scan + Backup)
 - Word inline als iframe (CSPP-Vertrag mit Microsoft nötig)
 - Tiptap-Heft wird NICHT ersetzt — bleibt für Code+PIN-Schüler:innen
+- Heft pro Thema (urspünglich geplant, vom User auf generelles Heft
+  umgewünscht)
 
 ---
 

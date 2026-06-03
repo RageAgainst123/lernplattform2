@@ -192,6 +192,31 @@ Hefte, Streak), beendet die Session, redirected nach `/k`.
 
 Siehe ADR-0014 für die Architektur-Entscheidung, `docs/adr/0014-o365-sso-fuer-schueler-innen.md`.
 
+## 6b. Word-Schulübungsheft für SSO-Schüler:innen (Phase Q)
+
+Seit Phase Q haben SSO-Schüler:innen ein zusätzliches Werkzeug: ein
+**Word-Schulübungsheft im eigenen OneDrive**, das sie in allen Themen-
+Lernpfaden als Notiz/Übung/Abschlusstest-Vorbereitung verwenden können.
+
+| Aspekt                           | Implementierung                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------- |
+| **Wer hat es?**                  | Nur Schüler:innen mit `o365_email`-Feld (= SSO-Login)                                  |
+| **Wo liegt die Datei?**          | OneDrive der Schüler:in (Schul-Tenant, A1-EDU)                                         |
+| **Was speichern wir?**           | Nur URL + Status in `word_heft_links`-Tabelle                                          |
+| **Wie kommt die Lehrer:in ran?** | Sharing-Link via Word-Web („Personen in MS Pitten")                                    |
+| **Header-Knopf**                 | „📓 Mein Heft" rechts neben „Mein Bereich" (nur SSO-Schüler:innen)                     |
+| **Lehrer:in-Sicht**              | `/lehrer/klassen/[id]` → Sektion „📓 Word-Schulübungshefte" mit Klick-zum-Öffnen-Liste |
+
+**Code+PIN-Schüler:innen** sehen den Word-Heft-Knopf NICHT — sie behalten
+ihr Tiptap-Heft. Bewusst zwei getrennte Welten, keine Doppel-UI.
+
+**Cross-Tenant-Einsicht für Lehrer:in:** Funktioniert nur wenn Lehrer:in
+selbst per O365 eingeloggt ist (siehe Magic-Link-Hinweis in
+`/lehrer/klassen/[id]`). Im selben Tenant geht es immer.
+
+Siehe ADR-0015 (`docs/adr/0015-word-via-sharing-link.md`) für die Begründung
+warum dieser Pfad statt Graph-API / Storage / WOPI.
+
 ## 7. Änderungs-Protokoll
 
 - **2026-05-28** — Datei angelegt; Admin-Rolle als E-Mail-Allowlist eingeführt,
@@ -214,6 +239,12 @@ Siehe ADR-0014 für die Architektur-Entscheidung, `docs/adr/0014-o365-sso-fuer-s
   RLS-Policies `class_modules_all_own` und `student_progress_select_own_classes`
   erzwingen die Sicht auf eigene Klassen. Codenamen sind anonym — Lehrer:in
   sieht nur Status + Score, keine PII (DSGVO §6).
+- **2026-06-03** — Phase Q (ADR-0015): Word-Schulübungsheft via OneDrive-
+  Sharing-Link für SSO-Schüler:innen. Migration 0018 (Tabelle word_heft_links)
+  - 0019 (1 Heft pro Schüler:in, kein Thema). Neue Routes: /s/heft/word
+    (Schüler:in-Setup), /lehrer/klassen/[id] erweitert um Word-Heft-Matrix.
+    Konkrete 7-Schritt-Anleitung mit Permission-Pfad „Personen in MS Pitten".
+    Tiptap-Heft bleibt für Code+PIN-Schüler:innen unverändert. Siehe §6b.
 - **2026-06-02** — Phase O (ADR-0014): O365-SSO als zweiter Login-Pfad für
   Schüler:innen, parallel zu Code+PIN. Erweitert `student_codes` um
   `o365_oid`/`o365_email`/`given_name`/`surname`/`sso_first_login_at`

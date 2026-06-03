@@ -5,6 +5,7 @@ import {
   TeacherLoginPart,
   StudentCodePinPart,
   StudentSsoPart,
+  WordHeftPart,
 } from './DataPartials';
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ function DataSection() {
       <TeacherLoginPart />
       <StudentCodePinPart />
       <StudentSsoPart />
+      <WordHeftPart />
     </Section>
   );
 }
@@ -98,6 +100,10 @@ function RetentionSection() {
           Ende des Schuljahres.
         </li>
         <li>Hochgeladene Materialien (PDFs): bis zur Löschung durch die Lehrkraft.</li>
+        <li>
+          Word-Schulübungsheft-Links (Phase Q): bis zur Löschung durch die Schüler:in oder beim
+          Klassen-Verlassen. Die Word-Datei selbst bleibt im OneDrive der Schüler:in.
+        </li>
       </ul>
     </Section>
   );

@@ -72,3 +72,26 @@ export function StudentSsoPart() {
     </>
   );
 }
+
+export function WordHeftPart() {
+  return (
+    <>
+      <h3 className="text-lg font-medium">Word-Schulübungsheft (optional, nur für SSO-Zugänge)</h3>
+      <p>
+        SSO-Schüler:innen können ein <strong>Word-Schulübungsheft</strong> verwenden. Das Heft liegt
+        im <strong>OneDrive der Schüler:in</strong> (Schul-Tenant, EU-Region bei A1 Education) und
+        wird über einen Freigabe-Link mit der Lehrer:in geteilt. In unserer Datenbank speichern wir{' '}
+        <strong>ausschließlich die Sharing-Link-URL</strong> + Datei- Name + Status —{' '}
+        <strong>keine Datei-Inhalte, keine Bilder, keine Texte</strong>. Die Microsoft-Verarbeitung
+        dieser Datei läuft direkt im OneDrive der Schule (Microsoft als Auftrags­verarbeiter der
+        Schule, nicht der Lernplattform). Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO
+        (Vertragserfüllung).
+      </p>
+      <p>
+        Beim Klassen-Verlassen oder Konto-Löschen entfernen wir nur die URL — die Word-Datei selbst
+        bleibt im OneDrive der Schüler:in und kann dort jederzeit über das Microsoft- Konto gelöscht
+        werden.
+      </p>
+    </>
+  );
+}

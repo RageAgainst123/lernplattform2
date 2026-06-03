@@ -5,7 +5,8 @@ import { studentDisplayName } from '@/lib/db/student-display-name';
 import { getAssignedTopicsForStudent } from '@/lib/db/student-topics';
 import { getQuizBannerForStudent } from '@/lib/db/quiz-sessions';
 import { StudentTopicCard } from '@/components/student/StudentTopicCard';
-import { QuizLiveBanner } from '@/components/student/QuizLiveBanner';
+import { QuizLiveBannerPolling } from '@/components/student/QuizLiveBannerPolling';
+import type { StudentLobbyState } from '@/app/api/quiz/lobby/route';
 
 // Schüler:innen-Dashboard (Phase G4): Themen-Karten statt einer flachen
 // Modul-Liste. Sortierung: in_progress zuerst, dann open, dann done.
@@ -38,15 +39,16 @@ export default async function StudentDashboard() {
         )}
       </div>
 
-      {quizBanner && (
-        <QuizLiveBanner
-          sessionId={quizBanner.sessionId}
-          moduleTitle={quizBanner.moduleTitle}
-          teamMode={quizBanner.teamMode}
-          status={quizBanner.status}
-          alreadyJoined={quizBanner.alreadyJoined}
-        />
-      )}
+      {/* Banner-Polling: initialer snapshot SSR-rendered (kein flicker),
+          danach übernimmt useQuizLobbyPoll auf Client. */}
+      <QuizLiveBannerPolling
+        initial={
+          {
+            kind: 'student',
+            banner: quizBanner ?? null,
+          } satisfies StudentLobbyState
+        }
+      />
 
       {topics.length === 0 ? (
         <p className="text-muted-foreground">

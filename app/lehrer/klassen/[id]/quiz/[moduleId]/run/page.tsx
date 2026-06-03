@@ -7,19 +7,18 @@ import {
   getActiveQuizSessionForClass,
   getQuizParticipantsForTeacher,
 } from '@/lib/db/quiz-sessions';
-import { QuizLobby } from '@/components/quiz/QuizLobby';
+import { QuizLobbyPolling } from '@/components/quiz/QuizLobbyPolling';
+import type { TeacherLobbyState } from '@/app/api/quiz/lobby/route';
 
 export const metadata: Metadata = {
   title: 'Quiz-Lobby — Lernplattform',
   robots: { index: false, follow: false },
 };
 
-// Beamer-Lobby für eine laufende Quiz-Session (Phase S1.D, Spec §5.3).
+// Beamer-Lobby für eine laufende Quiz-Session (Phase S1.D + S1.C-Polling).
 //
 // Wenn noch keine Session läuft → zurück zur Setup-Seite.
-// Wenn Session in 'ended' ist → zurück zur Klassenseite.
-// Sonst: Lobby mit Teilnehmer:innen-Liste (heute static, S1.C bringt
-// Polling) und „Quiz starten"-Button.
+// Sonst: Lobby mit Teilnehmer:innen-Liste, die alle 1.5s live aktualisiert.
 
 export default async function QuizRunPage({
   params,
@@ -37,20 +36,27 @@ export default async function QuizRunPage({
 
   if (!schoolClass || !moduleData) notFound();
 
-  // Keine laufende Session → Setup-Seite anzeigen.
   if (!session || session.moduleId !== moduleData.id) {
     redirect(`/lehrer/klassen/${id}/quiz/${moduleId}`);
   }
 
   const participants = await getQuizParticipantsForTeacher(session.id);
+  const initial: TeacherLobbyState = {
+    kind: 'teacher',
+    session: {
+      id: session.id,
+      status: session.status === 'ended' ? 'lobby' : session.status,
+      participantCount: participants.length,
+      participants,
+    },
+  };
 
   return (
-    <QuizLobby
+    <QuizLobbyPolling
       classId={schoolClass.id}
       moduleTitle={moduleData.title}
       teamMode={session.teamMode}
-      status={session.status === 'ended' ? 'lobby' : session.status}
-      participants={participants}
+      initial={initial}
     />
   );
 }

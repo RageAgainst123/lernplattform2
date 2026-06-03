@@ -146,3 +146,31 @@ export async function isQuizLiveForTeacher(classId: string): Promise<boolean> {
   if (data.mode === 'homework') return true;
   return Date.now() - new Date(data.heartbeat_at as string).getTime() <= QUIZ_HEARTBEAT_DEAD_MS;
 }
+
+// Teilnehmer:innen-Liste einer Quiz-Session für die Beamer-Lobby (Spec §5.3).
+// User-Client + RLS — quiz_participants_select_own_classes erzwingt, dass
+// nur Lehrer:innen der eigenen Klassen lesen können.
+export type QuizLobbyParticipant = {
+  studentCodeId: string;
+  displayName: string;
+  teamName: string | null;
+  joinedAt: string;
+};
+
+export async function getQuizParticipantsForTeacher(
+  sessionId: string
+): Promise<QuizLobbyParticipant[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('quiz_participants')
+    .select('student_code_id, display_name, team_name, joined_at')
+    .eq('session_id', sessionId)
+    .order('joined_at', { ascending: true });
+  if (error) throw new Error(`Teilnehmer:innen konnten nicht geladen werden: ${error.message}`);
+  return (data ?? []).map((r) => ({
+    studentCodeId: r.student_code_id as string,
+    displayName: r.display_name as string,
+    teamName: (r.team_name as string | null) ?? null,
+    joinedAt: r.joined_at as string,
+  }));
+}

@@ -58,7 +58,7 @@ export function TopicCard({ classId, topic }: Props) {
         {presentations.length > 0 && (
           <TeacherOnlySection classId={classId} entries={presentations} />
         )}
-        <StudentPathSection entries={studentPath} />
+        <StudentPathSection classId={classId} entries={studentPath} />
         <div className="flex justify-end pt-2">
           <TopicRemoveButton classId={classId} topicId={topic.topicId} topicLabel={topic.label} />
         </div>
@@ -100,7 +100,13 @@ function TeacherOnlySection({
   );
 }
 
-function StudentPathSection({ entries }: { entries: TopicModuleEntry[] }) {
+function StudentPathSection({
+  classId,
+  entries,
+}: {
+  classId: string;
+  entries: TopicModuleEntry[];
+}) {
   if (entries.length === 0) {
     return (
       <p className="text-muted-foreground rounded-md border border-dashed px-3 py-2 text-xs">
@@ -113,14 +119,20 @@ function StudentPathSection({ entries }: { entries: TopicModuleEntry[] }) {
       <h3 className="text-sm font-medium">Lernpfad für Schüler:innen</h3>
       <ol className="mt-2 space-y-1.5">
         {entries.map((m, i) => (
-          <StudentPathItem key={m.moduleId} entry={m} index={i + 1} />
+          <StudentPathItem key={m.moduleId} classId={classId} entry={m} index={i + 1} />
         ))}
       </ol>
     </div>
   );
 }
 
-function StudentPathItem({ entry, index }: { entry: TopicModuleEntry; index: number }) {
+type StudentPathItemProps = {
+  classId: string;
+  entry: TopicModuleEntry;
+  index: number;
+};
+
+function StudentPathItem({ classId, entry, index }: StudentPathItemProps) {
   const info = ACTIVITY_INFO[entry.activityKind];
   const canLiveStart = LIVE_QUIZ_KINDS.includes(entry.activityKind);
   return (
@@ -135,23 +147,20 @@ function StudentPathItem({ entry, index }: { entry: TopicModuleEntry; index: num
           fällig {entry.dueDate}
         </span>
       )}
-      {canLiveStart && <LiveQuizStartButton />}
+      {canLiveStart && <LiveQuizStartButton classId={classId} moduleId={entry.moduleId} />}
     </li>
   );
 }
 
-// Placeholder für „Live starten" — die echte Setup-Seite kommt in S1.D.
-// Bis dahin: disabled-Button mit Tooltip, damit Geo im UI sieht WO der
-// Live-Quiz-Start später sitzt, ohne dass es einen 404-Link gibt.
-function LiveQuizStartButton() {
+// „Live starten"-Button für Quiz/Abschlusstest. Verlinkt auf die Beamer-
+// Setup-Seite (Phase S1.D). Setup → Lobby → Frage-Phase (S2 folgt).
+function LiveQuizStartButton({ classId, moduleId }: { classId: string; moduleId: string }) {
   return (
-    <button
-      type="button"
-      disabled
-      title="Live-Klassen-Quiz im Kahoot-Stil — Setup-UI kommt in Sprint S1.D"
-      className="shrink-0 cursor-not-allowed rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 opacity-60"
+    <Link
+      href={`/lehrer/klassen/${classId}/quiz/${moduleId}`}
+      className="shrink-0 rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100"
     >
-      🎮 Live starten (bald)
-    </button>
+      🎮 Live starten
+    </Link>
   );
 }

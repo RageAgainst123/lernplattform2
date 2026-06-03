@@ -3,8 +3,11 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { requireStudentSession } from '@/lib/auth/student-auth';
 import { getAssignedTopicBySlug } from '@/lib/db/student-topics';
+import { getStudentIdentityById } from '@/lib/db/student-login';
+import { getWordHeftLinkForTopic } from '@/lib/db/word-heft-links';
 import { TopicProgressBar } from '@/components/student/TopicProgressBar';
 import { TopicDetailList } from '@/components/student/TopicDetailList';
+import { WordHeftSlot } from '@/components/student/WordHeftSlot';
 
 // Themen-Detailseite für Schüler:innen (Phase G4). Header mit Titel +
 // Fortschrittsbalken, darunter der Lernpfad als nummerierte Liste mit
@@ -20,6 +23,15 @@ export default async function StudentTopicPage({ params }: { params: Promise<{ s
   const { slug } = await params;
   const topic = await getAssignedTopicBySlug(session.classId, session.studentCodeId, slug);
   if (!topic) notFound();
+
+  // Phase Q4: Word-Heft-Slot nur für O365-SSO-Schüler:innen anzeigen.
+  // Code+PIN-Schüler:innen behalten ihr Tiptap-Heft (existiert weiter über
+  // /s/heft, nicht pro Thema). Beide Quellen parallel lesen.
+  const [identity, wordHeftLink] = await Promise.all([
+    getStudentIdentityById(session.studentCodeId),
+    getWordHeftLinkForTopic(session.studentCodeId, topic.topicId),
+  ]);
+  const isSso = Boolean(identity?.o365Email);
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6 px-6 py-10">
@@ -41,6 +53,11 @@ export default async function StudentTopicPage({ params }: { params: Promise<{ s
         <h2 className="mb-3 text-lg font-medium">Lernpfad</h2>
         <TopicDetailList topic={topic} />
       </section>
+      {isSso && (
+        <section>
+          <WordHeftSlot topicId={topic.topicId} topicLabel={topic.label} link={wordHeftLink} />
+        </section>
+      )}
     </div>
   );
 }

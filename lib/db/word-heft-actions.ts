@@ -10,7 +10,9 @@ import {
 } from '@/lib/db/word-heft-links';
 import type { ValidationStatus } from '@/lib/schemas/entities';
 
-// Phase Q3: Server Actions für Word-Heft-Link-Verwaltung.
+// Phase Q (Modell ab Migration 0019): EIN generelles Word-Heft pro
+// Schüler:in. Kein topic_id mehr. Server Actions für Speichern, Touch,
+// Löschen.
 //
 // Sicherheits-Modell: studentCodeId KOMMT IMMER aus der jose-Session
 // (requireStudentSession), NIE aus dem Client-Param. So kann eine
@@ -39,25 +41,17 @@ async function probeOneDriveUrl(url: string): Promise<ValidationStatus> {
     });
     clearTimeout(timeout);
 
-    // 200-299 → Link antwortet, vermutlich ok
     if (response.ok) return 'ok';
-    // 401/403 → Permission verweigert. Schüler:in muss Sharing-Modus ändern.
-    // 404 → Datei existiert nicht / wurde gelöscht.
     if (response.status === 401 || response.status === 403 || response.status === 404) {
       return 'broken';
     }
-    // Sonstige Codes (Microsoft kann auch 302 zu Login-Page geben,
-    // was im Browser anders aussieht als bei HEAD) → unverified.
     return 'unverified';
   } catch {
-    // Netzwerk-Fehler, Timeout, CORS-Block etc. → unverified, nicht broken.
-    // Wir geben dem Link den Benefit of the Doubt.
     return 'unverified';
   }
 }
 
 export async function saveWordHeftLink(args: {
-  topicId: string | null;
   oneDriveUrl: string;
   displayName?: string | null;
 }): Promise<SaveWordHeftState> {
@@ -71,15 +65,11 @@ export async function saveWordHeftLink(args: {
     };
   }
 
-  // HEAD-Request: prüft Erreichbarkeit. Wenn broken: Schüler:in trotzdem
-  // speichern lassen, aber Status flaggen — sie muss dann in OneDrive die
-  // Permission ändern und kann später Re-Validierung anstoßen.
   const probeStatus = await probeOneDriveUrl(formValidation.normalizedUrl);
 
   try {
     await upsertWordHeftLink({
       studentCodeId: session.studentCodeId,
-      topicId: args.topicId,
       oneDriveUrl: formValidation.normalizedUrl,
       displayName: args.displayName ?? null,
       validationStatus: probeStatus,
@@ -91,8 +81,7 @@ export async function saveWordHeftLink(args: {
     };
   }
 
-  revalidatePath('/s');
-  revalidatePath('/s/thema/[slug]', 'page');
+  revalidatePath('/s', 'layout');
   return { ok: true, validationStatus: probeStatus };
 }
 
@@ -104,8 +93,7 @@ export async function markWordHeftOpened(linkId: string): Promise<void> {
 export async function removeWordHeftLink(linkId: string): Promise<void> {
   const session = await requireStudentSession();
   await deleteWordHeftLink(linkId, session.studentCodeId);
-  revalidatePath('/s');
-  revalidatePath('/s/thema/[slug]', 'page');
+  revalidatePath('/s', 'layout');
 }
 
 function formValidationReason(

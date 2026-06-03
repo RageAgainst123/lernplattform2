@@ -8,11 +8,6 @@ import { WordHeftInstructionsModal } from './WordHeftInstructionsModal';
 
 // Sub-Komponente von WordHeftSlot: gezeigt wenn (a) noch kein Heft angelegt
 // ist ODER (b) der User explizit "Link aktualisieren" geklickt hat.
-//
-// Drei Aktionen:
-//   - "Word in neuem Tab öffnen" (externer Link zu office.com/word)
-//   - "Anleitung" (Modal mit Schritt-für-Schritt)
-//   - "Ich habe schon einen Link" → klappt Eingabefeld auf
 
 function NoLinkActions({
   onShowInstructions,
@@ -81,7 +76,7 @@ function LinkInputBlock({
   );
 }
 
-function useSaveLink(topicId: string, topicLabel: string, onSaved: () => void) {
+function useSaveLink(onSaved: () => void) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -90,9 +85,8 @@ function useSaveLink(topicId: string, topicLabel: string, onSaved: () => void) {
     setError(null);
     startTransition(async () => {
       const result = await saveWordHeftLink({
-        topicId,
         oneDriveUrl: url,
-        displayName: `${topicLabel}.docx`,
+        displayName: 'Mein Schulübungsheft',
       });
       if (result.ok) {
         setUrl('');
@@ -106,36 +100,29 @@ function useSaveLink(topicId: string, topicLabel: string, onSaved: () => void) {
   return { url, setUrl, error, pending, save };
 }
 
-function EmptyHeader({ topicLabel }: { topicLabel: string }) {
+function EmptyHeader() {
   return (
     <div>
-      <p className="font-medium">📝 Mein Word-Heft zu &bdquo;{topicLabel}&ldquo;</p>
+      <p className="font-medium">📓 Mein Schulübungsheft (Word)</p>
       <p className="text-muted-foreground mt-1 text-sm">
-        Lege dein Heft in deinem OneDrive an (Word-Web) und klebe den Freigabe-Link hier ein.
+        Lege einmalig ein Word-Heft in deinem OneDrive an. Du kannst es bei allen Themen verwenden —
+        als Notiz, Übung oder Vorbereitung auf den Abschlusstest.
       </p>
     </div>
   );
 }
 
-export function WordHeftSlotEmpty({
-  topicId,
-  topicLabel,
-  onSaved,
-}: {
-  topicId: string;
-  topicLabel: string;
-  onSaved: () => void;
-}) {
+export function WordHeftSlotEmpty({ onSaved }: { onSaved: () => void }) {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showInput, setShowInput] = useState(false);
-  const { url, setUrl, error, pending, save } = useSaveLink(topicId, topicLabel, () => {
+  const { url, setUrl, error, pending, save } = useSaveLink(() => {
     setShowInput(false);
     onSaved();
   });
 
   return (
     <div className="bg-muted/50 flex flex-col gap-3 rounded-md border p-4">
-      <EmptyHeader topicLabel={topicLabel} />
+      <EmptyHeader />
       <NoLinkActions
         onShowInstructions={() => setShowInstructions(true)}
         onToggleInput={() => setShowInput((v) => !v)}

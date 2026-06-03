@@ -16,6 +16,10 @@ export type AuthSlotInfo = {
   userLabel: string | null;
   userKind: 'teacher' | 'student' | null;
   isAdminUser: boolean;
+  // Phase Q: true wenn der eingeloggte Schüler:in via O365-SSO eingeloggt ist
+  // (hat Word-Heft-Funktion). Bei Code+PIN-Schüler:innen + Lehrer:innen + Anon: false.
+  // Optional damit bestehende Test-Fixtures nicht alle gleichzeitig brechen.
+  isSsoStudent?: boolean;
 };
 
 // Helper: Email auf max 24 Zeichen kürzen (mit „…").
@@ -31,6 +35,7 @@ export async function fetchAuthSlot(): Promise<AuthSlotInfo> {
       userLabel: user.email ? shortEmail(user.email) : 'Lehrer:in',
       userKind: 'teacher',
       isAdminUser: isAdmin(user.email),
+      isSsoStudent: false,
     };
   }
   if (session) {
@@ -39,9 +44,10 @@ export async function fetchAuthSlot(): Promise<AuthSlotInfo> {
       userLabel: identity ? studentDisplayName(identity) : 'Schüler:in',
       userKind: 'student',
       isAdminUser: false,
+      isSsoStudent: Boolean(identity?.o365Email),
     };
   }
-  return { userLabel: null, userKind: null, isAdminUser: false };
+  return { userLabel: null, userKind: null, isAdminUser: false, isSsoStudent: false };
 }
 
 // Logout-Form für Lehrer:innen. Schüler:innen nutzen das Settings-Menü.

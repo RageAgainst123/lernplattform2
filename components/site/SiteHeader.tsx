@@ -14,6 +14,9 @@ import { HeaderAuthDesktop, fetchAuthSlot, type AuthSlotInfo } from '@/component
 //  - ausgeloggt: „Schüler:innen-Login" → /k
 
 const MATERIALS_LINK: NavLink = { href: '/dgb', label: 'Materialien' };
+// Phase Q: zusätzlicher Header-Link für SSO-Schüler:innen, führt zu ihrem
+// Word-Schulübungsheft. Wird nur sichtbar wenn isSso=true (siehe AuthSlot).
+const WORD_HEFT_LINK: NavLink = { href: '/s/heft/word', label: '📓 Mein Heft' };
 
 function roleNavLink(info: AuthSlotInfo): NavLink {
   if (info.userKind === 'student') return { href: '/s', label: 'Mein Bereich' };
@@ -24,6 +27,10 @@ function roleNavLink(info: AuthSlotInfo): NavLink {
 export async function SiteHeader() {
   const info = await fetchAuthSlot();
   const navLinks: NavLink[] = [MATERIALS_LINK, roleNavLink(info)];
+  // Nur SSO-Schüler:innen sehen den Word-Heft-Link im Header.
+  if (info.userKind === 'student' && info.isSsoStudent) {
+    navLinks.push(WORD_HEFT_LINK);
+  }
 
   return (
     <header className="bg-background/80 sticky top-0 z-40 border-b backdrop-blur">

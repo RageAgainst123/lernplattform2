@@ -40,32 +40,42 @@ const STEPS: { title: string; body: React.ReactNode }[] = [
     body: (
       <>
         Oben in der Mitte steht &bdquo;Dokument&ldquo; — klicke darauf und vergib einen klaren
-        Namen, z.B. <strong>&bdquo;EVA-Prinzip&ldquo;</strong>. Word speichert automatisch in deinem
-        OneDrive.
+        Namen, z.B. <strong>&bdquo;Mein Schulübungsheft&ldquo;</strong>. Word speichert automatisch
+        in deinem OneDrive.
       </>
     ),
   },
   {
-    title: 'Freigeben — WICHTIG: richtigen Modus wählen',
+    title: 'Freigabe-Berechtigung einstellen — WICHTIG',
     body: (
       <>
-        Oben rechts: <strong>&bdquo;Freigeben&ldquo;</strong> → das Dropdown
-        <strong> &bdquo;Personen die du eingibst können bearbeiten&ldquo;</strong> klicken → auf
-        <strong> &bdquo;Personen in [deine Schule] mit dem Link&ldquo;</strong> umstellen →{' '}
-        <strong>&bdquo;Bearbeiten&ldquo;</strong> aktiviert lassen (so kann deine Lehrer:in
-        Kommentare schreiben) → <strong>&bdquo;Übernehmen&ldquo;</strong>.
+        Klick oben rechts auf <strong>&bdquo;Teilen&ldquo;</strong> → dann auf{' '}
+        <strong>&bdquo;Zugriff verwalten&ldquo;</strong>. Im Dialog: Berechtigung auf
+        <strong> &bdquo;Personen in [deine Schule]&ldquo;</strong> mit
+        <strong> Bearbeitungsrechten</strong> stellen. So kann deine Lehrer:in das Heft öffnen UND
+        Kommentare schreiben.
         <br />
-        <span className="text-destructive">⚠️ Wichtig:</span> Wenn der Default &bdquo;Personen die
-        du eingibst&ldquo; bleibt, sieht deine Lehrer:in das Heft nicht!
+        <span className="text-destructive">⚠️ Wichtig:</span> Wenn die Standard-Einstellung
+        &bdquo;Nur du&ldquo; bleibt, sieht deine Lehrer:in nichts!
       </>
     ),
   },
   {
-    title: 'Link kopieren und hier einfügen',
+    title: 'Link kopieren',
     body: (
       <>
-        Klick auf <strong>&bdquo;Link kopieren&ldquo;</strong>. Wechsle in diesen Tab zurück, klicke
-        <strong> &bdquo;🔗 Ich habe schon einen Link&ldquo;</strong> und füge den Link ein.
+        Wieder oben rechts auf <strong>&bdquo;Teilen&ldquo;</strong> klicken →{' '}
+        <strong>&bdquo;Link kopieren&ldquo;</strong>. Der Link wandert in die Zwischenablage.
+      </>
+    ),
+  },
+  {
+    title: 'Link hier einfügen',
+    body: (
+      <>
+        Wechsle in diesen Tab zurück, klicke
+        <strong> &bdquo;🔗 Ich habe schon einen Link&ldquo;</strong>, füge den Link ein und
+        speichere.
       </>
     ),
   },

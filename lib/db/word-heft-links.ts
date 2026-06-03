@@ -3,7 +3,9 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type { WordHeftLink, ValidationStatus } from '@/lib/schemas/entities';
 
-// Phase Q: DB-Layer für word_heft_links.
+// Phase Q (Modell ab Migration 0019): EIN Word-Heft pro Schüler:in.
+// Generelles Schulübungsheft, NICHT pro Thema. Schüler:in legt einmal an,
+// nutzt es in allen Themen-Lernpfaden.
 //
 // Schreib-Pfad (Schüler:in):  Service-Role, weil kein auth.uid()
 // Lese-Pfad Schüler:in:       Service-Role (Owner-Check über jose-Session)
@@ -37,39 +39,22 @@ function toWordHeftLink(row: Row): WordHeftLink {
   };
 }
 
-// Schüler:in: alle eigenen Word-Hefte. Sortiert: zuletzt geöffnete zuerst.
-export async function getWordHeftLinksForStudent(studentCodeId: string): Promise<WordHeftLink[]> {
-  const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from('word_heft_links')
-    .select('*')
-    .eq('student_code_id', studentCodeId)
-    .order('last_opened_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false });
-  if (error) {
-    throw new Error(`Word-Hefte nicht ladbar: ${error.message}`);
-  }
-  return ((data ?? []) as Row[]).map(toWordHeftLink);
-}
-
-// Schüler:in: das EINE Word-Heft zu einem Thema (oder null).
-export async function getWordHeftLinkForTopic(
-  studentCodeId: string,
-  topicId: string
+// Schüler:in: das EINE Heft (oder null).
+export async function getWordHeftLinkForStudent(
+  studentCodeId: string
 ): Promise<WordHeftLink | null> {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('word_heft_links')
     .select('*')
     .eq('student_code_id', studentCodeId)
-    .eq('topic_id', topicId)
     .maybeSingle();
   return data ? toWordHeftLink(data as Row) : null;
 }
 
-// Lehrer:in: alle Word-Hefte einer Klasse (User-Client + RLS).
-// RLS-Policy word_heft_links_select_own_class_students filtert auf
-// Klassen der eingeloggten Lehrer:in.
+// Lehrer:in: alle Hefte einer Klasse (User-Client + RLS).
+// RLS-Policy word_heft_links_select_own_class_students filtert auf Klassen
+// der eingeloggten Lehrer:in.
 export async function getWordHeftLinksForClass(classId: string): Promise<WordHeftLink[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -83,11 +68,10 @@ export async function getWordHeftLinksForClass(classId: string): Promise<WordHef
   return ((data ?? []) as Row[]).map(toWordHeftLink);
 }
 
-// Upsert: Wenn Schüler:in für dasselbe Thema schon einen Link hat → update.
-// Sonst neuen Link anlegen. topic_id NULL erlaubt mehrere "freie" Hefte.
+// Upsert auf student_code_id (Unique-Constraint aus Migration 0019).
+// Wenn Schüler:in schon ein Heft hat → update URL/Status. Sonst insert.
 export async function upsertWordHeftLink(args: {
   studentCodeId: string;
-  topicId: string | null;
   oneDriveUrl: string;
   displayName: string | null;
   validationStatus: ValidationStatus;
@@ -95,55 +79,32 @@ export async function upsertWordHeftLink(args: {
   const supabase = createServiceClient();
   const now = new Date().toISOString();
 
-  // Wenn topicId gesetzt: Upsert über unique (student_code_id, topic_id).
-  // Sonst plain insert (mehrere freie Hefte erlaubt).
-  if (args.topicId) {
-    const { data, error } = await supabase
-      .from('word_heft_links')
-      .upsert(
-        {
-          student_code_id: args.studentCodeId,
-          topic_id: args.topicId,
-          one_drive_url: args.oneDriveUrl,
-          display_name: args.displayName,
-          validation_status: args.validationStatus,
-          last_validated_at: args.validationStatus === 'pending' ? null : now,
-        },
-        { onConflict: 'student_code_id,topic_id' }
-      )
-      .select('*')
-      .single();
-    if (error || !data) {
-      throw new Error(`Word-Heft-Link konnte nicht gespeichert werden: ${error?.message}`);
-    }
-    return toWordHeftLink(data as Row);
-  }
-
   const { data, error } = await supabase
     .from('word_heft_links')
-    .insert({
-      student_code_id: args.studentCodeId,
-      topic_id: null,
-      one_drive_url: args.oneDriveUrl,
-      display_name: args.displayName,
-      validation_status: args.validationStatus,
-      last_validated_at: args.validationStatus === 'pending' ? null : now,
-    })
+    .upsert(
+      {
+        student_code_id: args.studentCodeId,
+        one_drive_url: args.oneDriveUrl,
+        display_name: args.displayName,
+        validation_status: args.validationStatus,
+        last_validated_at: args.validationStatus === 'pending' ? null : now,
+      },
+      { onConflict: 'student_code_id' }
+    )
     .select('*')
     .single();
   if (error || !data) {
-    throw new Error(`Word-Heft-Link konnte nicht angelegt werden: ${error?.message}`);
+    throw new Error(`Word-Heft-Link konnte nicht gespeichert werden: ${error?.message}`);
   }
   return toWordHeftLink(data as Row);
 }
 
-// Schüler:in markiert ihren Heft-Link als zuletzt geöffnet (für UI-Anzeige).
+// Schüler:in markiert ihr Heft als zuletzt geöffnet (für UI-Anzeige).
 export async function touchWordHeftLinkOpened(
   linkId: string,
   studentCodeId: string
 ): Promise<void> {
   const supabase = createServiceClient();
-  // Owner-Check inline (kein auth.uid() für Schüler:innen).
   await supabase
     .from('word_heft_links')
     .update({ last_opened_at: new Date().toISOString() })

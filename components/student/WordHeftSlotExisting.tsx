@@ -22,8 +22,7 @@ function StatusBadge({ status }: { status: ValidationStatus }) {
   if (status === 'unverified') {
     return (
       <span className="text-muted-foreground text-xs">
-        ℹ️ Link gespeichert (nicht überprüfbar — Lehrer:in sieht beim ersten Klick ob er
-        funktioniert)
+        ℹ️ Link gespeichert (deine Lehrer:in sieht beim ersten Klick ob er funktioniert)
       </span>
     );
   }
@@ -44,7 +43,7 @@ function ExistingLinkActions({
   return (
     <div className="flex flex-wrap gap-2">
       <Button type="button" onClick={onOpen} disabled={pending}>
-        📝 Heft öffnen
+        📓 Heft öffnen
       </Button>
       <Button type="button" variant="outline" onClick={onUpdate} disabled={pending}>
         🔄 Link aktualisieren
@@ -64,12 +63,10 @@ function ExistingLinkActions({
 
 export function WordHeftSlotExisting({
   link,
-  topicLabel,
   onUpdate,
   onRemove,
 }: {
   link: WordHeftLink;
-  topicLabel: string;
   onUpdate: () => void;
   onRemove: () => void;
 }) {
@@ -93,7 +90,7 @@ export function WordHeftSlotExisting({
   return (
     <div className="bg-muted/50 flex flex-col gap-3 rounded-md border p-4">
       <div>
-        <p className="font-medium">📝 Mein Word-Heft zu &bdquo;{topicLabel}&ldquo;</p>
+        <p className="font-medium">📓 Mein Schulübungsheft (Word)</p>
         <p className="text-foreground mt-1 text-sm">{link.displayName ?? 'Heft in OneDrive'}</p>
         <StatusBadge status={link.validationStatus} />
       </div>

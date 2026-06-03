@@ -2,12 +2,33 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireStudentSession } from '@/lib/auth/student-auth';
 import { getProgress, getStudentModule } from '@/lib/db/student-modules';
+import { isGraded, blockResult, type BlockAnswer } from '@/lib/blocks/evaluate';
 import { buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SoloRunSummary } from '@/components/blocks/SoloRunSummary';
+import {
+  AnswerOverviewCard,
+  ModuleNotAvailable,
+  ReflectionsCard,
+  ScoreHeroCard,
+  blockShortLabel,
+  type ResultItem,
+} from '@/components/blocks/ModuleDoneCards';
 
 export const metadata: Metadata = {
   title: 'Geschafft',
 };
+
+// Quiz-Endseite (R1.1):
+//   • Score-Hero (X von Y richtig + Prozent + Solo-Punkte)
+//   • Antwort-Übersicht pro Block (✅/❌)
+//   • „Falsche Fragen wiederholen"-Button (R1.4)
+//   • Reflexionen separat aufgelistet
+//
+// Solo-Punkte kommen via sessionStorage rein (siehe ModuleRunner + R1.3).
+// Server-seitig kennen wir sie NICHT — bewusst (Solo = Übung, kein
+// Wettbewerb). Daher ist die Score-Anzeige + Antwort-Übersicht server-side
+// (aus student_progress + module.content), die Punkte-Anzeige client-side
+// in <SoloRunSummary />.
 
 export default async function ModuleDonePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireStudentSession();
@@ -15,25 +36,43 @@ export default async function ModuleDonePage({ params }: { params: Promise<{ id:
   const moduleData = await getStudentModule(id, session.classId);
   const progress = await getProgress(session.studentCodeId, id);
 
+  if (!moduleData) {
+    return <ModuleNotAvailable />;
+  }
+
+  const blocks = moduleData.content.blocks;
+  const answers: Record<string, BlockAnswer> = progress?.answers ?? {};
+  const items: ResultItem[] = blocks.filter(isGraded).map((block, i) => ({
+    id: block.id,
+    label: blockShortLabel(block, i + 1),
+    result: blockResult(block, answers[block.id]),
+  }));
+  const reflectionCount = blocks.filter((b) => b.type === 'reflection').length;
+  const correctCount = items.filter((it) => it.result === 'correct').length;
+  const wrongCount = items.filter((it) => it.result === 'wrong').length;
+  const total = items.length;
+  const percent = total > 0 ? Math.round((correctCount / total) * 100) : null;
+
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-md flex-col items-center justify-center gap-6 p-6 text-center">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-2xl">Geschafft!</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-lg">
-            Du hast <span className="font-medium">{moduleData?.title ?? 'das Modul'}</span>{' '}
-            abgeschlossen.
-          </p>
-          {progress && progress.completedAt && (
-            <p className="text-muted-foreground">Gut gemacht — schau dir gern weitere Module an.</p>
-          )}
-          <Link href="/s" className={buttonVariants()}>
-            Zurück zur Übersicht
-          </Link>
-        </CardContent>
-      </Card>
+    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+      <ScoreHeroCard
+        moduleTitle={moduleData.title}
+        correctCount={correctCount}
+        total={total}
+        percent={percent}
+      >
+        <SoloRunSummary moduleId={id} />
+      </ScoreHeroCard>
+
+      {items.length > 0 && (
+        <AnswerOverviewCard moduleId={id} items={items} wrongCount={wrongCount} />
+      )}
+
+      {reflectionCount > 0 && <ReflectionsCard count={reflectionCount} />}
+
+      <Link href="/s" className={`${buttonVariants({ variant: 'outline' })} self-center`}>
+        Zurück zur Übersicht
+      </Link>
     </div>
   );
 }

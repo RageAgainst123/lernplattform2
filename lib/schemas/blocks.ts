@@ -53,6 +53,13 @@ export const fillBlankBlockSchema = z.object({
   solutions: z.array(z.string()).min(1),
   // Zusätzliche Distraktoren für den Wortpool.
   distractors: z.array(z.string()).default([]),
+  // Tippfehlertoleranz: per Default werden Einzelbuchstaben-Vertipper bei
+  // Wörtern ≥ 4 Buchstaben akzeptiert (Levenshtein ≤ 1). `strict: true`
+  // schaltet das aus — sinnvoll für Fachbegriffe, deren Schreibweise exakt
+  // zählen muss (z. B. chemische Formeln, Eigennamen). Siehe
+  // docs/QUIZ-MODI-SPEZIFIKATION.md §9.
+  // Optional, weil falsy === aus (default-Verhalten).
+  strict: z.boolean().optional(),
 });
 
 const matchPairSchema = z.object({

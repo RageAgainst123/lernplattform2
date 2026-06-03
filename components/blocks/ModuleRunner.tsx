@@ -9,6 +9,7 @@ import { BlockView } from '@/components/blocks/BlockView';
 import { BlockFeedback } from '@/components/blocks/BlockFeedback';
 import { ProgressBar } from '@/components/blocks/ProgressBar';
 import { useModuleRunner } from '@/components/blocks/useModuleRunner';
+import { stashSoloRunResult } from '@/lib/blocks/solo-run-result';
 
 type SaveArgs = {
   blockIndex: number;
@@ -16,6 +17,8 @@ type SaveArgs = {
   score: number;
   done: boolean;
 };
+
+type Runner = ReturnType<typeof useModuleRunner>;
 
 type Props = {
   moduleId: string;
@@ -25,6 +28,24 @@ type Props = {
   onSave: (args: SaveArgs) => Promise<void>;
 };
 
+// Beim „Weiter"/„Fertig" speichern + (falls Endseite) Solo-Punkte in
+// sessionStorage legen, damit die Endseite sie anzeigen kann (R1.3).
+async function persistAndAdvance(runner: Runner, moduleId: string, onSave: Props['onSave']) {
+  const done = runner.isLast;
+  const blockIndex = done ? runner.index : runner.index + 1;
+  await onSave({ blockIndex, answers: runner.answers, score: runner.score(), done });
+  if (!done) {
+    runner.next();
+    return false;
+  }
+  stashSoloRunResult(moduleId, {
+    totalPoints: runner.totalPoints(),
+    longestStreak: runner.longestStreak(),
+    pointsByBlock: runner.pointsByBlock,
+  });
+  return true;
+}
+
 export function ModuleRunner({ moduleId, blocks, startIndex, initialAnswers, onSave }: Props) {
   const runner = useModuleRunner({ blocks, startIndex, initialAnswers });
   const router = useRouter();
@@ -32,14 +53,8 @@ export function ModuleRunner({ moduleId, blocks, startIndex, initialAnswers, onS
 
   function handleNext() {
     startTransition(async () => {
-      const done = runner.isLast;
-      const blockIndex = done ? runner.index : runner.index + 1;
-      await onSave({ blockIndex, answers: runner.answers, score: runner.score(), done });
-      if (done) {
-        router.push(`/s/modul/${moduleId}/done`);
-      } else {
-        runner.next();
-      }
+      const done = await persistAndAdvance(runner, moduleId, onSave);
+      if (done) router.push(`/s/modul/${moduleId}/done`);
     });
   }
 

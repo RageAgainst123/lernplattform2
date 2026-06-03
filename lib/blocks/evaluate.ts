@@ -5,6 +5,7 @@ import type {
   MultipleChoiceBlock,
   TrueFalseBlock,
 } from '@/lib/schemas/blocks';
+import { isFuzzyMatch } from '@/lib/blocks/levenshtein';
 
 // Antwort-Formate pro auswertbarem Block-Typ.
 export type MultipleChoiceAnswer = string[]; // gewählte Option-IDs
@@ -51,7 +52,16 @@ function evalFillBlank(block: FillBlankBlock, answer: FillBlankAnswer): boolean 
   if (answer.length !== block.solutions.length) {
     return false;
   }
-  return block.solutions.every((sol, i) => normalize(sol) === normalize(answer[i] ?? ''));
+  // Tippfehlertoleranz per Default (Levenshtein ≤ 1 ab 4 Buchstaben). Über
+  // block.strict=true (z. B. für Fachbegriffe) wird wieder exakter Vergleich
+  // erzwungen. Siehe docs/QUIZ-MODI-SPEZIFIKATION.md §9.
+  return block.solutions.every((sol, i) => {
+    const given = answer[i] ?? '';
+    if (block.strict) {
+      return normalize(sol) === normalize(given);
+    }
+    return isFuzzyMatch(given, sol);
+  });
 }
 
 function evalMatch(block: MatchBlock, answer: MatchAnswer): boolean {

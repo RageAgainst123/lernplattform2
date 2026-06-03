@@ -77,6 +77,36 @@ describe('evaluateBlock — fill_blank', () => {
     expect(evaluateBlock(fb, ['Drucker'])).toBe(false);
     expect(evaluateBlock(fb, [])).toBe(false);
   });
+
+  // Tippfehlertoleranz (R1.5, siehe docs/QUIZ-MODI-SPEZIFIKATION.md §9).
+  it('accepts a single typo on words ≥ 4 chars (Levenshtein ≤ 1)', () => {
+    // „mikrofon" (8) ↔ „mikrofen" (1 substitution) → ok
+    expect(evaluateBlock(fb, ['mikrofen'])).toBe(true);
+    // 1 fehlender Buchstabe → ok
+    expect(evaluateBlock(fb, ['mikrofn'])).toBe(true);
+    // 1 extra Buchstabe → ok
+    expect(evaluateBlock(fb, ['mikrofonn'])).toBe(true);
+  });
+
+  it('still rejects 2+ typos', () => {
+    // „mikrofon" ↔ „mokrofin" → 2 substitutions
+    expect(evaluateBlock(fb, ['mokrofin'])).toBe(false);
+  });
+
+  it('respects strict=true (no typo tolerance)', () => {
+    const fbStrict: Block = {
+      id: 'fb-strict',
+      type: 'fill_blank',
+      text: 'Die chemische Formel von Wasser ist {0}.',
+      solutions: ['H2O'],
+      distractors: [],
+      strict: true,
+    };
+    // Genau richtig → ok (auch mit Trim+Lowercase)
+    expect(evaluateBlock(fbStrict, ['h2o'])).toBe(true);
+    // 1 Edit-Distanz, aber strict → falsch
+    expect(evaluateBlock(fbStrict, ['h2p'])).toBe(false);
+  });
 });
 
 describe('evaluateBlock — match', () => {

@@ -3,7 +3,9 @@ import { requireStudentSession } from '@/lib/auth/student-auth';
 import { getStudentIdentityById, getClassNameForStudent } from '@/lib/db/student-login';
 import { studentDisplayName } from '@/lib/db/student-display-name';
 import { getAssignedTopicsForStudent } from '@/lib/db/student-topics';
+import { getQuizBannerForStudent } from '@/lib/db/quiz-sessions';
 import { StudentTopicCard } from '@/components/student/StudentTopicCard';
+import { QuizLiveBanner } from '@/components/student/QuizLiveBanner';
 
 // Schüler:innen-Dashboard (Phase G4): Themen-Karten statt einer flachen
 // Modul-Liste. Sortierung: in_progress zuerst, dann open, dann done.
@@ -17,10 +19,11 @@ export const metadata: Metadata = {
 
 export default async function StudentDashboard() {
   const session = await requireStudentSession();
-  const [identity, className, topics] = await Promise.all([
+  const [identity, className, topics, quizBanner] = await Promise.all([
     getStudentIdentityById(session.studentCodeId),
     getClassNameForStudent(session.classId),
     getAssignedTopicsForStudent(session.classId, session.studentCodeId),
+    getQuizBannerForStudent(session.classId, session.studentCodeId),
   ]);
   const displayName = identity ? studentDisplayName(identity) : 'Schüler:in';
 
@@ -34,6 +37,16 @@ export default async function StudentDashboard() {
           </p>
         )}
       </div>
+
+      {quizBanner && (
+        <QuizLiveBanner
+          sessionId={quizBanner.sessionId}
+          moduleTitle={quizBanner.moduleTitle}
+          teamMode={quizBanner.teamMode}
+          status={quizBanner.status}
+          alreadyJoined={quizBanner.alreadyJoined}
+        />
+      )}
 
       {topics.length === 0 ? (
         <p className="text-muted-foreground">

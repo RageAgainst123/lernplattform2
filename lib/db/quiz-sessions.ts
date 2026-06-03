@@ -147,6 +147,52 @@ export async function isQuizLiveForTeacher(classId: string): Promise<boolean> {
   return Date.now() - new Date(data.heartbeat_at as string).getTime() <= QUIZ_HEARTBEAT_DEAD_MS;
 }
 
+// Banner-Info für die Schüler:innen-Sicht (Phase S1.E). Eine Service-Role-
+// Query mit allem was der Banner braucht: aktive Session + Modul-Titel +
+// ob die Schüler:in schon beigetreten ist. Wird im /s-Layout bei JEDEM
+// Page-Load gerendert, daher kompakt halten.
+// Banner zeigt nur 'lobby' und 'active' an (vor Frage-Start oder während
+// einer laufenden Frage). 'between_questions' wird ausgefiltert — Beitritt
+// zwischen Reveal und nächster Frage wäre verwirrend. 'ended' kommt durch
+// getActiveQuizSessionForClass eh nicht durch.
+export type StudentQuizBanner = {
+  sessionId: string;
+  moduleTitle: string;
+  teamMode: boolean;
+  status: 'lobby' | 'active';
+  alreadyJoined: boolean;
+};
+
+export async function getQuizBannerForStudent(
+  classId: string,
+  studentCodeId: string
+): Promise<StudentQuizBanner | null> {
+  const session = await getActiveQuizSessionForClass(classId);
+  if (!session) return null;
+  // Nur lobby + active im Banner. between_questions wird ausgefiltert —
+  // Beitritt mitten in einer Frage wäre verwirrend, später nochmal denken.
+  // 'ended' kommt durch getActiveQuizSessionForClass eh nicht durch.
+  if (session.status !== 'lobby' && session.status !== 'active') return null;
+  const bannerStatus: 'lobby' | 'active' = session.status;
+  const supabase = createServiceClient();
+  const [moduleRow, participantRow] = await Promise.all([
+    supabase.from('modules').select('title').eq('id', session.moduleId).maybeSingle(),
+    supabase
+      .from('quiz_participants')
+      .select('student_code_id')
+      .eq('session_id', session.id)
+      .eq('student_code_id', studentCodeId)
+      .maybeSingle(),
+  ]);
+  return {
+    sessionId: session.id,
+    moduleTitle: (moduleRow.data?.title as string | undefined) ?? 'Quiz',
+    teamMode: session.teamMode,
+    status: bannerStatus,
+    alreadyJoined: !!participantRow.data,
+  };
+}
+
 // Teilnehmer:innen-Liste einer Quiz-Session für die Beamer-Lobby (Spec §5.3).
 // User-Client + RLS — quiz_participants_select_own_classes erzwingt, dass
 // nur Lehrer:innen der eigenen Klassen lesen können.

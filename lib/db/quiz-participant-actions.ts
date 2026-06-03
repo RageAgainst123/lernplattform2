@@ -1,0 +1,96 @@
+'use server';
+
+import { requireStudentSession } from '@/lib/auth/student-auth';
+import { createServiceClient } from '@/lib/supabase/admin';
+
+// Schüler:innen-Schreibpfad für Quiz-Teilnahme (Phase S, Migration 0020).
+//
+// Service-Role-Client, weil Schüler:innen kein auth.uid() haben. Die
+// studentCodeId + classId kommen IMMER aus der jose-Session
+// (requireStudentSession), NIE aus Client-Param — Schutz gegen IDOR.
+//
+// Spezifikation: docs/QUIZ-MODI-SPEZIFIKATION.md §5.3 (Lobby) + §7.3 (Team).
+
+const TEAM_NAME_MAX = 40;
+
+export type JoinQuizResult = {
+  error: string | null;
+  sessionId: string | null;
+};
+
+// Trimmt + cappt einen Teamnamen. null bei leerem Input — Caller entscheidet
+// ob das ein Fehler ist (im Team-Modus ja, sonst ignoriert).
+function normalizeTeamName(raw: string | undefined): string | null {
+  const trimmed = (raw ?? '').trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, TEAM_NAME_MAX);
+}
+
+// Mappt DB-Fehler auf freundliche Nachrichten. Unique-Violation auf
+// (session_id, team_name) heißt: Teamname schon vergeben.
+function joinErrorMessage(error: { code?: string }): string {
+  if (error.code === '23505') {
+    return 'Dieser Teamname ist bereits vergeben — bitte einen anderen wählen.';
+  }
+  return 'Beitritt fehlgeschlagen.';
+}
+
+// Schüler:in tritt der aktiven Quiz-Session ihrer Klasse bei. Idempotent
+// (ON CONFLICT bei doppelten Tabs). Im Team-Modus wird der Teamname
+// validiert + getrimmt + auf 40 Zeichen gecappt.
+export async function joinQuizSession(args?: { teamName?: string }): Promise<JoinQuizResult> {
+  const session = await requireStudentSession();
+  const supabase = createServiceClient();
+
+  // Aktive Session der Klasse finden (Service-Role-Lookup; classId ist
+  // authentisch aus der jose-Session, kein IDOR).
+  const { data: sessionRow } = await supabase
+    .from('quiz_sessions')
+    .select('id, status, team_mode, heartbeat_at, mode')
+    .eq('class_id', session.classId)
+    .in('status', ['lobby', 'active', 'between_questions'])
+    .maybeSingle();
+  if (!sessionRow) {
+    return { sessionId: null, error: 'Es läuft gerade kein Quiz für deine Klasse.' };
+  }
+
+  const teamName = sessionRow.team_mode ? normalizeTeamName(args?.teamName) : null;
+  if (sessionRow.team_mode && !teamName) {
+    return { sessionId: null, error: 'Bitte einen Teamnamen wählen.' };
+  }
+
+  // Display-Name = Codename (Spec §3.10: immer Codename, auch SSO).
+  // Snapshot beim Join — bleibt stabil falls der Codename später geändert wird.
+  const { data: codeRow } = await supabase
+    .from('student_codes')
+    .select('codename')
+    .eq('id', session.studentCodeId)
+    .maybeSingle();
+  const codename = (codeRow?.codename as string | undefined) ?? 'Anonym';
+
+  const { error } = await supabase.from('quiz_participants').upsert(
+    {
+      session_id: sessionRow.id,
+      student_code_id: session.studentCodeId,
+      display_name: teamName ?? codename,
+      team_name: teamName,
+      last_seen_at: new Date().toISOString(),
+    },
+    { onConflict: 'session_id,student_code_id' }
+  );
+  if (error) {
+    return { sessionId: null, error: joinErrorMessage(error) };
+  }
+  return { sessionId: sessionRow.id as string, error: null };
+}
+
+// Schüler:innen-Heartbeat beim Polling (Spec §5.9 — Disconnect-Karenz
+// 30 s). Wird bei jedem Polling-Tick auf /api/quiz aktualisiert.
+export async function touchQuizPresence(sessionId: string, studentCodeId: string): Promise<void> {
+  const supabase = createServiceClient();
+  await supabase
+    .from('quiz_participants')
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq('session_id', sessionId)
+    .eq('student_code_id', studentCodeId);
+}

@@ -113,11 +113,22 @@ function PathItemAction({
       </div>
     );
   }
+  // Prozent-Anzeige bei erledigten Modulen (R/Smoke-Bug-B). Wir zeigen die
+  // Zahl nur bei done/returned, weil sie bei in_progress noch nicht
+  // aussagekräftig ist (Schüler:in ist mitten drin). Wenn das Modul keine
+  // bewertbaren Blocks hat (percent === null), zeigen wir auch nichts.
+  const showPercent =
+    (m.status === 'done' || m.status === 'returned') && typeof m.percent === 'number';
   return (
     <>
-      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${STATUS_BADGE[m.status]}`}>
-        {STATUS_LABEL[m.status]}
-      </span>
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
+        <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_BADGE[m.status]}`}>
+          {STATUS_LABEL[m.status]}
+        </span>
+        {showPercent && (
+          <span className="text-muted-foreground text-xs tabular-nums">{m.percent}%</span>
+        )}
+      </div>
       <Link
         href={`/s/modul/${m.moduleId}`}
         className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 shrink-0 items-center rounded-md px-3 text-xs font-medium"

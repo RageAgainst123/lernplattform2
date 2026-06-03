@@ -1,7 +1,12 @@
 import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
 import type { ActivityKind, Kompetenzbereich } from '@/lib/schemas/entities';
-import { progressStatusMap, type ModuleStatus, type ProgressRow } from './student-modules-status';
+import {
+  progressInfoMap,
+  type ModuleStatus,
+  type ProgressInfo,
+  type ProgressRow,
+} from './student-modules-status';
 import { aggregateTopicStatus, type TopicStatus } from './student-topics-status';
 
 // Schüler:innen-Themen-Sicht (Phase G4). Pro Klasse + Schüler:in liefern
@@ -15,6 +20,10 @@ export type StudentTopicModule = {
   activityKind: ActivityKind;
   sortOrder: number;
   status: ModuleStatus;
+  // Erreichter Prozent-Score, nur bei status='done' / 'returned' relevant.
+  // null wenn Modul keinen auto-bewertbaren Block hat oder noch nichts
+  // gespeichert wurde. Wird im Lernpfad neben dem Status-Badge angezeigt.
+  percent: number | null;
 };
 
 export type StudentTopic = {
@@ -101,17 +110,19 @@ type StudentTopicModuleStub = {
   topicId: string;
 };
 
-// Schritt 2: Status-Map für die Schüler:in laden (student_progress).
-async function loadStatusMap(studentCodeId: string): Promise<Map<string, ModuleStatus>> {
+// Schritt 2: Status- + Score-Map für die Schüler:in laden (student_progress).
+// Liefert pro Modul Status, score, maxScore, percent — damit der Lernpfad
+// bei erledigten Modulen die erreichte Prozentzahl anzeigen kann.
+async function loadProgressInfoMap(studentCodeId: string): Promise<Map<string, ProgressInfo>> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from('student_progress')
-    .select('module_id, completed_at, returned_at')
+    .select('module_id, completed_at, returned_at, score, max_score')
     .eq('student_code_id', studentCodeId);
   if (error) {
     throw new Error(`Fortschritt konnte nicht geladen werden: ${error.message}`);
   }
-  return progressStatusMap((data ?? []) as ProgressRow[]);
+  return progressInfoMap((data ?? []) as ProgressRow[]);
 }
 
 // Schritt 3: Topic-Metadaten zu den betroffenen IDs laden.
@@ -132,16 +143,20 @@ async function loadTopicRows(topicIds: string[]): Promise<TopicRow[]> {
 function buildStudentTopic(
   t: TopicRow,
   stubs: StudentTopicModuleStub[],
-  statusByModule: Map<string, ModuleStatus>
+  progressByModule: Map<string, ProgressInfo>
 ): StudentTopic {
   const modules: StudentTopicModule[] = stubs
-    .map((s) => ({
-      moduleId: s.moduleId,
-      title: s.title,
-      activityKind: s.activityKind,
-      sortOrder: s.sortOrder,
-      status: statusByModule.get(s.moduleId) ?? 'open',
-    }))
+    .map((s) => {
+      const info = progressByModule.get(s.moduleId);
+      return {
+        moduleId: s.moduleId,
+        title: s.title,
+        activityKind: s.activityKind,
+        sortOrder: s.sortOrder,
+        status: info?.status ?? 'open',
+        percent: info?.percent ?? null,
+      };
+    })
     .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title, 'de'));
   const agg = aggregateTopicStatus(modules.map((m) => m.status));
   return {
@@ -183,12 +198,12 @@ export async function getAssignedTopicsForStudent(
   const { moduleIdsByTopic } = await loadAssignmentsForStudent(classId);
   const topicIds = Array.from(moduleIdsByTopic.keys());
   if (topicIds.length === 0) return [];
-  const [statusByModule, topicRows] = await Promise.all([
-    loadStatusMap(studentCodeId),
+  const [progressByModule, topicRows] = await Promise.all([
+    loadProgressInfoMap(studentCodeId),
     loadTopicRows(topicIds),
   ]);
   return sortStudentTopics(
-    topicRows.map((t) => buildStudentTopic(t, moduleIdsByTopic.get(t.id) ?? [], statusByModule))
+    topicRows.map((t) => buildStudentTopic(t, moduleIdsByTopic.get(t.id) ?? [], progressByModule))
   );
 }
 

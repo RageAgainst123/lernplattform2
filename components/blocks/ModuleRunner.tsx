@@ -59,10 +59,12 @@ export function ModuleRunner({ moduleId, blocks, startIndex, initialAnswers, onS
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-xl flex-col gap-6 p-6">
+    <div className="mx-auto flex max-w-xl flex-col gap-6 p-6">
       <ProgressBar current={runner.index} total={runner.total} />
 
-      <div className="flex-1 space-y-4">
+      {/* Frage + (geprüftes) Feedback fließen natürlich — Button bleibt
+          visuell direkt unter der Frage, auch bei kurzen T/F-Fragen. */}
+      <div className="space-y-4">
         <BlockView
           block={runner.block}
           answer={runner.answers[runner.block.id]}

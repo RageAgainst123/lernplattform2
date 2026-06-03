@@ -14,7 +14,27 @@ export type ProgressRow = {
   completed_at: string | null;
   // Optional → abwärtskompatibel mit alten Aufrufern/Daten ohne Rückgabe.
   returned_at?: string | null;
+  // Score-Felder (optional, für Lernpfad-Prozent-Anzeige bei erledigten
+  // Modulen). Existierten schon immer in der DB, werden hier explizit
+  // dazugemacht damit Aufrufer sie nutzen können.
+  score?: number | null;
+  max_score?: number | null;
 };
+
+// Status + Score-Info pro Modul, für den Lernpfad (Schüler:innen-
+// Themen-Detailseite). percent ist null wenn max_score nicht > 0 oder
+// noch nichts abgegeben wurde.
+export type ProgressInfo = {
+  status: ModuleStatus;
+  score: number | null;
+  maxScore: number | null;
+  percent: number | null;
+};
+
+function calcPercent(score: number | null, max: number | null): number | null {
+  if (score === null || max === null || max <= 0) return null;
+  return Math.round((score / max) * 100);
+}
 
 // Leitet den Status einer einzelnen Progress-Row ab.
 //   returned_at gesetzt UND nicht (wieder) abgegeben → 'returned'
@@ -37,6 +57,24 @@ export function progressStatusMap(rows: ProgressRow[]): Map<string, ModuleStatus
   const map = new Map<string, ModuleStatus>();
   for (const row of rows) {
     map.set(row.module_id, deriveStatus(row));
+  }
+  return map;
+}
+
+// Wie progressStatusMap, aber mit Score-Info. Wird für den Lernpfad
+// (Themen-Detailseite) genutzt, damit Schüler:innen bei erledigten Modulen
+// den erreichten Prozentwert sehen.
+export function progressInfoMap(rows: ProgressRow[]): Map<string, ProgressInfo> {
+  const map = new Map<string, ProgressInfo>();
+  for (const row of rows) {
+    const score = row.score ?? null;
+    const maxScore = row.max_score ?? null;
+    map.set(row.module_id, {
+      status: deriveStatus(row),
+      score,
+      maxScore,
+      percent: calcPercent(score, maxScore),
+    });
   }
   return map;
 }

@@ -26,12 +26,11 @@ function useEscapeKey(onClose: () => void) {
 
 const STEPS: { title: string; body: React.ReactNode }[] = [
   {
-    title: 'Word in neuem Tab öffnen',
+    title: 'Word öffnen + leeres Dokument erstellen',
     body: (
       <>
-        Klicke auf <strong>&bdquo;➜ Word in neuem Tab öffnen&ldquo;</strong>. Du landest auf
-        office.com/word mit deinem Schul-Konto. Klick dort auf
-        <strong> &bdquo;+ Neues leeres Dokument&ldquo;</strong>.
+        Klick auf <strong>&bdquo;➜ Word in neuem Tab öffnen&ldquo;</strong>. Bei office.com/word
+        klick auf <strong>&bdquo;+ Neues leeres Dokument&ldquo;</strong>.
       </>
     ),
   },
@@ -39,33 +38,53 @@ const STEPS: { title: string; body: React.ReactNode }[] = [
     title: 'Datei umbenennen',
     body: (
       <>
-        Oben in der Mitte steht &bdquo;Dokument&ldquo; — klicke darauf und vergib einen klaren
-        Namen, z.B. <strong>&bdquo;Mein Schulübungsheft&ldquo;</strong>. Word speichert automatisch
-        in deinem OneDrive.
+        Oben in der Mitte wo &bdquo;Dokument&ldquo; steht — klick drauf, tippe einen klaren Namen
+        wie <strong>&bdquo;Mein Schulübungsheft&ldquo;</strong>. Word speichert automatisch in
+        deinem OneDrive.
       </>
     ),
   },
   {
-    title: 'Freigabe-Berechtigung einstellen — WICHTIG',
+    title: 'Auf „Teilen" klicken (blauer Knopf oben rechts)',
     body: (
       <>
-        Klick oben rechts auf <strong>&bdquo;Teilen&ldquo;</strong> → dann auf{' '}
-        <strong>&bdquo;Zugriff verwalten&ldquo;</strong>. Im Dialog: Berechtigung auf
-        <strong> &bdquo;Personen in [deine Schule]&ldquo;</strong> mit
-        <strong> Bearbeitungsrechten</strong> stellen. So kann deine Lehrer:in das Heft öffnen UND
-        Kommentare schreiben.
+        Im Dropdown wähle nochmal <strong>&bdquo;Teilen&ldquo;</strong> (NICHT &bdquo;Link
+        kopieren&ldquo;!). Es öffnet sich ein neues Fenster &bdquo;Mein Schulübungsheft.docx
+        freigeben&ldquo;.
+      </>
+    ),
+  },
+  {
+    title: 'Auf das ⚙️-Zahnrad klicken (neben „Link kopieren")',
+    body: (
+      <>
+        Im Fenster siehst du unten einen Button <strong>&bdquo;Link kopieren&ldquo;</strong> und
+        rechts daneben ein kleines ⚙️-Symbol. <strong>Klick auf das ⚙️-Symbol</strong>, NICHT auf
+        &bdquo;Link kopieren&ldquo;.
+      </>
+    ),
+  },
+  {
+    title: 'Berechtigung auf „Personen in MS Pitten" stellen — WICHTIG',
+    body: (
+      <>
+        Es öffnet sich <strong>&bdquo;Linkeinstellungen&ldquo;</strong>. Klick auf
+        <strong> &bdquo;Personen in MS Pitten&ldquo;</strong> (zweite Option, mit Aktentaschen-
+        Symbol). Unten muss <strong>&bdquo;Kann bearbeiten&ldquo;</strong> stehen — so kann deine
+        Lehrer:in Kommentare schreiben. Dann <strong>&bdquo;Übernehmen&ldquo;</strong> klicken.
         <br />
-        <span className="text-destructive">⚠️ Wichtig:</span> Wenn die Standard-Einstellung
-        &bdquo;Nur du&ldquo; bleibt, sieht deine Lehrer:in nichts!
+        <span className="text-destructive">⚠️ Wichtig:</span> Wenn &bdquo;Von Ihnen ausgewählte
+        Personen&ldquo; aktiv bleibt, sieht deine Lehrer:in nichts!
       </>
     ),
   },
   {
-    title: 'Link kopieren',
+    title: 'Jetzt „Link kopieren"',
     body: (
       <>
-        Wieder oben rechts auf <strong>&bdquo;Teilen&ldquo;</strong> klicken →{' '}
-        <strong>&bdquo;Link kopieren&ldquo;</strong>. Der Link wandert in die Zwischenablage.
+        Du landest zurück im Freigabe-Fenster. <strong>Jetzt</strong> auf
+        <strong> &bdquo;Link kopieren&ldquo;</strong> klicken. Der Link wandert in die
+        Zwischenablage.
       </>
     ),
   },
@@ -73,9 +92,9 @@ const STEPS: { title: string; body: React.ReactNode }[] = [
     title: 'Link hier einfügen',
     body: (
       <>
-        Wechsle in diesen Tab zurück, klicke
-        <strong> &bdquo;🔗 Ich habe schon einen Link&ldquo;</strong>, füge den Link ein und
-        speichere.
+        Wechsle zu diesem Tab zurück, klick
+        <strong> &bdquo;🔗 Ich habe schon einen Link&ldquo;</strong>, füge den Link ein und klick{' '}
+        <strong>&bdquo;Link speichern&ldquo;</strong>.
       </>
     ),
   },
@@ -110,7 +129,8 @@ export function WordHeftInstructionsModal({ onClose }: WordHeftInstructionsModal
           So legst du dein Word-Heft an
         </h2>
         <p className="text-muted-foreground mt-2 text-sm">
-          Vier Schritte. Schritt 3 ist wichtig — sonst kann deine Lehrer:in das Heft nicht sehen.
+          7 Schritte. Schritte 4 + 5 sind die wichtigen — sonst kann deine Lehrer:in das Heft nicht
+          sehen.
         </p>
         <StepsList />
         <div className="mt-6 flex justify-end gap-2">

@@ -1,6 +1,28 @@
 # Phase P — Word-Heft in OneDrive für O365-Schüler:innen
 
-> **Status:** geplant, noch nicht implementiert. **Ausführlicher Plan damit Geo drüberschläft.**
+> **Status: ⚠️ VERWORFEN am 2026-06-03.**
+> Dieser Plan (Microsoft Graph API + MSAL.js für automatische Word-Heft-
+> Anlage im Schüler:innen-OneDrive) wurde **NICHT umgesetzt**.
+>
+> **Grund:** Microsofts Juli-2025-Consent-Policy-Verschärfung blockt den
+> `Files.ReadWrite`-Scope in 50–80% der Schul-Tenants → der „Admin approval
+> required"-Screen würde beim ersten Schüler:innen-Klick in jeder fremden
+> Schule erscheinen. Bricht die harte Anforderung „muss in fremden Schulen
+> ohne IT-Eingriff laufen".
+>
+> **Statt P wurde Phase Q gebaut** → siehe
+> [`docs/PHASE-Q-WORD-SHARING-LINK.md`](./PHASE-Q-WORD-SHARING-LINK.md):
+> Schüler:in legt das Heft selbst im OneDrive an + klebt den Sharing-Link
+> in unsere App. Wir speichern nur die URL, keine Graph-API, kein Admin-
+> Consent nötig.
+>
+> Diese Datei bleibt als historisches Artefakt + Begründung warum der
+> Graph-API-Pfad nicht ging — falls jemand später doch versucht ihn
+> aufzugreifen.
+
+---
+
+> **Status (historisch):** geplant, noch nicht implementiert. **Ausführlicher Plan damit Geo drüberschläft.**
 > **Voraussetzung:** Phase O (O365-SSO) ist fertig und live.
 > **Branch (geplant):** `feature/word-onedrive-heft`
 

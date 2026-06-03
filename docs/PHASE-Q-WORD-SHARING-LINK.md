@@ -1,6 +1,30 @@
 # Phase Q — Word-Heft in OneDrive via Sharing-Link
 
-> **Status:** geplant, noch nicht implementiert. Plan zum Drüberschlafen.
+> **Status: ✅ IMPLEMENTIERT am 2026-06-03.** Commits `220a77c` → `ba5400e`
+> auf Branch `feature/thema-workflow`. ADR-0015. Migrationen 0018 + 0019.
+>
+> **Wichtige Änderungen gegenüber diesem ursprünglichen Plan** (während der
+> Implementierung beschlossen):
+>
+> - **Generelles Schulübungsheft statt pro Thema.** Migration 0019 setzt
+>   `unique(student_code_id)` allein (statt der ursprünglich geplanten
+>   `unique(student_code_id, topic_id)`). Schüler:in legt EIN Heft an, nutzt
+>   es in allen Themen. Header-Knopf „📓 Mein Heft" + Hinweis-Card auf
+>   jeder Themen-Seite.
+> - **7-Schritt-Anleitung** statt der geplanten 4 Schritte — passend zur
+>   echten deutschen Word-Web-UI (Teilen → Teilen im Dropdown → ⚙️ neben
+>   Link kopieren → „Personen in MS Pitten" → Übernehmen → Link kopieren →
+>   einfügen).
+> - **Lehrer:in-SSO (Phase O5) wurde parallel gebaut** statt aufgeschoben —
+>   weil Cross-Tenant-Sharing-Link-Einsicht nur mit MS-Login funktioniert.
+> - **Probe-Validierung ehrlicher gemacht:** Login-Redirect → `unverified`
+>   statt fälschlich `broken`.
+>
+> Volle Feature-Liste + Commits in `CHANGELOG.md` → Phase Q.
+
+---
+
+> **Status (historisch beim Plan-Schreiben):** geplant, noch nicht implementiert. Plan zum Drüberschlafen.
 > **Voraussetzung:** Phase O (O365-SSO) ist live.
 > **Branch (geplant):** `feature/word-onedrive-sharing-link`
 

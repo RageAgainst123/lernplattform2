@@ -44,6 +44,25 @@ Module haben zwei **Anzeige-Modi** (Spalte `modules.display_mode`):
 - `worksheet` — alle Aufgaben auf einer scrollbaren Seite, Auto-Save (800 ms),
   definitive Abgabe via „Abgeben"-Button. `WorksheetRunner.tsx`.
 
+### Weitere Features (Phasen E – Q)
+
+- **Themen-Lernpfade** (Phase G): Themen als first-class Entity mit Modul-
+  Sortierung, Abschlusstest-Voraussetzungs-Check. Migration 0013.
+- **Schulheft** für Code+PIN-Schüler:innen (Phase H+): Tiptap-Editor mit
+  Word-ähnlichen Features (Tabellen, Schriften, Farben, Listen),
+  Pexels-Bild-Picker, Bild-Resize. Migration 0014.
+- **Live-Präsentation** am Beamer (Phasen 17–22): live_sessions + live_votes,
+  4 Live-Block-Typen (poll, word_cloud, scale, understanding), Reveal/Lock-
+  Steuerung, Heartbeat-Tod. Migrationen 0008–0011.
+- **O365-SSO** (Phase O): Multi-Tenant Azure-App, Schüler:innen + Lehrer:innen
+  können mit ihrem Schul-Microsoft-Konto anmelden. Tinkercad-Pattern für
+  Klassen-Beitritt (Code am Beamer zeigen → Schüler:in tippt nach SSO ein).
+  Migrationen 0015–0017. ADR-0014.
+- **Word-Schulübungsheft** (Phase Q): SSO-Schüler:innen verlinken ein Word-
+  Heft aus dem eigenen OneDrive. Wir speichern nur die URL, kein Graph-API,
+  kein eigener Storage. Lehrer:innen sehen alle Hefte einer Klasse.
+  Migrationen 0018+0019. ADR-0015.
+
 ## Setup
 
 Voraussetzungen: Node ≥ 20, pnpm.
@@ -60,9 +79,12 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 ```
 
 Datenbank-Schema einspielen: **alle** SQL-Dateien aus `supabase/migrations/`
-der Reihe nach (`0001_initial_schema.sql` bis `0007_submissions_feedback.sql`)
-im Supabase SQL-Editor ausführen. Für E-Mail-Versand (Magic Link) ist ein
-SMTP-Provider (z. B. Resend) in den Supabase-Auth-Einstellungen zu hinterlegen.
+der Reihe nach (`0001_initial_schema.sql` bis `0019_word_heft_one_per_student.sql`,
+insgesamt 19 Migrationen) im Supabase SQL-Editor ausführen. Für E-Mail-
+Versand (Magic Link) ist ein SMTP-Provider (z. B. Resend) in den
+Supabase-Auth-Einstellungen zu hinterlegen. Für O365-SSO (Phase O) zusätzlich
+den Azure-Provider in den Supabase-Auth-Settings aktivieren — siehe
+`docs/adr/0014-o365-sso-fuer-schueler-innen.md`.
 
 ## Befehle
 

@@ -281,7 +281,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - **Niemals** `package.json`-Hauptversionen ohne Auftrag anheben — der
   Stack ist bewusst stabil (Next 16 hat schon genug Breaking Changes).
 
-## Phasen-Status (Stand 2026-05-30)
+## Phasen-Status (Stand 2026-06-03)
 
 - ✅ **Phase 1:** Scaffold (Next 16, Tailwind v4, ESLint strict, Vitest)
 - ✅ **Phase 2:** shadcn/ui-Setup, Demo-Verifikation
@@ -328,8 +328,46 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   Aktivität. Alte URLs (`/admin/module/*`, `/admin/material/*`) redirecten
   weiterhin. Lehrer-Sicht: zugewiesene Module nach Aktivität gruppiert.
   Schüler-Dispatcher filtert Präsentationen aus (latenter Bug gefixt).
+- ✅ **Phase E (E2 – Editor-Komfort):** Typ-spezifische Form-Builder pro
+  Block-Typ statt JSON-Paste (commit `3ab275d`).
+- ✅ **Phase G (G1–G5):** Themen-Lernpfade als first-class Entity.
+  Migration 0013 (`topics` + `class_topics` + `modules.topic_id` +
+  `modules.sort_order`), Admin-Themen-Verwaltung, Lehrer-Sicht mit
+  Themen-Karten, Schüler:innen-Themen-Dashboard, Abschlusstest-
+  Voraussetzungs-Check. Bugfix: Quiz + Abschlusstest brauchen eigene
+  Admin-Routen.
+- ✅ **Phase H + H+ (Schulheft mit Tiptap):** Migration 0014
+  (`portfolio_entries` + `topic_writing_prompts`), Tiptap-Editor mit Word-
+  ähnlichen Features (Color, Align, Underline, Strike, Link, Tabellen,
+  FontFamily, FontSize, Emoji, Ribbon-UI), Pexels-Bild-Picker, Bild-Resize
+  via Drag-Handles. ADR-0013. Commits `114cc66` → `94acc09`.
+- ✅ **Phase O (O1–O6 — O365-SSO):** Multi-Tenant Azure-App, SSO für
+  Schüler:innen UND Lehrer:innen, Tinkercad-Pattern für Klassen-Beitritt
+  (`/k/join`). Migrationen 0015 (student_codes O365-Spalten) + 0016
+  (codename-Reparatur) + 0017 (Domain-Allowlist). 5 Bug-Fix-Runden:
+  Anzeigename, Klasse verlassen/löschen, Beamer-Code-Screen, Hydration-
+  Bug, Settings-Dropdown, Klassenname. ADR-0014. Admin georg.schlegel@
+  nms-pitten.ac.at hinzugefügt. Lehrer-SSO via Microsoft-Button auf
+  `/login`. Commits `36512e0` → `964286b`.
+- ✅ **Phase Q (Q1–Q6 — Word-Schulübungsheft):** OneDrive-Sharing-Link-
+  basiertes Heft für SSO-Schüler:innen (KEIN Graph-API wegen Microsofts
+  Juli-2025-Consent-Policy). EIN generelles Heft pro Schüler:in (nicht pro
+  Thema), wird in allen Themen-Lernpfaden als zusätzliches Werkzeug
+  angeboten. Migration 0018 (word_heft_links-Tabelle) + 0019
+  (unique-Constraint-Korrektur). 7-Schritt-Anleitung passend zur deutschen
+  Word-Web-UI. Lehrer-Klassen-Heft-Matrix mit Magic-Link-Hinweis. Header-
+  Knopf „📓 Mein Heft" für SSO-Schüler:innen. Ehrliche HEAD-Probe-Logik
+  (Login-Redirect → unverified statt broken). ADR-0015. Commits `220a77c`
+  → `ba5400e`.
 - 🔜 **Phase F (UI-Politur):** Editor-Layout-Redesign (Vorschau als Tab),
-  Spacing/Typography-Pass, Mobile-Optimierung.
+  Spacing/Typography-Pass, Mobile-Optimierung. (Aufgeschoben — Phase O+Q
+  hatten Priorität.)
+- 🔜 **Phase I (Lernmodul-Erweiterungen):** Diagnose-Modus, Selbsteinschätzung,
+  Bonus-Blöcke, Übungsmodus. ~2 Tage.
+- 🔜 **Phase J (Wissens-Anker):** Karteikarten + Glossar + Streak mit SM-2-
+  Algorithmus. ~4 Tage.
+- 🔜 **Phase K (Recherche-Auftrag):** Neuer Block-Typ als DGB-Kernkompetenz.
+  ~2 Tage.
 
 **Begriffs-Trio (Phase E, bindend):**
 

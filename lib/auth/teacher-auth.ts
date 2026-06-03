@@ -12,6 +12,15 @@ export async function getUser(): Promise<User | null> {
   return user ?? null;
 }
 
+// Phase Q5: prüft ob der eingeloggte Lehrer:in via Azure-OAuth (= Microsoft
+// 365) eingeloggt ist (Identities-Liste enthält azure-Provider). Wichtig für
+// das Öffnen von Word-Heften aus fremden Tenants — Magic-Link-Login reicht
+// dafür nicht (Microsoft will MS-Auth-Cookie sehen).
+export function isAzureLogin(user: User | null): boolean {
+  if (!user?.identities) return false;
+  return user.identities.some((i) => i.provider === 'azure');
+}
+
 // Für geschützte Server Components: gibt den User zurück oder leitet zu /login um.
 export async function requireUser(): Promise<User> {
   const user = await getUser();

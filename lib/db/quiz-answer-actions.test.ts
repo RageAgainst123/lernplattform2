@@ -27,6 +27,22 @@ vi.mock('@/lib/auth/student-auth', () => ({
   })),
 }));
 
+// Phase T2: Broadcast als hoisted-Mock — fire-and-forget, Tests prüfen
+// dass nach erfolgreichem Insert ein answer_received-Event publisht wird.
+const { publishBroadcastMock } = vi.hoisted(() => ({
+  publishBroadcastMock: vi.fn(async () => 'ok'),
+}));
+vi.mock('@/lib/realtime/broadcast', () => ({
+  publishBroadcast: publishBroadcastMock,
+}));
+
+// Auto-Advance separat mocken — das Lazy-Trigger-Verhalten ist in
+// quiz-auto-advance.test.ts abgedeckt, hier soll es nur kein Rauschen
+// verursachen.
+vi.mock('@/lib/db/quiz-auto-advance', () => ({
+  maybeAdvanceQuiz: vi.fn(async () => ({ advanced: false, reason: null })),
+}));
+
 const SESSION_ID = 'qs-1';
 const MODULE_ID = 'm-1';
 
@@ -75,6 +91,7 @@ beforeEach(() => {
   answerInsert.mockReset();
   participantUpdate.mockReset();
   fromMock.mockReset();
+  publishBroadcastMock.mockClear();
 
   // Default: session aktiv, modul vorhanden, participant existiert, insert ok,
   // update ok. Tests überschreiben einzeln.
@@ -231,5 +248,32 @@ describe('submitQuizAnswer — Doppel-Submit', () => {
       answer: ['a'],
     });
     expect(res.error).toMatch(/bereits|schon/i);
+  });
+});
+
+describe('submitQuizAnswer — Broadcast (Phase T2)', () => {
+  it('publisht answer_received auf quiz_session:{id} nach erfolgreichem Insert', async () => {
+    await submitQuizAnswer({
+      sessionId: SESSION_ID,
+      questionIndex: 0,
+      answer: ['a'],
+    });
+    expect(publishBroadcastMock).toHaveBeenCalledWith(
+      `quiz_session:${SESSION_ID}`,
+      'answer_received',
+      expect.objectContaining({ questionIndex: 0 })
+    );
+  });
+
+  it('publisht KEIN Event bei UNIQUE-Constraint-Violation', async () => {
+    answerInsert.mockResolvedValue({
+      error: { code: '23505', message: 'duplicate key' },
+    });
+    await submitQuizAnswer({
+      sessionId: SESSION_ID,
+      questionIndex: 0,
+      answer: ['a'],
+    });
+    expect(publishBroadcastMock).not.toHaveBeenCalled();
   });
 });

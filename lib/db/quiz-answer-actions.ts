@@ -6,6 +6,8 @@ import { evaluateBlock, type BlockAnswer } from '@/lib/blocks/evaluate';
 import { calculatePoints } from '@/lib/blocks/points';
 import { maybeAdvanceQuiz } from '@/lib/db/quiz-auto-advance';
 import { featureFlags, maintenanceMessages } from '@/lib/feature-flags';
+import { publishBroadcast } from '@/lib/realtime/broadcast';
+import { channels, events } from '@/lib/realtime/channels';
 import type { Block } from '@/lib/schemas/blocks';
 import { moduleContentSchema } from '@/lib/schemas/blocks';
 
@@ -227,6 +229,14 @@ export async function submitQuizAnswer(
     newStreak,
   });
   if (writeErr) return writeErr;
+
+  // Phase T2: Broadcast „eine Antwort ist da" — Beamer aktualisiert
+  // sofort den Counter „12 von 25 geantwortet". Payload bewusst minimal:
+  // KEIN correct-Flag, KEINE Punkte, KEINE Identität — DevTools-Leak
+  // soll Quiz nicht verraten (siehe ADR-0016, Public Channels).
+  void publishBroadcast(channels.quizSession(sess.id), events.quiz.answerReceived, {
+    questionIndex: args.questionIndex,
+  });
 
   // Phase S2-Bugfix (Spec §11 Punkt 12): wenn diese Antwort die letzte
   // war (alle Teilnehmer:innen haben jetzt geantwortet), automatisch

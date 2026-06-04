@@ -1,6 +1,8 @@
 import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { backfillPendingAnswers } from '@/lib/db/quiz-end-backfill';
+import { publishBroadcast } from '@/lib/realtime/broadcast';
+import { channels, events } from '@/lib/realtime/channels';
 
 // Auto-Reveal-Trigger (Spec §11 Punkt 12 + §5.9). Wechselt die Session
 // automatisch in 'between_questions' wenn:
@@ -89,27 +91,44 @@ export async function maybeAdvanceQuiz(
     nowMs: Date.now(),
   });
   if (!reason) return { advanced: false, reason: null };
+  await commitAdvance(supabase, sess, reason);
+  return { advanced: true, reason };
+}
 
-  // Bei Timeout: Backfill für die verpassenden Teilnehmer:innen, damit das
-  // Leaderboard sauber zählt (sonst tauchen sie als „kein Eintrag" auf
-  // statt als „0 Punkte richtig zugeordnet").
+// Backfillt verpasste Antworten (nur bei Timeout), wechselt den Status
+// race-frei auf 'between_questions' und broadcastet question_revealed wenn
+// dieser Aufruf den Status gewonnen hat. Extrahiert aus maybeAdvanceQuiz
+// für Lint-Compliance (max-lines-per-function 50).
+async function commitAdvance(
+  supabase: ReturnType<typeof createServiceClient>,
+  sess: SessionSnapshot,
+  reason: AutoAdvanceReason
+): Promise<void> {
   if (reason === 'timeout') {
     await backfillPendingAnswers(sess.id, sess.question_order, sess.current_question_index);
   }
-
   // Race-frei: nur updaten wenn Status noch 'active' ist. Wenn ein
   // paralleler Aufruf bereits 'between_questions' gesetzt hat, matched
   // die WHERE-Klausel nicht und wir tun nichts.
-  await supabase
+  const { data: updated } = await supabase
     .from('quiz_sessions')
     .update({
       status: 'between_questions',
       heartbeat_at: new Date().toISOString(),
     })
     .eq('id', sess.id)
-    .eq('status', 'active');
-
-  return { advanced: true, reason };
+    .eq('status', 'active')
+    .select('id')
+    .maybeSingle();
+  // Phase T2: nur dann broadcasten, wenn DIESER Aufruf den Status gewonnen
+  // hat (updated != null). Sonst hat ein paralleler Reveal-Klick oder
+  // anderer Auto-Advance schon publisht.
+  if (updated) {
+    void publishBroadcast(channels.quizSession(sess.id), events.quiz.questionRevealed, {
+      questionIndex: sess.current_question_index,
+      reason,
+    });
+  }
 }
 
 async function loadAnsweredAndParticipantCounts(

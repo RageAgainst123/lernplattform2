@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { backfillPendingAnswers } from '@/lib/db/quiz-end-backfill';
 import { checkQuizQuota, QUOTA_EXCEEDED_MESSAGE } from '@/lib/db/quiz-quota';
 import { featureFlags, maintenanceMessages } from '@/lib/feature-flags';
+import { publishBroadcast } from '@/lib/realtime/broadcast';
+import { channels, events } from '@/lib/realtime/channels';
 import type { QuizMode, QuizQuestionRef, QuizSessionSettings } from '@/lib/schemas/quiz';
 
 // Server Actions für die Quiz-Steuerung (Lehrer:innen-Seite, Phase S).
@@ -94,7 +96,7 @@ export async function createQuizSession(args: {
 export async function startQuiz(classId: string): Promise<QuizActionState> {
   await requireUser();
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('quiz_sessions')
     .update({
       status: 'active',
@@ -103,9 +105,20 @@ export async function startQuiz(classId: string): Promise<QuizActionState> {
       heartbeat_at: new Date().toISOString(),
     })
     .eq('class_id', classId)
-    .eq('status', 'lobby');
+    .eq('status', 'lobby')
+    .select('id')
+    .maybeSingle();
   if (error) {
     return { error: 'Quiz konnte nicht gestartet werden.' };
+  }
+  // Phase T2: nach erfolgreichem Status-Wechsel Broadcast triggern — fire-
+  // and-forget. Polling-Fallback fängt den Aussetzer, wenn der Broadcast
+  // hängt oder failt.
+  const sessionId = (data as { id: string } | null)?.id;
+  if (sessionId) {
+    void publishBroadcast(channels.quizSession(sessionId), events.quiz.questionStarted, {
+      questionIndex: 0,
+    });
   }
   return { error: null };
 }
@@ -153,6 +166,11 @@ export async function endQuizSession(classId: string): Promise<QuizActionState> 
   if (error) {
     return { error: 'Quiz konnte nicht beendet werden.' };
   }
+  // Phase T2: nach erfolgreichem End-Update Broadcast — Schüler:innen-Tabs
+  // wechseln sofort auf Ende-Screen statt erst nach Polling-Tick.
+  if (sessionRow?.id) {
+    void publishBroadcast(channels.quizSession(sessionRow.id as string), events.quiz.quizEnded, {});
+  }
   revalidatePath(`/lehrer/klassen/${classId}`);
   return { error: null };
 }
@@ -164,12 +182,20 @@ export async function endQuizSession(classId: string): Promise<QuizActionState> 
 export async function revealQuizQuestion(classId: string): Promise<QuizActionState> {
   await requireUser();
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('quiz_sessions')
     .update({ status: 'between_questions', heartbeat_at: new Date().toISOString() })
     .eq('class_id', classId)
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .select('id, current_question_index')
+    .maybeSingle();
   if (error) return { error: 'Auflösen fehlgeschlagen.' };
+  const row = data as { id: string; current_question_index: number } | null;
+  if (row) {
+    void publishBroadcast(channels.quizSession(row.id), events.quiz.questionRevealed, {
+      questionIndex: row.current_question_index,
+    });
+  }
   return { error: null };
 }
 
@@ -181,7 +207,7 @@ export async function nextQuizQuestion(classId: string): Promise<QuizActionState
   // Aktuellen Stand lesen — current_question_index + question_order-Länge.
   const { data: row } = await supabase
     .from('quiz_sessions')
-    .select('current_question_index, question_order')
+    .select('id, current_question_index, question_order')
     .eq('class_id', classId)
     .eq('status', 'between_questions')
     .maybeSingle();
@@ -203,6 +229,10 @@ export async function nextQuizQuestion(classId: string): Promise<QuizActionState
     .eq('class_id', classId)
     .eq('status', 'between_questions');
   if (error) return { error: 'Nächste Frage konnte nicht geladen werden.' };
+  // Phase T2: Broadcast nach erfolgreichem Index-Bump.
+  void publishBroadcast(channels.quizSession(row.id as string), events.quiz.nextQuestion, {
+    questionIndex: nextIndex,
+  });
   return { error: null };
 }
 

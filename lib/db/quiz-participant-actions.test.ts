@@ -22,11 +22,21 @@ vi.mock('@/lib/auth/student-auth', () => ({
   })),
 }));
 
+// Phase T2: Broadcast als hoisted-Mock — Tests prüfen dass
+// participant_joined publisht wird.
+const { publishBroadcastMock } = vi.hoisted(() => ({
+  publishBroadcastMock: vi.fn(async () => 'ok'),
+}));
+vi.mock('@/lib/realtime/broadcast', () => ({
+  publishBroadcast: publishBroadcastMock,
+}));
+
 beforeEach(() => {
   upsertMock.mockReset();
   sessionMaybeSingle.mockReset();
   codeMaybeSingle.mockReset();
   fromMock.mockReset();
+  publishBroadcastMock.mockClear();
 
   // Sessions-Lookup: getActiveQuizSessionForClass-Pattern
   const sessionsBuilder = {
@@ -138,5 +148,27 @@ describe('joinQuizSession', () => {
     const res = await joinQuizSession({ teamName: 'Codeknacker' });
     expect(res.sessionId).toBeNull();
     expect(res.error).toMatch(/teamname.*vergeben/i);
+  });
+
+  it('publisht participant_joined nach erfolgreichem Upsert (Phase T2)', async () => {
+    sessionMaybeSingle.mockResolvedValue({ data: baseSession });
+    codeMaybeSingle.mockResolvedValue({ data: { codename: '5T-01' } });
+    upsertMock.mockResolvedValue({ error: null });
+
+    await joinQuizSession();
+    expect(publishBroadcastMock).toHaveBeenCalledWith(
+      'quiz_session:qs1',
+      'participant_joined',
+      expect.objectContaining({ displayName: '5T-01' })
+    );
+  });
+
+  it('publisht KEIN Event wenn Upsert failed', async () => {
+    sessionMaybeSingle.mockResolvedValue({ data: baseSession });
+    codeMaybeSingle.mockResolvedValue({ data: { codename: '5T-01' } });
+    upsertMock.mockResolvedValue({ error: { code: '23505', message: 'dup' } });
+
+    await joinQuizSession();
+    expect(publishBroadcastMock).not.toHaveBeenCalled();
   });
 });

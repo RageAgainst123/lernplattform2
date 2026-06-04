@@ -8,11 +8,29 @@ vi.mock('server-only', () => ({}));
 const rpcMock = vi.fn();
 const updateMock = vi.fn();
 const selectMock = vi.fn();
+// Phase T2: nach update().eq().eq() folgt manchmal .select('id').maybeSingle()
+// (für Broadcast-Trigger). Per Default liefert dieser Pfad eine simulierte
+// Session-Id zurück, damit publishBroadcast in den happy-path-Tests
+// aufgerufen wird. Tests können updateSelectMaybeSingleMock überschreiben.
+type UpdateSelectResult = {
+  data: { id: string; current_question_index: number } | null;
+  error: null;
+};
+const updateSelectMaybeSingleMock = vi.fn<() => Promise<UpdateSelectResult>>();
+updateSelectMaybeSingleMock.mockImplementation(async () => ({
+  data: { id: 'sess-1', current_question_index: 0 },
+  error: null,
+}));
+const updateSelectChain = {
+  maybeSingle: updateSelectMaybeSingleMock,
+};
 // Filter-Methoden geben sich selbst zurück (chainable + awaitable als
 // Promise<{error: null}>). So funktionieren beliebige .eq().in().eq()-Ketten.
+// .select(...) öffnet die Post-Update-Subchain für Broadcast-Reads.
 const filterChain = {
   eq: vi.fn(),
   in: vi.fn(),
+  select: vi.fn(() => updateSelectChain),
   then(resolve: (v: { error: null }) => unknown) {
     return Promise.resolve({ error: null }).then(resolve);
   },
@@ -23,11 +41,21 @@ filterChain.in.mockImplementation(() => filterChain);
 // Select-Chain liefert per Default null zurück (= keine laufende Session
 // gefunden → Backfill wird übersprungen). Tests können selectMock
 // überschreiben falls sie eine Session simulieren wollen.
+type SelectChainResult = {
+  data: null | {
+    id: string;
+    status: string;
+    current_question_index: number;
+    question_order: { blockId: string }[];
+  };
+  error: null;
+};
 const selectChain = {
   eq: vi.fn(),
   in: vi.fn(),
-  maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+  maybeSingle: vi.fn<() => Promise<SelectChainResult>>(),
 };
+selectChain.maybeSingle.mockImplementation(async () => ({ data: null, error: null }));
 selectChain.eq.mockImplementation(() => selectChain);
 selectChain.in.mockImplementation(() => selectChain);
 selectMock.mockImplementation(() => selectChain);
@@ -70,14 +98,33 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+// Phase T2: Broadcast-Helper mocken — fire-and-forget, Tests prüfen nur
+// dass die richtigen Events publisht werden (siehe describe('broadcasts')).
+// vi.hoisted, weil vi.mock zur Compile-Zeit oben angeführt wird und
+// publishBroadcastMock NACH dem Hoisted-vi.mock initialisiert wäre.
+const { publishBroadcastMock } = vi.hoisted(() => ({
+  publishBroadcastMock: vi.fn(async () => 'ok'),
+}));
+vi.mock('@/lib/realtime/broadcast', () => ({
+  publishBroadcast: publishBroadcastMock,
+}));
+
 beforeEach(() => {
   rpcMock.mockReset();
   updateMock.mockReset();
   selectMock.mockReset();
+  publishBroadcastMock.mockClear();
   filterChain.eq.mockClear();
   filterChain.in.mockClear();
+  filterChain.select.mockClear();
   filterChain.eq.mockImplementation(() => filterChain);
   filterChain.in.mockImplementation(() => filterChain);
+  filterChain.select.mockImplementation(() => updateSelectChain);
+  updateSelectMaybeSingleMock.mockReset();
+  updateSelectMaybeSingleMock.mockImplementation(async () => ({
+    data: { id: 'sess-1', current_question_index: 0 },
+    error: null,
+  }));
   updateMock.mockImplementation(() => filterChain);
   selectChain.eq.mockClear();
   selectChain.in.mockClear();
@@ -97,6 +144,7 @@ import {
   startQuiz,
   endQuizSession,
   heartbeatQuizSession,
+  revealQuizQuestion,
 } from '@/lib/db/quiz-session-actions';
 
 describe('createQuizSession', () => {
@@ -209,5 +257,56 @@ describe('heartbeatQuizSession', () => {
     await heartbeatQuizSession('c1');
     const payload = updateMock.mock.calls[0]?.[0] as { heartbeat_at: string };
     expect(payload.heartbeat_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+});
+
+describe('broadcasts (Phase T2)', () => {
+  it('startQuiz publisht question_started auf quiz_session:{id}', async () => {
+    await startQuiz('c1');
+    expect(publishBroadcastMock).toHaveBeenCalledWith(
+      'quiz_session:sess-1',
+      'question_started',
+      expect.objectContaining({ questionIndex: 0 })
+    );
+  });
+
+  it('revealQuizQuestion publisht question_revealed', async () => {
+    updateSelectMaybeSingleMock.mockResolvedValueOnce({
+      data: { id: 'sess-2', current_question_index: 3 },
+      error: null,
+    });
+    await revealQuizQuestion('c1');
+    expect(publishBroadcastMock).toHaveBeenCalledWith(
+      'quiz_session:sess-2',
+      'question_revealed',
+      expect.objectContaining({ questionIndex: 3 })
+    );
+  });
+
+  it('endQuizSession publisht quiz_ended wenn Session existiert', async () => {
+    // endQuizSession liest erst die Session per select-Chain (selectChain).
+    // Simulieren wir eine aktive Session.
+    selectChain.maybeSingle.mockImplementationOnce(async () => ({
+      data: {
+        id: 'sess-end',
+        status: 'active',
+        current_question_index: 1,
+        question_order: [{ blockId: 'b1' }, { blockId: 'b2' }],
+      },
+      error: null,
+    }));
+    await endQuizSession('c1');
+    expect(publishBroadcastMock).toHaveBeenCalledWith(
+      'quiz_session:sess-end',
+      'quiz_ended',
+      expect.anything()
+    );
+  });
+
+  it('startQuiz schluckt fehlende Session leise (kein Broadcast)', async () => {
+    updateSelectMaybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    const res = await startQuiz('c1');
+    expect(res.error).toBeNull();
+    expect(publishBroadcastMock).not.toHaveBeenCalled();
   });
 });

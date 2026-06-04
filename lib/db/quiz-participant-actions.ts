@@ -2,6 +2,8 @@
 
 import { requireStudentSession } from '@/lib/auth/student-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { publishBroadcast } from '@/lib/realtime/broadcast';
+import { channels, events } from '@/lib/realtime/channels';
 
 // Schüler:innen-Schreibpfad für Quiz-Teilnahme (Phase S, Migration 0020).
 //
@@ -35,6 +37,20 @@ function joinErrorMessage(error: { code?: string }): string {
   return 'Beitritt fehlgeschlagen.';
 }
 
+// Liest den Codename des Schülers (Snapshot beim Join — bleibt stabil
+// falls der Codename später geändert wird). Fallback 'Anonym'.
+async function loadCodename(
+  supabase: ReturnType<typeof createServiceClient>,
+  studentCodeId: string
+): Promise<string> {
+  const { data: codeRow } = await supabase
+    .from('student_codes')
+    .select('codename')
+    .eq('id', studentCodeId)
+    .maybeSingle();
+  return (codeRow?.codename as string | undefined) ?? 'Anonym';
+}
+
 // Schüler:in tritt der aktiven Quiz-Session ihrer Klasse bei. Idempotent
 // (ON CONFLICT bei doppelten Tabs). Im Team-Modus wird der Teamname
 // validiert + getrimmt + auf 40 Zeichen gecappt.
@@ -59,20 +75,13 @@ export async function joinQuizSession(args?: { teamName?: string }): Promise<Joi
     return { sessionId: null, error: 'Bitte einen Teamnamen wählen.' };
   }
 
-  // Display-Name = Codename (Spec §3.10: immer Codename, auch SSO).
-  // Snapshot beim Join — bleibt stabil falls der Codename später geändert wird.
-  const { data: codeRow } = await supabase
-    .from('student_codes')
-    .select('codename')
-    .eq('id', session.studentCodeId)
-    .maybeSingle();
-  const codename = (codeRow?.codename as string | undefined) ?? 'Anonym';
-
+  const codename = await loadCodename(supabase, session.studentCodeId);
+  const displayName = teamName ?? codename;
   const { error } = await supabase.from('quiz_participants').upsert(
     {
       session_id: sessionRow.id,
       student_code_id: session.studentCodeId,
-      display_name: teamName ?? codename,
+      display_name: displayName,
       team_name: teamName,
       last_seen_at: new Date().toISOString(),
     },
@@ -81,6 +90,14 @@ export async function joinQuizSession(args?: { teamName?: string }): Promise<Joi
   if (error) {
     return { sessionId: null, error: joinErrorMessage(error) };
   }
+  // Phase T2: Broadcast „neue:r Teilnehmer:in" — Lehrer-Lobby aktualisiert
+  // sofort die Liste statt erst nach Polling-Tick. Payload klein halten:
+  // nur display_name (= Codename oder Teamname), kein student_code_id.
+  void publishBroadcast(
+    channels.quizSession(sessionRow.id as string),
+    events.quiz.participantJoined,
+    { displayName }
+  );
   return { sessionId: sessionRow.id as string, error: null };
 }
 

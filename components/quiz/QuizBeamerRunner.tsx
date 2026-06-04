@@ -42,7 +42,7 @@ export function QuizBeamerRunner({
   initialBeamer,
   initialLobby,
 }: Props) {
-  const state = useQuizBeamerPoll(classId, initialBeamer);
+  const { state, refetch } = useQuizBeamerPoll(classId, initialBeamer);
   const [showLeaderboardRaw, setShowLeaderboard] = useState(false);
   // Effective toggle: nur in between gilt der User-Wunsch. In active wird
   // immer die Frage gezeigt, in lobby ohnehin nicht relevant. Damit
@@ -77,6 +77,7 @@ export function QuizBeamerRunner({
         state={state}
         showLeaderboard={showLeaderboard}
         onToggleLeaderboard={() => setShowLeaderboard((v) => !v)}
+        onActionDone={refetch}
       />
     </div>
   );

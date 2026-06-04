@@ -31,11 +31,12 @@ export function useLiveSync(classId: string | null): LiveState {
     return (await res.json()) as LiveState;
   }, []);
 
-  return useRealtimeWithFallback<LiveState>({
+  const { state } = useRealtimeWithFallback<LiveState>({
     channelName: classId ? channels.liveSession(classId) : 'live_session:disabled',
     events: LIVE_EVENTS,
     fetcher,
     initial: { active: false },
     pollIntervalMs: POLL_FALLBACK_MS,
   });
+  return state;
 }

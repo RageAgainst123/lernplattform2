@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // Hybrid-Realtime-Hook mit Polling-Fallback (Phase T1, ADR-0016).
@@ -37,9 +37,24 @@ export type UseRealtimeWithFallbackArgs<T> = {
   pauseOnHidden?: boolean;
 };
 
-export function useRealtimeWithFallback<T>(args: UseRealtimeWithFallbackArgs<T>): T {
+export type UseRealtimeWithFallbackResult<T> = {
+  /** Aktueller authoritative State */
+  state: T;
+  /**
+   * Sofortiger Refetch — fuer den schreibenden Tab. Nach erfolgreicher
+   * Server-Action aufrufen, statt auf den Realtime-Broadcast-Roundtrip oder
+   * den Polling-Tick zu warten. Cuts ~100-300ms latency fuer die Person,
+   * die die Aktion ausgeloest hat.
+   */
+  refetch: () => Promise<void>;
+};
+
+export function useRealtimeWithFallback<T>(
+  args: UseRealtimeWithFallbackArgs<T>
+): UseRealtimeWithFallbackResult<T> {
   const [state, setState] = useState<T>(args.initial);
   const fetcherRef = useRef(args.fetcher);
+  const cancelledRef = useRef(false);
 
   // fetcher in einem Effect aktualisieren — KEIN Lesen/Schreiben von refs
   // während des Renders (React-19-Regel).
@@ -48,7 +63,8 @@ export function useRealtimeWithFallback<T>(args: UseRealtimeWithFallbackArgs<T>)
   });
 
   useEffect(() => {
-    return setupRealtimeAndPolling({
+    cancelledRef.current = false;
+    const cleanup = setupRealtimeAndPolling({
       channelName: args.channelName,
       events: args.events,
       pollIntervalMs: args.pollIntervalMs ?? DEFAULT_POLL_MS,
@@ -56,12 +72,28 @@ export function useRealtimeWithFallback<T>(args: UseRealtimeWithFallbackArgs<T>)
       fetcherRef,
       setState,
     });
+    return () => {
+      cancelledRef.current = true;
+      cleanup();
+    };
     // channelName und events sollen einen neuen Subscribe triggern wenn
     // sie sich ändern. fetcher liest via Ref → keine Re-Subscribes nötig.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [args.channelName, JSON.stringify(args.events), args.pollIntervalMs, args.pauseOnHidden]);
 
-  return state;
+  // Imperative refetch — Caller (z.B. Lehrer-Button-Handler) ruft das nach
+  // erfolgreicher Server-Action auf. Liest fetcher via Ref, damit der
+  // Callback stabil bleibt.
+  const refetch = useCallback(async (): Promise<void> => {
+    try {
+      const next = await fetcherRef.current();
+      if (!cancelledRef.current) setState(next);
+    } catch {
+      // Netz-Fehler: nächster Tick versucht erneut.
+    }
+  }, []);
+
+  return { state, refetch };
 }
 
 type SetupArgs<T> = {

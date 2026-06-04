@@ -22,6 +22,14 @@ type Props = {
   state: Extract<QuizBeamerState, { kind: 'active' | 'between' }>;
   showLeaderboard: boolean;
   onToggleLeaderboard: () => void;
+  /**
+   * Phase T3-bugfix: nach erfolgreicher server-action sofort den hook-state
+   * refetchen. ohne das wartet der lehrer-tab auf den realtime-roundtrip
+   * (oder schlimmer: polling-tick), waehrend schueler-tabs die neue frage
+   * schon sehen. liefert async damit wir bis zum frischen state warten
+   * koennen, bevor der spinner verschwindet.
+   */
+  onActionDone: () => Promise<void>;
 };
 
 export function QuizTeacherControls({
@@ -29,6 +37,7 @@ export function QuizTeacherControls({
   state,
   showLeaderboard,
   onToggleLeaderboard,
+  onActionDone,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -36,12 +45,12 @@ export function QuizTeacherControls({
   const reveal = () =>
     startTransition(async () => {
       await revealQuizQuestion(classId);
-      router.refresh();
+      await onActionDone();
     });
   const next = () =>
     startTransition(async () => {
       await nextQuizQuestion(classId);
-      router.refresh();
+      await onActionDone();
     });
   const end = () => {
     if (!confirm('Quiz wirklich beenden?')) return;

@@ -32,7 +32,16 @@ function channelFor(state: QuizBeamerState): string {
   return channels.quizSession(state.sessionId);
 }
 
-export function useQuizBeamerPoll(classId: string, initial: QuizBeamerState): QuizBeamerState {
+export type UseQuizBeamerPollResult = {
+  state: QuizBeamerState;
+  /** Sofortiger refetch fuer schreibende Lehrer-Buttons (T3-bugfix). */
+  refetch: () => Promise<void>;
+};
+
+export function useQuizBeamerPoll(
+  classId: string,
+  initial: QuizBeamerState
+): UseQuizBeamerPollResult {
   const fetcher = useCallback(async (): Promise<QuizBeamerState> => {
     const url = `/api/quiz/beamer?classId=${encodeURIComponent(classId)}`;
     const res = await fetch(url, { cache: 'no-store' });

@@ -42,11 +42,12 @@ export function useQuizQuestionPoll(initial: QuizQuestionState): QuizQuestionSta
     return (await res.json()) as QuizQuestionState;
   }, []);
 
-  return useRealtimeWithFallback<QuizQuestionState>({
+  const { state } = useRealtimeWithFallback<QuizQuestionState>({
     channelName: channelFor(initial),
     events: QUIZ_EVENTS,
     fetcher,
     initial,
     pollIntervalMs: POLL_FALLBACK_MS,
   });
+  return state;
 }

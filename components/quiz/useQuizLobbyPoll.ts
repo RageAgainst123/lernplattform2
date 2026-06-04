@@ -54,13 +54,14 @@ function useTeacherLobbyHybrid(
     return (await res.json()) as QuizLobbyState;
   }, [classId, enabled, initial]);
 
-  return useRealtimeWithFallback<QuizLobbyState>({
+  const { state } = useRealtimeWithFallback<QuizLobbyState>({
     channelName: enabled ? teacherChannelFor(initial) : 'quiz_session:disabled',
     events: LOBBY_EVENTS,
     fetcher,
     initial,
     pollIntervalMs: TEACHER_POLL_FALLBACK_MS,
   });
+  return state;
 }
 
 function teacherChannelFor(state: QuizLobbyState): string {

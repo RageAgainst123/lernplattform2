@@ -1,6 +1,6 @@
 # ADR-0016: Hybrid-Realtime-Broadcast für Quiz und Live-Präsentation
 
-**Status:** proposed
+**Status:** proposed (Spike-Verifikation 2026-06-04 erfolgreich: gemessene Latenz 75-115ms auf Geos PC gegen Supabase-Cloud, weit besser als die <300ms-Vorgabe)
 **Datum:** 2026-06-04
 **Supersedes (teilweise):** [ADR-0013](0013-live-praesentation-polling.md)
 

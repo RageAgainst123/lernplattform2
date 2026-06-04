@@ -4,12 +4,13 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuizQuestionPoll } from '@/components/quiz/useQuizQuestionPoll';
 import { QuizQuestionOverlay } from '@/components/student/QuizQuestionOverlay';
+import { QuizBetweenWait } from '@/components/student/QuizBetweenWait';
 import type { QuizQuestionState } from '@/app/api/quiz/question/route';
 
-// Schüler:innen-Live-Runner (Phase S2.D). Status-bewusster Renderer:
+// Schüler:innen-Live-Runner (Phase S2.D + S3). Status-bewusster Renderer:
 //   • lobby → Warte-Screen
 //   • active → QuizQuestionOverlay (Antworten)
-//   • between → "Auflösung läuft am Beamer"-Screen
+//   • between → QuizBetweenWait mit eigenem Rang (Phase S3, Spec §5.6)
 //   • none → Redirect zu /s (Quiz beendet)
 //
 // Polling übernimmt useQuizQuestionPoll. Initial-State kommt server-
@@ -28,7 +29,7 @@ export function QuizLiveRunner({ initial }: Props) {
   }, [state, router]);
 
   if (state.kind === 'lobby') return <LobbyWait />;
-  if (state.kind === 'between') return <BetweenWait />;
+  if (state.kind === 'between') return <QuizBetweenWait />;
   if (state.kind === 'active') {
     return (
       <QuizQuestionOverlay
@@ -53,18 +54,6 @@ function LobbyWait() {
       <p className="text-4xl">⏳</p>
       <p className="text-xl font-semibold">Warte auf den Start…</p>
       <p className="text-muted-foreground text-sm">Deine Lehrer:in startet das Quiz gleich.</p>
-    </div>
-  );
-}
-
-function BetweenWait() {
-  return (
-    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-3 p-6 text-center">
-      <p className="text-4xl">🔍</p>
-      <p className="text-xl font-semibold">Auflösung am Beamer</p>
-      <p className="text-muted-foreground text-sm">
-        Schau nach vorne — gleich kommt die nächste Frage.
-      </p>
     </div>
   );
 }

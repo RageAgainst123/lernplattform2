@@ -10,17 +10,26 @@ import {
 import { Button } from '@/components/ui/button';
 import type { QuizBeamerState } from '@/app/api/quiz/beamer/route';
 
-// Lehrer:innen-Steuerung im Beamer-Modus (Phase S2.E).
+// Lehrer:innen-Steuerung im Beamer-Modus (Phase S2.E + S3).
 // Floatet oben rechts: „Auflösen" (active → between_questions), „Nächste
-// Frage" (between_questions → active mit current_question_index++) oder
+// Frage" (between_questions → active mit current_question_index++),
+// „Leaderboard zeigen/Auflösung zeigen"-Toggle nur in between (S3,
+// Spec §5.6 — rein clientseitiger Switch, kein DB-Status) und
 // „Quiz beenden" (immer sichtbar).
 
 type Props = {
   classId: string;
   state: Extract<QuizBeamerState, { kind: 'active' | 'between' }>;
+  showLeaderboard: boolean;
+  onToggleLeaderboard: () => void;
 };
 
-export function QuizTeacherControls({ classId, state }: Props) {
+export function QuizTeacherControls({
+  classId,
+  state,
+  showLeaderboard,
+  onToggleLeaderboard,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -48,6 +57,16 @@ export function QuizTeacherControls({ classId, state }: Props) {
         Steuerung
       </p>
       <PrimaryAction state={state} pending={pending} onReveal={reveal} onNext={next} />
+      {state.kind === 'between' && (
+        <Button
+          variant="outline"
+          onClick={onToggleLeaderboard}
+          disabled={pending}
+          className="h-9 text-sm"
+        >
+          {showLeaderboard ? '🔍 Auflösung zeigen' : '🏆 Leaderboard zeigen'}
+        </Button>
+      )}
       <Button variant="outline" onClick={end} disabled={pending} className="h-9 text-sm">
         Quiz beenden
       </Button>

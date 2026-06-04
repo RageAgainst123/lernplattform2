@@ -24,52 +24,66 @@ export function QuizTeacherControls({ classId, state }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  function reveal() {
+  const reveal = () =>
     startTransition(async () => {
       await revealQuizQuestion(classId);
       router.refresh();
     });
-  }
-  function next() {
+  const next = () =>
     startTransition(async () => {
       await nextQuizQuestion(classId);
       router.refresh();
     });
-  }
-  function end() {
+  const end = () => {
     if (!confirm('Quiz wirklich beenden?')) return;
     startTransition(async () => {
       await endQuizSession(classId);
       router.push(`/lehrer/klassen/${classId}`);
     });
-  }
+  };
 
   return (
     <div className="fixed right-4 bottom-4 flex flex-col gap-2 rounded-lg bg-white/95 p-3 shadow-2xl ring-1 ring-slate-300">
       <p className="text-center text-xs font-medium tracking-wide text-slate-600 uppercase">
         Steuerung
       </p>
-      {state.kind === 'active' && (
-        <Button
-          onClick={reveal}
-          disabled={pending}
-          className="h-10 bg-amber-500 hover:bg-amber-600"
-        >
-          {pending ? 'Auflöse…' : '🔍 Auflösen'}
-        </Button>
-      )}
-      {state.kind === 'between' && (
-        <Button
-          onClick={next}
-          disabled={pending}
-          className="h-10 bg-emerald-600 hover:bg-emerald-700"
-        >
-          {pending ? 'Lade…' : '▶ Nächste Frage'}
-        </Button>
-      )}
+      <PrimaryAction state={state} pending={pending} onReveal={reveal} onNext={next} />
       <Button variant="outline" onClick={end} disabled={pending} className="h-9 text-sm">
         Quiz beenden
       </Button>
     </div>
+  );
+}
+
+function PrimaryAction({
+  state,
+  pending,
+  onReveal,
+  onNext,
+}: {
+  state: Props['state'];
+  pending: boolean;
+  onReveal: () => void;
+  onNext: () => void;
+}) {
+  if (state.kind === 'active') {
+    return (
+      <Button
+        onClick={onReveal}
+        disabled={pending}
+        className="h-10 bg-amber-500 hover:bg-amber-600"
+      >
+        {pending ? 'Auflöse…' : '🔍 Auflösen'}
+      </Button>
+    );
+  }
+  return (
+    <Button
+      onClick={onNext}
+      disabled={pending}
+      className="h-10 bg-emerald-600 hover:bg-emerald-700"
+    >
+      {pending ? 'Lade…' : '▶ Nächste Frage'}
+    </Button>
   );
 }

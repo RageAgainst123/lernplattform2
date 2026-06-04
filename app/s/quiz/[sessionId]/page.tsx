@@ -2,32 +2,45 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireStudentSession } from '@/lib/auth/student-auth';
 import { getQuizBannerForStudent } from '@/lib/db/quiz-sessions';
-import { QuizWaitPolling } from '@/components/student/QuizWaitPolling';
-import type { StudentLobbyState } from '@/app/api/quiz/lobby/route';
+import { QuizLiveRunner } from '@/components/student/QuizLiveRunner';
+import type { QuizQuestionState } from '@/app/api/quiz/question/route';
 
 export const metadata: Metadata = {
-  title: 'Quiz-Lobby — Lernplattform',
+  title: 'Quiz — Lernplattform',
 };
 
-// Schüler:innen-Wait-Page nach dem Beitritt zu einem Live-Quiz (S1.E + S1.C).
-// Server-rendered den initialen Snapshot, danach übernimmt das Polling im
-// Client (QuizWaitPolling). Status-Wechsel 'lobby' → 'active' kommt
-// automatisch ohne F5.
+// Schüler:innen-Live-Quiz-Page (Phase S1.E + S2.D).
 //
-// sessionId aus der URL ist nur ein Hint — die echte Quote „läuft gerade
-// ein Quiz?" kommt server-seitig über die jose-Session + classId.
+// Status-bewusster Renderer im Client (QuizLiveRunner) übernimmt die
+// Logik: lobby → Warte-Screen, active → Antwort-Buttons,
+// between → "schau nach vorne", none → Redirect zu /s.
+//
+// Initial-Snapshot kommt server-seitig (per Banner-Helper) damit beim
+// Mount kein Flicker. Polling übernimmt /api/quiz/question.
+//
+// sessionId aus der URL ist Hint — die echte Quote über jose-Session +
+// classId verhindert IDOR.
 
-export default async function StudentQuizLobbyPage({
+export default async function StudentQuizLivePage({
   params,
 }: {
   params: Promise<{ sessionId: string }>;
 }) {
   const session = await requireStudentSession();
-  await params; // sessionId wird heute nicht gebraucht — Quote läuft über classId
+  await params;
   const banner = await getQuizBannerForStudent(session.classId, session.studentCodeId);
   if (!banner) redirect('/s');
   if (!banner.alreadyJoined) redirect('/s');
 
-  const initial: StudentLobbyState = { kind: 'student', banner };
-  return <QuizWaitPolling initial={initial} moduleTitleInitial={banner.moduleTitle} />;
+  // Wir lassen den Client-Hook beim ersten Poll den vollen QuestionState
+  // holen (active enthält den Block, den wir hier server-side nochmal
+  // teuer rendern würden). Initial-State ist daher minimal: 'lobby' wenn
+  // banner.status='lobby' ist, sonst ein platzhalter-'lobby'-State
+  // (Client polled in 1-2s den echten Stand und ersetzt das Frame).
+  const initial: QuizQuestionState =
+    banner.status === 'lobby'
+      ? { kind: 'lobby', sessionId: banner.sessionId }
+      : { kind: 'lobby', sessionId: banner.sessionId };
+
+  return <QuizLiveRunner initial={initial} />;
 }

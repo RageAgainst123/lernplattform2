@@ -58,8 +58,10 @@ die ganze Bewertungs-Pipeline (Score, %, Schwelle, Matrix) automatisch weiter.
 
 Next.js 16.2 (App Router, Turbopack) · React 19.2 · TypeScript strict · Tailwind
 v4 (CSS-based `@theme`) · shadcn/ui (Base UI, **nicht** Radix) · Supabase
-(Frankfurt eu-central-1) via `@supabase/ssr` · jose (Schüler:innen-JWT) ·
-bcryptjs (PIN-Hash, rounds=10) · @react-pdf/renderer (Lehrer:innen-PDF-Export) ·
+(Frankfurt eu-central-1) via `@supabase/ssr` · **Supabase Realtime Broadcast**
+(Phase T, ADR-0016, Public-Channels mit UUID-Namen) · jose (Schüler:innen-JWT) ·
+bcryptjs (PIN-Hash, rounds=10) · @react-pdf/renderer (Lehrer:innen-PDF-Export,
+lazy via dynamic import) · Tiptap (12 Pakete, nur in `/s/heft/[id]`) ·
 Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
 
 ## Architektur (eine Zeile pro Modul)
@@ -102,11 +104,41 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   - `evaluate.ts` — `BlockAnswer`-Typen + `isGraded`/`gradeBlock` (0–1, teilpunkt-fähig)
     - `scoreModule`/`maxScore`/`percentScore`/`isPassed`/`blockResult` (Phase 16)
   - `fill-blank.ts` — `shuffle<T>()` Fisher-Yates für FillBlank-Pool
+  - `points.ts` — Sprint-R Punkte-Formel (Time × Streak)
+- **`lib/realtime/`** — Phase T Hybrid-Broadcast (ADR-0016)
+  - `broadcast.ts` — `publishBroadcast(channelName, event, payload)` server-only,
+    fire-and-forget. Wird in Quiz-/Live-Server-Actions NACH erfolgreichem
+    DB-Write aufgerufen.
+  - `channels.ts` — `channels.quizSession(id)` / `liveSession(classId)` /
+    `classProgress(classId)` + `events.quiz.*` / `events.live.*` /
+    `events.classProgress.*` Konstanten. Single Source of Truth für
+    Channel-Namen und Event-Strings.
+- **`lib/rate-limit.ts`** — In-Memory-Bucket-Rate-Limit pro IP (Pre-Launch C6).
+  Zwei Bucket-Typen: `checkRate` (100/min, allgemein) + `checkLoginRate`
+  (5/15min, PIN-Brute-Force-Schutz). `rateLimitGate(req, prefix)` als
+  Convenience-Wrapper für API-Routen.
+- **`lib/feature-flags.ts`** — Global-Kill-Switch (Pre-Launch C3): Env-Vars
+  `QUIZ_DISABLED`/`LIVE_DISABLED`/`STUDENT_LOGIN_DISABLED` + freundliche
+  Maintenance-Messages.
 - **`lib/schemas/`** — Zod-Schemas (Blöcke, Entities)
 
 ### UI (`components/`)
 
 - **`components/ui/`** — shadcn/ui-Primitives (NICHT manuell anfassen; via CLI)
+- **`components/realtime/`** — Phase T (ADR-0016)
+  - `useRealtimeWithFallback.ts` — generischer Hybrid-Hook: subscribed auf
+    Supabase-Broadcast-Channel + parallel Polling 5s als Fallback. Liefert
+    `{state, refetch}` — `refetch` ist für den schreibenden Tab (sofortiger
+    Refetch nach Server-Action, spart Roundtrip).
+- **`components/quiz/`** — Quiz-Hooks als Wrapper über `useRealtimeWithFallback`
+  - `useQuizQuestionPoll.ts` (Schüler) / `useQuizBeamerPoll.ts` (Lehrer-Beamer,
+    mit `refetch` für `onActionDone`) / `useQuizLobbyPoll.ts` (Hybrid:
+    Lehrer-Modus Realtime, Schüler-Modus klassisches Polling 1.5s/5s da
+    sessionId vor Quiz-Start nicht bekannt).
+- **`components/student/useLiveSync.ts`** — Live-Präsentations-Hook, classId
+  vom Server-Layout (`app/s/layout.tsx`).
+- **`components/teacher/ProgressMatrixLive.tsx`** — Wrapper um Server-Component
+  Fortschrittsmatrix, triggert `router.refresh()` bei Realtime-Event.
 - **`components/site/`** — globaler Header/Footer/Shell
   - `SiteHeader.tsx` — **async Server-Komp.**; rollenabhängiger Nav-Link via `roleNavLink()`
   - `HeaderAuth.tsx` — Server-Slot für „Angemeldet als …" + Abmelden
@@ -281,7 +313,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - **Niemals** `package.json`-Hauptversionen ohne Auftrag anheben — der
   Stack ist bewusst stabil (Next 16 hat schon genug Breaking Changes).
 
-## Phasen-Status (Stand 2026-06-03)
+## Phasen-Status (Stand 2026-06-04)
 
 - ✅ **Phase 1:** Scaffold (Next 16, Tailwind v4, ESLint strict, Vitest)
 - ✅ **Phase 2:** shadcn/ui-Setup, Demo-Verifikation
@@ -359,6 +391,50 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   Knopf „📓 Mein Heft" für SSO-Schüler:innen. Ehrliche HEAD-Probe-Logik
   (Login-Redirect → unverified statt broken). ADR-0015. Commits `220a77c`
   → `ba5400e`.
+- ✅ **Sprint R (Solo-Quiz-Polish):** R1.1 Quiz-Endseite mit Score-Hero +
+  Antwort-Übersicht, R1.2 Punkte-Formel als pure Helper
+  (`lib/blocks/points.ts`), R1.3 Zeit + Streak server-seitig, R1.4
+  „Falsche Fragen wiederholen", R1.5 Tippfehlertoleranz für Lückentext
+  (Levenshtein ≤1). Commits `b83a95d` → `a1d43b8`.
+- ✅ **Sprint S + Phase C (Live-Klassen-Quiz + Pre-Launch-Härtung):**
+  Migration 0020 (quiz_sessions/\_participants/\_answers + RPC). S1 Lobby
+  - Beitritt, S2 Live-Frage-Flow, S3 Leaderboard zwischen Fragen, S4
+    Quiz-Ende-Podium. + C2-C8: /api/health, Global-Kill-Switch (Env-Vars),
+    Quiz-Tagespensum 20/Tag (`lib/db/quiz-quota.ts`), `/status`-Page,
+    Rate-Limit pro IP (`lib/rate-limit.ts`), Cache-Header, k6-Lasttest.
+    `docs/QUIZ-MODI-SPEZIFIKATION.md`, `docs/SCALE-PLAN.md`,
+    `docs/COST-CONTROLS.md`, `docs/PRE-LAUNCH-CHECKLIST.md`. Commits
+    `9a3fc97` → `62fd2e6`.
+- ✅ **Phase T (T0–T6 — Hybrid Realtime-Broadcast):** Supabase-Realtime
+  als Push-Layer + Polling-Fallback 5s. ADR-0016. Channel-Pattern
+  `quiz_session:{uuid}` / `live_session:{classId}` / `class_progress:
+{classId}` (Public Channels, UUID-basiert). T0 Spike (75-115ms
+  gemessen), T1 Helper + Hook (`lib/realtime/broadcast.ts`,
+  `lib/realtime/channels.ts`, `components/realtime/useRealtimeWithFallback.ts`),
+  T2 alle 6 Quiz-Server-Actions publishen, T3 Quiz-Hooks
+  (useQuizQuestionPoll/useQuizBeamerPoll), T4 Lobby-Lehrer-Realtime,
+  T5 Live-Präsentation (useLiveSync), T6 Fortschrittsmatrix
+  (ProgressMatrixLive). Bugfixes: `self:true` damit publizierender Tab
+  eigene Broadcasts empfängt, `{state, refetch}`-Return damit Lehrer-
+  Buttons direkt refetchen. Tags `pre-phase-t-savepoint`,
+  `phase-t-quiz-savepoint`, `phase-t-live-savepoint`. Commits `b398735`
+  → `5d8940d`. **Architektur-Erkenntnis:** Realtime ideal für passive
+  Empfänger, direkter Refetch ideal für schreibende Tabs.
+- ✅ **Phase U1 (Pre-Launch Security-Blocker):** 5 parallele Audit-Agents
+  (`docs/PRE-LAUNCH-AUDIT.md`) haben 30+ Befunde aufgedeckt. U1 deckt 5
+  Launch-Blocker: CRIT-1 anonymer DoS auf `/api/live/end` (jetzt
+  requireUser + classId-owner-check), CRIT-2 PIN-Brute-Force (jetzt
+  `checkLoginRate` 5/15min pro IP+codename), CRIT-3 `touchQuizPresence`
+  Heartbeat-Spoofing (toter Code, gelöscht), HIGH-1 Race in
+  `commitAdvance` (WHERE-Klausel um `current_question_index` ergänzt),
+  HIGH-4 Rate-Limits auf `/api/live/{end,results,wordcloud}`. Commit
+  `9ec4626`.
+- 🔜 **Phase U2 (Pre-Launch HIGH/MED):** ProgressMatrixLive Polling-
+  Fallback, Broadcast-Timeout senken, `isAssigned`-Check in
+  submitWorksheet, `enabled`-Option im Hook, Suspense-Boundaries,
+  Security-Header. Geschätzt ~5h.
+- 🔜 **Phase U3 (Pre-Launch Performance):** Beamer-Polling-RPC (10→2
+  DB-Queries pro Tick), k6-Lasttest mit echtem Realtime (T7-Rest).
 - 🔜 **Phase F (UI-Politur):** Editor-Layout-Redesign (Vorschau als Tab),
   Spacing/Typography-Pass, Mobile-Optimierung. (Aufgeschoben — Phase O+Q
   hatten Priorität.)

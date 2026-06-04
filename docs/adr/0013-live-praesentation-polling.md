@@ -1,7 +1,8 @@
 # ADR-0013: Live-Präsentation via Polling (kein Realtime)
 
-**Status:** accepted
+**Status:** accepted (teilweise superseded durch [ADR-0016](0016-hybrid-realtime-fuer-quiz-und-praesentation.md) seit 2026-06-04 für Hot-Path-Push; Polling-Fallback bleibt zwingend aktiv)
 **Datum:** 2026-05-30
+**Hinweis:** Seit Phase T (ADR-0016) läuft der Hot-Path (Folie wechseln, Reveal, Lock) über Supabase Realtime Broadcast — das in diesem ADR verworfene Realtime hat Geo dann mit der **Broadcast-Variante ohne RLS-Pflicht** doch eingebaut. Das Polling aus diesem ADR bleibt als **Sicherheitsnetz** aktiv (5s-Fallback-Tick) — die Architektur ist jetzt hybrid, nicht ersetzt.
 
 ## Kontext
 

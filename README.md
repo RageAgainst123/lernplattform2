@@ -62,6 +62,20 @@ Module haben zwei **Anzeige-Modi** (Spalte `modules.display_mode`):
   Heft aus dem eigenen OneDrive. Wir speichern nur die URL, kein Graph-API,
   kein eigener Storage. Lehrer:innen sehen alle Hefte einer Klasse.
   Migrationen 0018+0019. ADR-0015.
+- **Live-Klassen-Quiz** (Sprint S): Kahoot-Style-Quiz im Klassenzimmer.
+  Lehrer:in am Beamer steuert (Frage starten, auflösen, weiter), Schüler:innen
+  antworten am eigenen Gerät, Leaderboard zwischen Fragen, Top-3-Podest am
+  Ende. Live-Modus + Hausaufgabenmodus geplant. Migration 0020.
+  `docs/QUIZ-MODI-SPEZIFIKATION.md`.
+- **Hybrid Realtime-Broadcast** (Phase T): Supabase Realtime als Push-Layer
+  über bestehendes Polling — Latenz im Hot-Path 0,5–2,5s → <300ms (75-115ms
+  gemessen), Polling 5s als Fallback bleibt zwingend. Senkt Vercel-Function-
+  Last für Live-Phasen um ~80%. Public Channels mit UUID-Namen (kein RLS für
+  Schüler:innen-Push). ADR-0016.
+- **Pre-Launch-Härtung** (Phase C + U1): /api/health, Global-Kill-Switch
+  (Env-Vars), Quiz-Tagespensum-Quota, Status-Page, IP-Rate-Limits + Login-
+  Brute-Force-Schutz, Cache-Header, k6-Lasttest. `docs/PRE-LAUNCH-AUDIT.md`
+  dokumentiert verbleibende U2-U3-Tasks vor SEO-Launch.
 
 ## Setup
 
@@ -133,7 +147,7 @@ supabase/
 docs/
   INHALTSKONZEPT.md  Inhalts-Begriffe (Material vs. Modul, Navigations-Hierarchie)
   ROLES.md           Rollen, Auth-Mechanismen, Zugriffsrechte
-  adr/               Architecture Decision Records (0001–0012)
+  adr/               Architecture Decision Records (0001–0016)
 proxy.ts          Auth-Token-Refresh + Routenschutz (Next-16-Konvention)
 CLAUDE.md         Session-Notizen für AI-Pair (Stolperfallen, Konventionen, Phasen)
 CHANGELOG.md      Phasen-Verlauf (reverse-chronologisch)

@@ -8,6 +8,143 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase U1 — Pre-Launch Security-Blocker
+
+**2026-06-04** · Commit `9ec4626` · `docs/PRE-LAUNCH-AUDIT.md`
+
+### Behoben (Security)
+
+- **CRIT-1: Anonymer DoS auf Live-Sessions** — `/api/live/end` hatte keinen
+  Auth-Check. Jeder konnte mit einer geratenen `classId` jede Live-Präsentation
+  beenden. Jetzt `requireUser()`-Pflicht + classId-Owner-Check.
+- **CRIT-2: PIN-Brute-Force** — `studentLogin` ohne Rate-Limit war in ~14 min
+  pro Account knackbar (4 Ziffern × bcrypt cost 10). Jetzt `checkLoginRate`
+  (5 Versuche / 15 min pro IP+joinCode+codename-Tupel) + `ipFromHeaderList`
+  Helper.
+- **CRIT-3: Heartbeat-Spoofing** — `touchQuizPresence` Server-Action war ohne
+  Session-Check exportiert (toter Code, aber triggerbar). Gelöscht.
+- **HIGH-1: Race in `commitAdvance`** — WHERE-Klausel um `current_question_index`
+  ergänzt, verhindert falschen `question_revealed`-Broadcast wenn Lehrer
+  manuell weiterschaltet während Auto-Advance läuft.
+- **HIGH-4: Rate-Limits** auf `/api/live/{end,results,wordcloud}` ergänzt.
+
+### Audit-Doku
+
+- **`docs/PRE-LAUNCH-AUDIT.md`** mit Befunden aus 5 parallelen Audit-Agents
+  (Sicherheit, Performance, Realtime-Code, Doku, Toter Code). Priorisierte
+  Fix-Liste: U1=jetzt, U2=vor SEO-Launch, U3=für ≥10 Schulen, T8=Doku-Wrap-up.
+
+---
+
+## Phase T — Hybrid Realtime-Broadcast für Quiz + Live-Präsentation
+
+**2026-06-04** · Commits `b398735` → `dd233cd` → `5d8940d` · ADR-0016 · Tags `pre-phase-t-savepoint`, `phase-t-quiz-savepoint`, `phase-t-live-savepoint`
+
+### Hinzugefügt
+
+- **T0** — ADR-0016 Hybrid-Realtime-Architektur. Spike-Test auf eigener
+  Supabase-Instanz: 75-115 ms Latenz gemessen (Ziel war <300 ms).
+- **T1** — `lib/realtime/broadcast.ts` (Server-Publish, fire-and-forget),
+  `lib/realtime/channels.ts` (zentrale Channel-Namen + Event-Konstanten),
+  `components/realtime/useRealtimeWithFallback.ts` (generischer Hybrid-Hook
+  mit Polling-Fallback 5s).
+- **T2** — Alle 6 Quiz-Server-Actions publishen Broadcasts nach erfolgreichem
+  DB-Write: `startQuiz`/`revealQuizQuestion`/`nextQuizQuestion`/`endQuizSession`/
+  `submitQuizAnswer`/`joinQuizSession` + `maybeAdvanceQuiz` (race-frei via
+  select-after-update).
+- **T3** — Quiz-Schüler + Quiz-Beamer-Hooks (`useQuizQuestionPoll`,
+  `useQuizBeamerPoll`) als Wrapper über `useRealtimeWithFallback`. Polling-
+  Tick von 1s auf 5s reduziert (Last −80%).
+- **T4** — `useQuizLobbyPoll` für Lehrer:in auf Realtime; Schüler-Modus bleibt
+  klassisches Polling (kein Channel verfügbar bevor Quiz gestartet).
+- **T5** — `live-session-actions` (`startPresentation`/`setLiveBlock`/
+  `revealResults`/`lockAndReveal`/`setBlockLocked`/`endPresentation`)
+  publishen Broadcasts. `useLiveSync` als Wrapper. ClassId kommt vom
+  Server-Layout (`app/s/layout.tsx`).
+- **T6** — `ProgressMatrixLive`-Wrapper für Lehrer-Fortschrittsmatrix mit
+  `router.refresh()`-Pattern. `submitWorksheet` published auf
+  `class_progress:{classId}`.
+
+### Behoben
+
+- **Bugfix `dd233cd`**: `self: true` in `useRealtimeWithFallback` damit der
+  publizierende Lehrer-Tab seinen eigenen Broadcast erhält + auf eigene
+  Aktion reagiert. Vorher asymmetrische Latenz (Schüler sahen Reveal vor
+  dem Lehrer-Beamer). Plus „📊 Fortschritt der Klasse"-Link im
+  Klassen-Detail-Header.
+- **Bugfix `5d8940d`**: `useRealtimeWithFallback` liefert jetzt
+  `{state, refetch}`. `QuizTeacherControls.onActionDone` refetcht direkt
+  nach jeder Server-Action — spart Realtime-Roundtrip für den schreibenden
+  Tab (100-300ms schneller).
+
+### Architektur-Erkenntnis
+
+Realtime-Broadcasts sind ideal für **passive Empfänger** (Schüler-Tabs,
+andere Lehrer-Geräte). Für den **schreibenden Tab selbst** ist ein
+direkter Refetch nach der Server-Action immer schneller und sauberer
+(Broadcast-Loop über Netz ist redundant).
+
+### Verbleibend
+
+- T7 (k6-Lasttest mit echtem Realtime) — offen
+- T8 (finale Doku-Updates + `phase-t-realtime-savepoint`-Tag) — teilweise
+  abgeschlossen mit Phase U1-Audit
+
+---
+
+## Sprint S + Phase C — Live-Klassen-Quiz + Pre-Launch-Härtung
+
+**2026-06-03** · Commits `9a3fc97` → `30c48cd`, `3aa9d20` → `62fd2e6`
+
+### Hinzugefügt (Sprint S — Live-Quiz)
+
+- **Migration 0020**: `quiz_sessions`, `quiz_participants`, `quiz_answers`
+  - RLS-Policies + RPC `start_quiz_session`.
+- **S1**: Beamer-Lobby + Schüler:innen-Beitritt + Lobby-Polling.
+- **S2**: Live-Frage-Flow (Frage, Antwort, Reveal, Punkte via
+  `lib/blocks/points.ts`).
+- **S3**: Leaderboard zwischen Fragen + persönlicher Rang
+  (`docs/QUIZ-MODI-SPEZIFIKATION.md`).
+- **S4**: Quiz-Ende-Podium (Top 3) + Schüler:innen-Zusammenfassung.
+
+### Hinzugefügt (Phase C — Pre-Launch-Härtung)
+
+- **C2**: `/api/health`-Endpoint für Better-Stack-Monitor.
+- **C3**: Global-Kill-Switch via Env-Vars (`QUIZ_DISABLED`,
+  `LIVE_DISABLED`, `STUDENT_LOGIN_DISABLED`) — `lib/feature-flags.ts`.
+- **C4**: Quiz-Tagespensum pro Klasse (Soft-Limit 20/Tag) —
+  `lib/db/quiz-quota.ts`.
+- **C5**: Öffentliche Status-Page `/status`.
+- **C6**: Rate-Limit pro IP für `/api/quiz/*` und `/api/live/*` —
+  `lib/rate-limit.ts`.
+- **C7**: Cache-Header für statische Endpoints.
+- **C8**: k6-Lasttest mit 200 simulierten Schüler:innen
+  (`loadtests/quiz-polling.js`).
+
+### Doku
+
+- **`docs/QUIZ-MODI-SPEZIFIKATION.md`** mit allen 13 verbindlichen
+  Entscheidungen (Live/Team/Homework, Punkte-Formel, Disconnect-Karenz,
+  Anzeigename-Konvention).
+- **`docs/SCALE-PLAN.md`** + **`docs/COST-CONTROLS.md`** + **`docs/PRE-LAUNCH-CHECKLIST.md`**.
+
+---
+
+## Sprint R — Solo-Quiz-Polish (vor Live-Quiz)
+
+**2026-06-02** · Commits `b83a95d` → `a1d43b8`
+
+### Hinzugefügt
+
+- **R1.1**: Quiz-Endseite mit Score-Hero + Antwort-Übersicht
+  (`components/quiz/SoloRunSummary.tsx`).
+- **R1.2**: Punkte-Formel als pure Helper (`lib/blocks/points.ts`).
+- **R1.3**: `ModuleRunner` misst Zeit + Streak server-seitig.
+- **R1.4**: „Falsche Fragen wiederholen"-Button + wrong-only-Filter.
+- **R1.5**: Tippfehlertoleranz für Lückentext (Levenshtein ≤1).
+
+---
+
 ## Phase Q — Word-Heft via OneDrive-Sharing-Link
 
 **2026-06-03** · Commits `36512e0` → `2236414` (Branch `feature/thema-workflow`) · ADR-0015

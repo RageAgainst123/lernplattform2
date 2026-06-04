@@ -1,8 +1,41 @@
 # ADR-0016: Hybrid-Realtime-Broadcast für Quiz und Live-Präsentation
 
-**Status:** proposed (Spike-Verifikation 2026-06-04 erfolgreich: gemessene Latenz 75-115ms auf Geos PC gegen Supabase-Cloud, weit besser als die <300ms-Vorgabe)
+**Status:** accepted (T0–T6 implementiert + verifiziert 2026-06-04; T7 k6-Lasttest steht noch aus)
 **Datum:** 2026-06-04
 **Supersedes (teilweise):** [ADR-0013](0013-live-praesentation-polling.md)
+
+## Implementierungs-Status
+
+**T0–T6 abgeschlossen** in den Commits `b398735` → `5d8940d`:
+
+- **T0** Spike-Test: lokal 75–115 ms WebSocket-Latenz gemessen (Browser ↔ Supabase EU).
+- **T1** Helper + Hook (`lib/realtime/broadcast.ts`, `lib/realtime/channels.ts`,
+  `components/realtime/useRealtimeWithFallback.ts`).
+- **T2** 6 Quiz-Server-Actions publishen Broadcasts (startQuiz,
+  revealQuizQuestion, nextQuizQuestion, endQuizSession, submitQuizAnswer,
+  joinQuizSession, maybeAdvanceQuiz race-frei mit select-after-update).
+- **T3** Quiz-Schüler + Quiz-Beamer-Hooks auf Realtime (`useQuizQuestionPoll`,
+  `useQuizBeamerPoll`). Polling 1s → 5s (Last −80%).
+- **T4** Lobby-Lehrer auf Realtime, Schüler-Modus bleibt Polling (kein Channel
+  vor Quiz-Start).
+- **T5** Live-Präsentation auf Realtime (`live-session-actions` + `useLiveSync`).
+- **T6** ProgressMatrixLive mit `router.refresh()`-Pattern.
+
+**Bugfixes nach erster Verifikation:**
+
+- `self: true` im Hook — der publizierende Tab muss seinen eigenen Broadcast
+  erhalten, sonst asymmetrische Latenz (Schüler-Tabs sehen Reveal vor dem
+  Lehrer-Beamer). Commit `dd233cd`.
+- `{state, refetch}`-Return — Lehrer-Buttons triggern Refetch direkt nach
+  Server-Action, spart 100–300 ms gegenüber dem Realtime-Loop. Commit `5d8940d`.
+
+**Architektur-Erkenntnis:** Realtime ist ideal für **passive Empfänger**
+(Schüler-Tabs, andere Lehrer-Geräte). Für den **schreibenden Tab selbst** ist
+ein direkter Refetch nach der Server-Action immer schneller und sauberer.
+
+**Verbleibend:** k6-Lasttest mit echtem Realtime (T7) + Pre-Launch-Audit-
+Befunde aus `docs/PRE-LAUNCH-AUDIT.md` (HIGH-2 ProgressMatrixLive-Fallback,
+HIGH-3 Broadcast-Timeout, MED-1/2/3 Channel-Wechsel-Race + idle-Channels).
 
 ## Kontext
 

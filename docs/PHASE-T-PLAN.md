@@ -1,7 +1,8 @@
 # Phase T — Realtime-Broadcast für Live-Quiz und Live-Präsentation
 
-> **Status: 🔜 Geplant.** Branch wird `feature/realtime-broadcast` (oder Fortsetzung von `feature/thema-workflow`).
-> **Voraussetzung:** Sprint S vollständig abgeschlossen (S1–S6).
+> **Status (2026-06-04): 🟢 T0–T6 done · T7 (Lasttest) + T8 (Doku-Wrap-up) noch offen.**
+> Branch `feature/thema-workflow`. Commits `b398735` → `5d8940d`. Tags `pre-phase-t-savepoint`, `phase-t-quiz-savepoint`, `phase-t-live-savepoint`. ADR-0016 ist accepted. Bugfixes nach erstem Test: `self: true` damit Lehrer-Tab eigene Broadcasts empfängt, `{state, refetch}`-Return damit Lehrer-Buttons direkt refetchen (spart Realtime-Roundtrip für schreibenden Tab).
+> Verbleibende Befunde stehen in `docs/PRE-LAUNCH-AUDIT.md` (HIGH-2, HIGH-3, MED-1 bis MED-5).
 > **Standing Rule:** Migration als Copy-Paste-SQL → User führt im Supabase-Dashboard aus. SUPABASE_SECRET_KEY nie ins Transkript lesen. Lowercase-Conventional-Commits mit Claude-Footer.
 
 ## Context — Warum Phase T

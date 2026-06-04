@@ -119,8 +119,18 @@ function subscribeChannel<T>(
   setup: SetupArgs<T>,
   safeFetch: () => Promise<void>
 ) {
+  // self: true — der publizierende Client KRIEGT seinen eigenen Broadcast
+  // zurueck. Klingt komisch (warum sollte ich auf mein eigenes Event
+  // lauschen?), ist aber genau richtig fuer unser pattern: der lehrer-tab
+  // ruft die server-action auf, die published, und der LEHRER-tab selbst
+  // muss seinen state aktualisieren ohne auf den 5-s-polling-tick zu
+  // warten. ohne self:true wuerde der lehrer seine eigene aktion erst
+  // nach polling sehen — schueler sahen es schon vorher (asymmetrische
+  // latenz, sieht nach bug aus). der refetch ist idempotent, also doppelt
+  // wuerde nicht schaden — aber durch supabase-internes deduping kommt
+  // das event ohnehin nur einmal.
   const channel = supabase.channel(setup.channelName, {
-    config: { broadcast: { self: false } },
+    config: { broadcast: { self: true } },
   });
   for (const eventName of setup.events) {
     channel.on('broadcast', { event: eventName }, () => void safeFetch());

@@ -30,13 +30,22 @@ function ClassHeader({ schoolClass }: { schoolClass: Class }) {
       <Link href="/lehrer/klassen" className="text-muted-foreground text-sm hover:underline">
         ← Zurück zu den Klassen
       </Link>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{schoolClass.name}</h1>
-        <p className="text-muted-foreground text-sm">
-          {schoolClass.schulstufe
-            ? `${schoolClass.schulstufe}. Schulstufe`
-            : 'Keine Schulstufe angegeben'}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{schoolClass.name}</h1>
+          <p className="text-muted-foreground text-sm">
+            {schoolClass.schulstufe
+              ? `${schoolClass.schulstufe}. Schulstufe`
+              : 'Keine Schulstufe angegeben'}
+          </p>
+        </div>
+        <Link
+          href={`/lehrer/klassen/${schoolClass.id}/fortschritt`}
+          className="inline-flex items-center gap-2 rounded-md border bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-slate-50"
+        >
+          <span aria-hidden>📊</span>
+          Fortschritt der Klasse
+        </Link>
       </div>
       <JoinCodeHint joinCode={schoolClass.joinCode} classId={schoolClass.id} />
     </>

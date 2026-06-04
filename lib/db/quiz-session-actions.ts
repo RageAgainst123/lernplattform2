@@ -119,6 +119,55 @@ export async function endQuizSession(classId: string): Promise<QuizActionState> 
   return { error: null };
 }
 
+// Reveal: active → between_questions. Lehrer:in klickt „Auflösen" am
+// Beamer. Schüler:innen-Wartezeit-Page wechselt automatisch.
+// current_question_started_at bleibt stehen (Lazy-Default-Insert nutzt
+// es weiter falls noch jemand nicht geantwortet hat).
+export async function revealQuizQuestion(classId: string): Promise<QuizActionState> {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('quiz_sessions')
+    .update({ status: 'between_questions', heartbeat_at: new Date().toISOString() })
+    .eq('class_id', classId)
+    .eq('status', 'active');
+  if (error) return { error: 'Auflösen fehlgeschlagen.' };
+  return { error: null };
+}
+
+// Nächste Frage: between_questions → active, current_question_index++.
+// Wenn schon am Ende der question_order angekommen → endQuizSession.
+export async function nextQuizQuestion(classId: string): Promise<QuizActionState> {
+  await requireUser();
+  const supabase = await createClient();
+  // Aktuellen Stand lesen — current_question_index + question_order-Länge.
+  const { data: row } = await supabase
+    .from('quiz_sessions')
+    .select('current_question_index, question_order')
+    .eq('class_id', classId)
+    .eq('status', 'between_questions')
+    .maybeSingle();
+  if (!row) return { error: 'Kein wartendes Quiz gefunden.' };
+  const nextIndex = (row.current_question_index as number) + 1;
+  const total = Array.isArray(row.question_order) ? (row.question_order as unknown[]).length : 0;
+  if (nextIndex >= total) {
+    // Keine Frage mehr — beenden.
+    return endQuizSession(classId);
+  }
+  const { error } = await supabase
+    .from('quiz_sessions')
+    .update({
+      status: 'active',
+      current_question_index: nextIndex,
+      current_question_started_at: new Date().toISOString(),
+      heartbeat_at: new Date().toISOString(),
+    })
+    .eq('class_id', classId)
+    .eq('status', 'between_questions');
+  if (error) return { error: 'Nächste Frage konnte nicht geladen werden.' };
+  return { error: null };
+}
+
 // Beamer-Tab pingt regelmäßig (alle 30 s, siehe S1.D Hook). Ohne Heartbeat
 // nach 120 s gilt die Session als tot (Spec §11 D10).
 export async function heartbeatQuizSession(classId: string): Promise<QuizActionState> {

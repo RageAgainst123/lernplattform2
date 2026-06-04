@@ -7,18 +7,21 @@ import {
   getActiveQuizSessionForClass,
   getQuizParticipantsForTeacher,
 } from '@/lib/db/quiz-sessions';
-import { QuizLobbyPolling } from '@/components/quiz/QuizLobbyPolling';
+import { getQuizBeamerQuestionState } from '@/lib/db/quiz-beamer-state';
+import { QuizBeamerRunner } from '@/components/quiz/QuizBeamerRunner';
 import type { TeacherLobbyState } from '@/app/api/quiz/lobby/route';
+import type { QuizBeamerState } from '@/app/api/quiz/beamer/route';
 
 export const metadata: Metadata = {
-  title: 'Quiz-Lobby — Lernplattform',
+  title: 'Quiz-Beamer — Lernplattform',
   robots: { index: false, follow: false },
 };
 
-// Beamer-Lobby für eine laufende Quiz-Session (Phase S1.D + S1.C-Polling).
+// Beamer-Runner für eine laufende Quiz-Session (Phase S2.C).
+// Initiale Snapshots für Lobby UND Frage/Reveal werden server-seitig
+// vorbereitet → kein Flicker beim Mount.
 //
-// Wenn noch keine Session läuft → zurück zur Setup-Seite.
-// Sonst: Lobby mit Teilnehmer:innen-Liste, die alle 1.5s live aktualisiert.
+// Polling übernimmt useQuizBeamerPoll im Client (1s aktiv / 3s sonst).
 
 export default async function QuizRunPage({
   params,
@@ -41,7 +44,7 @@ export default async function QuizRunPage({
   }
 
   const participants = await getQuizParticipantsForTeacher(session.id);
-  const initial: TeacherLobbyState = {
+  const initialLobby: TeacherLobbyState = {
     kind: 'teacher',
     session: {
       id: session.id,
@@ -50,13 +53,41 @@ export default async function QuizRunPage({
       participants,
     },
   };
+  const initialBeamer = await buildInitialBeamer(session);
 
   return (
-    <QuizLobbyPolling
+    <QuizBeamerRunner
       classId={schoolClass.id}
       moduleTitle={moduleData.title}
       teamMode={session.teamMode}
-      initial={initial}
+      initialBeamer={initialBeamer}
+      initialLobby={initialLobby}
     />
   );
+}
+
+// Beamer-Initial-Snapshot je nach Session-Status.
+async function buildInitialBeamer(
+  session: NonNullable<Awaited<ReturnType<typeof getActiveQuizSessionForClass>>>
+): Promise<QuizBeamerState> {
+  if (session.status === 'lobby') return { kind: 'lobby', sessionId: session.id };
+  if (session.status !== 'active' && session.status !== 'between_questions') {
+    return { kind: 'none' };
+  }
+  const ref = session.questionOrder[session.currentQuestionIndex];
+  if (!ref) return { kind: 'lobby', sessionId: session.id };
+  const question = await getQuizBeamerQuestionState(
+    session.id,
+    session.moduleId,
+    ref.blockId,
+    session.currentQuestionIndex,
+    session.timeLimitSeconds,
+    session.currentQuestionStartedAt
+  );
+  if (!question) return { kind: 'lobby', sessionId: session.id };
+  return {
+    kind: session.status === 'between_questions' ? 'between' : 'active',
+    sessionId: session.id,
+    question,
+  };
 }

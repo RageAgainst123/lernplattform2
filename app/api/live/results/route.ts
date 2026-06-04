@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/auth/teacher-auth';
 import { createClient } from '@/lib/supabase/server';
 import { getVoteAggregate } from '@/lib/db/live-sessions';
 import { countPresence, countVoters } from '@/lib/db/live-presence';
+import { rateLimitGate } from '@/lib/rate-limit';
 
 // GET /api/live/results?classId=…&blockId=…
 // Lehrer:innen-Polling-Endpunkt für den Beamer (Phase B/C). Lieferte vorher die
@@ -38,6 +39,8 @@ const EMPTY: ResultsResponse = {
 };
 
 export async function GET(req: Request) {
+  const blocked = rateLimitGate(req, 'live-results');
+  if (blocked) return blocked;
   await requireUser();
   const url = new URL(req.url);
   const classId = url.searchParams.get('classId');

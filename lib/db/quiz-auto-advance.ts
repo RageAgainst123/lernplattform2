@@ -107,9 +107,14 @@ async function commitAdvance(
   if (reason === 'timeout') {
     await backfillPendingAnswers(sess.id, sess.question_order, sess.current_question_index);
   }
-  // Race-frei: nur updaten wenn Status noch 'active' ist. Wenn ein
-  // paralleler Aufruf bereits 'between_questions' gesetzt hat, matched
-  // die WHERE-Klausel nicht und wir tun nichts.
+  // Race-frei: nur updaten wenn Status noch 'active' UND current_question_index
+  // noch der gleiche ist wie beim Lesen (Pre-Launch-Audit HIGH-1, 2026-06-04).
+  // Vorher fehlte der index-Check: wenn zwischen loadAndValidateSession und
+  // commitAdvance der Lehrer manuell weiterschaltet (active→between→active mit
+  // index++), wuerde maybeAdvanceQuiz die NEUE Frage faelschlich als revealed
+  // markieren und broadcasten — mit dem Snapshot-questionIndex der vorigen
+  // Frage. Jetzt: WHERE current_question_index = sess.current_question_index
+  // → Update matched nicht und kein falscher Broadcast.
   const { data: updated } = await supabase
     .from('quiz_sessions')
     .update({
@@ -118,6 +123,7 @@ async function commitAdvance(
     })
     .eq('id', sess.id)
     .eq('status', 'active')
+    .eq('current_question_index', sess.current_question_index)
     .select('id')
     .maybeSingle();
   // Phase T2: nur dann broadcasten, wenn DIESER Aufruf den Status gewonnen

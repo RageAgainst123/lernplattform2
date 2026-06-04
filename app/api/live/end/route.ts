@@ -1,31 +1,31 @@
 import { NextResponse } from 'next/server';
+import { getUser } from '@/lib/auth/teacher-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { rateLimitGate } from '@/lib/rate-limit';
 
 // POST /api/live/end — wird vom Beamer via fetch({keepalive:true}) beim
 // beforeunload-Event aufgerufen. Hält die Verbindung auch nach dem Tab-Schließen
 // aufrecht und beendet die aktive Session der Klasse.
 //
-// ACHTUNG: dieser Endpunkt läuft über die Student-Session (classId) und den
-// Service-Role-Client — der Lehrer hat beim beforeunload keinen Auth-Cookie
-// mehr verfügbar (Cookies werden bei keepalive-Requests manchmal nicht
-// mitgesendet). Daher: Route liest classId aus der jose-Session des Lehrers,
-// die über das Lehrer-Auth-Cookie läuft (requireUser würde hier versagen).
+// PRE-LAUNCH-AUDIT CRIT-1 (2026-06-04): vorher anonym aufrufbar — Angreifer
+// konnte jede Live-Session einer beliebigen classId beenden. Jetzt: Lehrer-
+// Auth-Pflicht + classId muss eigene Klasse sein.
 //
-// Sicherheitsmodell: Der Endpunkt beendet ausschließlich aktive Sessions der
-// eigenen Klasse (classId aus dem Cookie, nie aus einem Body-Param).
-// Im worst-case ignoriert der Browser das keepalive-Fetch — der 4-h-Timeout
-// in getActiveSessionForClass ist das Fallback.
+// keepalive + same-origin POST sendet Cookies mit (Browser-Standard). Falls
+// in seltenen Fällen Cookies fehlen (z.B. SameSite-strict-quirks), returnt der
+// Endpoint 401 — und der 60-s-Heartbeat-Tod in getActiveSessionForClass räumt
+// die Session ohnehin auf.
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  // classId muss aus dem Body kommen, da beforeunload keine Server-Action
-  // aufrufen kann. Der Wert wird server-seitig NICHT direkt als DB-Filter
-  // verwendet — wir lesen classId zusätzlich aus der Student-Session, um
-  // IDOR auszuschließen. Alternativ: Teacher-Session-Cookie.
-  //
-  // Pragmatisch: wir lesen classId aus dem Body UND verifizieren, dass
-  // tatsächlich eine aktive Session für diese Klasse existiert, bevor
-  // wir sie beenden. Service-Role, kein direktes auth.uid()-Check möglich.
+  const blocked = rateLimitGate(req, 'live-end');
+  if (blocked) return blocked;
+
+  const user = await getUser();
+  if (!user) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+
   let classId: string | undefined;
   try {
     const body = (await req.json()) as { classId?: string };
@@ -35,14 +35,23 @@ export async function POST(req: Request) {
   }
 
   if (!classId) {
-    return NextResponse.json({ ok: false }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'classId required' }, { status: 400 });
   }
 
-  // Scope: nur aktive Sessions genau dieser Klasse werden beendet.
-  // Im beforeunload-Kontext sind Cookies nicht zuverlässig verfügbar, daher
-  // läuft dieser Endpunkt ohne Auth-Check via Service-Role. Der classId-Scope
-  // ist der einzige Schutz — beendet wird ausschließlich was auch aktiv ist.
+  // Owner-Check: classId muss zu einer Klasse des eingeloggten Lehrers gehören.
+  // Service-Role nur fuer den Lookup + Update (Lehrer-Client + RLS waere
+  // sauberer, aber keepalive-Cookies sind Edge-Case-zickig; lieber ein
+  // expliziter Owner-Check.
   const supabase = createServiceClient();
+  const { data: cls } = await supabase
+    .from('classes')
+    .select('teacher_id')
+    .eq('id', classId)
+    .maybeSingle();
+  if (!cls || cls.teacher_id !== user.id) {
+    return NextResponse.json({ ok: false, error: 'forbidden' }, { status: 403 });
+  }
+
   await supabase
     .from('live_sessions')
     .update({ status: 'ended' })

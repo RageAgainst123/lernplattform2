@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { rateLimitGate } from '@/lib/rate-limit';
 
 // GET /api/live/wordcloud?classId=…&blockId=…
 // Lehrer:innen-Polling-Endpunkt für den WordCloud-Beamer. Wie /api/live/results:
@@ -17,6 +18,8 @@ function noStore(body: WordCloudResponse): NextResponse {
 }
 
 export async function GET(req: Request) {
+  const blocked = rateLimitGate(req, 'live-wordcloud');
+  if (blocked) return blocked;
   await requireUser();
   const url = new URL(req.url);
   const classId = url.searchParams.get('classId');

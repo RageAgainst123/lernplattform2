@@ -101,13 +101,11 @@ export async function joinQuizSession(args?: { teamName?: string }): Promise<Joi
   return { sessionId: sessionRow.id as string, error: null };
 }
 
-// Schüler:innen-Heartbeat beim Polling (Spec §5.9 — Disconnect-Karenz
-// 30 s). Wird bei jedem Polling-Tick auf /api/quiz aktualisiert.
-export async function touchQuizPresence(sessionId: string, studentCodeId: string): Promise<void> {
-  const supabase = createServiceClient();
-  await supabase
-    .from('quiz_participants')
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq('session_id', sessionId)
-    .eq('student_code_id', studentCodeId);
-}
+// PRE-LAUNCH-AUDIT CRIT-3 (2026-06-04): touchQuizPresence wurde geloescht.
+// War als Server-Action exportiert ohne Session-Validierung — sessionId +
+// studentCodeId aus Client-Param waeren Heartbeat-Spoofing-Vektor gewesen
+// (beliebige Schueler:in als „aktiv" markieren). Aktuell niemals aufgerufen
+// (toter Code), Heartbeat-Logik laeuft via last_seen_at in submitQuizAnswer
+// + joinQuizSession. Falls in Zukunft ein expliziter Presence-Ping noetig
+// wird: studentCodeId aus jose-Session, sessionId gegen classId der Session
+// cross-checken.

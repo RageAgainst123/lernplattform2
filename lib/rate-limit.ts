@@ -83,6 +83,57 @@ export function ipFromRequest(request: Request): string {
   );
 }
 
+// IP aus next/headers.headers() — fuer Server-Actions die kein Request-Objekt
+// haben. Gleiche Header-Priorisierung wie ipFromRequest.
+export function ipFromHeaderList(h: Headers): string {
+  return (
+    h.get('x-real-ip') ??
+    h.get('cf-connecting-ip') ??
+    h.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    'unknown'
+  );
+}
+
+// Strenges Bucket fuer Login-Pfade (PIN-Brute-Force-Schutz, Pre-Launch-Audit
+// CRIT-2). Eigener Map-Scope mit konfigurierbarem Window + Max — getrennt von
+// den 100/min-Polling-Buckets, damit ein legitimer Polling-Sturm nicht den
+// Login-Counter beeinflusst und umgekehrt.
+//
+// Default: 5 Versuche pro 15 Minuten pro key. Caller kombiniert IP + (classId,
+// codename), damit ein einzelner Angreifer pro Ziel-Tupel rate-limited wird
+// (verhindert auch verteilten Brute-Force von einer IP).
+
+const loginBuckets = new Map<string, Bucket>();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX = 5;
+
+export function checkLoginRate(key: string, now: number = Date.now()): RateLimitResult {
+  if (process.env.RATE_LIMIT_DISABLED === 'true') {
+    return { ok: true, remaining: LOGIN_MAX, resetAt: now + LOGIN_WINDOW_MS };
+  }
+  // Inline-cleanup: bei jedem Login-Check alte Buckets purgen (Login passiert
+  // selten genug, Cost vernachlaessigbar).
+  for (const [k, b] of loginBuckets) {
+    if (now - b.windowStart > LOGIN_WINDOW_MS) loginBuckets.delete(k);
+  }
+  const bucket = loginBuckets.get(key);
+  if (!bucket || now - bucket.windowStart > LOGIN_WINDOW_MS) {
+    loginBuckets.set(key, { count: 1, windowStart: now });
+    return { ok: true, remaining: LOGIN_MAX - 1, resetAt: now + LOGIN_WINDOW_MS };
+  }
+  bucket.count += 1;
+  const ok = bucket.count <= LOGIN_MAX;
+  return {
+    ok,
+    remaining: Math.max(LOGIN_MAX - bucket.count, 0),
+    resetAt: bucket.windowStart + LOGIN_WINDOW_MS,
+  };
+}
+
+export function _resetLoginRateForTests(): void {
+  loginBuckets.clear();
+}
+
 // Reset für Tests (vitest fresh-state).
 export function _resetRateLimitForTests(): void {
   buckets.clear();

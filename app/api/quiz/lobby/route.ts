@@ -8,6 +8,7 @@ import {
   type QuizLobbyParticipant,
 } from '@/lib/db/quiz-sessions';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { rateLimitGate } from '@/lib/rate-limit';
 
 // Polling-Endpunkt für die Quiz-Lobby (Phase S1.C).
 //
@@ -90,6 +91,8 @@ async function teacherSnapshot(classId: string): Promise<TeacherLobbyState> {
 }
 
 export async function GET(request: Request) {
+  const blocked = rateLimitGate(request, 'quiz-lobby');
+  if (blocked) return blocked;
   // Lehrer:in muss classId per Query mitschicken (eine Lehrer:in kann
   // mehrere Klassen haben — anders als Schüler:innen). Wird unten gegen
   // RLS gegengeprüft (getActiveQuizSessionForClass läuft mit Service-Role,

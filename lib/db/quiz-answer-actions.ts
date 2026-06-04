@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { evaluateBlock, type BlockAnswer } from '@/lib/blocks/evaluate';
 import { calculatePoints } from '@/lib/blocks/points';
 import { maybeAdvanceQuiz } from '@/lib/db/quiz-auto-advance';
+import { featureFlags, maintenanceMessages } from '@/lib/feature-flags';
 import type { Block } from '@/lib/schemas/blocks';
 import { moduleContentSchema } from '@/lib/schemas/blocks';
 
@@ -192,6 +193,9 @@ async function writeAnswerAndUpdateParticipant(
 export async function submitQuizAnswer(
   args: SubmitQuizAnswerArgs
 ): Promise<SubmitQuizAnswerResult> {
+  if (!featureFlags.isQuizEnabled()) {
+    return FAIL(maintenanceMessages.quiz.student);
+  }
   const session = await requireStudentSession();
   const supabase = createServiceClient();
 

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { getActiveQuizSessionForClass, getRecentlyEndedQuizForClass } from '@/lib/db/quiz-sessions';
 import { getQuestionProgress } from '@/lib/db/quiz-question-progress';
 import { maybeAdvanceQuiz } from '@/lib/db/quiz-auto-advance';
+import { rateLimitGate } from '@/lib/rate-limit';
 import { moduleContentSchema, type Block } from '@/lib/schemas/blocks';
 
 // Polling-Endpunkt für die Schüler:innen-Frage-Phase (Phase S2.B).
@@ -93,7 +94,9 @@ function remainingSecondsFor(startedAt: string | null, limitSeconds: number): nu
   return Math.max(limitSeconds - elapsed, 0);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = rateLimitGate(request, 'quiz-question');
+  if (blocked) return blocked;
   const session = await getStudentSession();
   if (!session) return noStore({ kind: 'none' });
 
@@ -122,6 +125,13 @@ export async function GET() {
     });
   }
   // status === 'active'
+  return buildActiveResponse(quiz, session.studentCodeId);
+}
+
+async function buildActiveResponse(
+  quiz: NonNullable<Awaited<ReturnType<typeof getActiveQuizSessionForClass>>>,
+  studentCodeId: string
+): Promise<NextResponse> {
   const ref = quiz.questionOrder[quiz.currentQuestionIndex];
   if (!ref) return noStore({ kind: 'none' });
 
@@ -130,11 +140,7 @@ export async function GET() {
   const safeBlock = toSafeBlock(rawBlock);
   if (!safeBlock) return noStore({ kind: 'none' });
 
-  const progress = await getQuestionProgress(
-    quiz.id,
-    quiz.currentQuestionIndex,
-    session.studentCodeId
-  );
+  const progress = await getQuestionProgress(quiz.id, quiz.currentQuestionIndex, studentCodeId);
 
   return noStore({
     kind: 'active',

@@ -11,6 +11,7 @@ import {
 import { clearTeacherSession } from '@/lib/auth/session-cleanup';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { getClassByJoinCode, getStudentCodeForLogin } from '@/lib/db/student-login';
+import { featureFlags, maintenanceMessages } from '@/lib/feature-flags';
 
 export type StudentLoginState = { error: string | null };
 
@@ -20,6 +21,9 @@ export async function studentLogin(
   _prev: StudentLoginState,
   formData: FormData
 ): Promise<StudentLoginState> {
+  if (!featureFlags.isStudentLoginEnabled()) {
+    return { error: maintenanceMessages.studentLogin.student };
+  }
   const joinCode = String(formData.get('joinCode') ?? '');
   const codename = String(formData.get('codename') ?? '');
   const pin = String(formData.get('pin') ?? '');

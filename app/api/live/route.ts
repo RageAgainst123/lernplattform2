@@ -6,6 +6,7 @@ import {
   type LiveInteraction,
 } from '@/lib/db/live-sessions';
 import { touchPresence } from '@/lib/db/live-presence';
+import { rateLimitGate } from '@/lib/rate-limit';
 
 // Polling-Endpunkt für die Live-Präsentation. Das Schüler:innen-Gerät fragt hier
 // alle paar Sekunden: „Läuft in meiner Klasse gerade eine Präsentation?"
@@ -30,7 +31,9 @@ function noStore(state: LiveState): NextResponse {
   return NextResponse.json(state, { headers: { 'Cache-Control': 'no-store' } });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = rateLimitGate(request, 'live');
+  if (blocked) return blocked;
   const session = await getStudentSession();
   if (!session) {
     return noStore({ active: false });

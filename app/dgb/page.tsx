@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   title: 'Digitale Grundbildung — Schulstufen',
 };
 
+// ISR-Caching (Pre-Launch-C7, COST-CONTROLS.md): 5 Min Stale-While-
+// Revalidate. Spart DB-Egress bei öffentlichen Seiten — Themen-Liste
+// ändert sich selten, 5 Min Cache-Latenz ist akzeptabel.
+export const revalidate = 300;
+
 export default function DgbPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">

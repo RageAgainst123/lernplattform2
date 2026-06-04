@@ -49,6 +49,19 @@ vi.mock('@/lib/db/quiz-end-backfill', () => ({
   backfillPendingAnswers: vi.fn(async () => undefined),
 }));
 
+// quiz-quota nutzt Service-Role direkt. Default: alles ok, lassen Tests
+// die Quota selbst überschreiben falls sie sie testen wollen.
+vi.mock('@/lib/db/quiz-quota', () => ({
+  checkQuizQuota: vi.fn(async () => ({
+    used: 0,
+    limit: 20,
+    remaining: 20,
+    ok: true,
+    warn: false,
+  })),
+  QUOTA_EXCEEDED_MESSAGE: 'Quota überschritten',
+}));
+
 vi.mock('@/lib/auth/teacher-auth', () => ({
   requireUser: vi.fn(async () => ({ id: 'teacher-1', email: 'g@x.at' })),
 }));

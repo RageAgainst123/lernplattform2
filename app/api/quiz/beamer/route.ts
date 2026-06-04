@@ -7,6 +7,7 @@ import {
   type QuizBeamerQuestionState,
 } from '@/lib/db/quiz-beamer-state';
 import { maybeAdvanceQuiz } from '@/lib/db/quiz-auto-advance';
+import { rateLimitGate } from '@/lib/rate-limit';
 
 // Polling-Endpunkt für die Lehrer:innen-Beamer-Ansicht in der Frage-Phase
 // (Phase S2.C).
@@ -63,6 +64,8 @@ async function authorizedClassId(request: Request): Promise<string | null> {
 }
 
 export async function GET(request: Request) {
+  const blocked = rateLimitGate(request, 'quiz-beamer');
+  if (blocked) return blocked;
   const classId = await authorizedClassId(request);
   if (!classId) return noStore({ kind: 'none' });
 
@@ -81,10 +84,15 @@ export async function GET(request: Request) {
   }
 
   if (quiz.status === 'lobby') return noStore({ kind: 'lobby', sessionId: quiz.id });
+  return buildQuestionResponse(quiz);
+}
+
+async function buildQuestionResponse(
+  quiz: NonNullable<Awaited<ReturnType<typeof getActiveQuizSessionForClass>>>
+): Promise<NextResponse> {
   if (quiz.status !== 'active' && quiz.status !== 'between_questions') {
     return noStore({ kind: 'none' });
   }
-
   const ref = quiz.questionOrder[quiz.currentQuestionIndex];
   if (!ref) return noStore({ kind: 'none' });
 

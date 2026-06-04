@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { createClient } from '@/lib/supabase/server';
 import { backfillPendingAnswers } from '@/lib/db/quiz-end-backfill';
+import { checkQuizQuota, QUOTA_EXCEEDED_MESSAGE } from '@/lib/db/quiz-quota';
+import { featureFlags, maintenanceMessages } from '@/lib/feature-flags';
 import type { QuizMode, QuizQuestionRef, QuizSessionSettings } from '@/lib/schemas/quiz';
 
 // Server Actions für die Quiz-Steuerung (Lehrer:innen-Seite, Phase S).
@@ -40,9 +42,18 @@ export async function createQuizSession(args: {
   questionOrder: QuizQuestionRef[];
   settings: QuizSessionSettings;
 }): Promise<CreateQuizSessionResult> {
+  if (!featureFlags.isQuizEnabled()) {
+    return { sessionId: null, error: maintenanceMessages.quiz.teacher };
+  }
   const user = await requireUser();
   if (!args.classId || !args.moduleId) {
     return { sessionId: null, error: 'Klasse oder Modul fehlt.' };
+  }
+  // C4 (COST-CONTROLS.md L1.1): Tagespensum-Quota prüfen. Bei Erreichen
+  // freundliche Fehlermeldung statt Bot-Schutz-500.
+  const quota = await checkQuizQuota(args.classId);
+  if (!quota.ok) {
+    return { sessionId: null, error: QUOTA_EXCEEDED_MESSAGE };
   }
   // Spec §3.9: Live/Team/Homework-Modi filtern match-Blocks raus. Wenn
   // dadurch keine Frage übrig bleibt, lehnt der Setup-Pfad bereits hier ab

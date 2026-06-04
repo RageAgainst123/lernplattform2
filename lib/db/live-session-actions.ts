@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { createClient } from '@/lib/supabase/server';
+import { featureFlags, maintenanceMessages } from '@/lib/feature-flags';
 
 // Server Actions für die Live-Präsentation (Lehrer:innen-Steuerung). Alle laufen
 // hinter requireUser() über den User-Client mit RLS — die Policy
@@ -18,6 +19,9 @@ export async function startPresentation(
   classId: string,
   moduleId: string
 ): Promise<LiveActionState> {
+  if (!featureFlags.isLiveEnabled()) {
+    return { error: maintenanceMessages.live.teacher };
+  }
   await requireUser();
   if (!classId || !moduleId) {
     return { error: 'Klasse oder Modul fehlt.' };

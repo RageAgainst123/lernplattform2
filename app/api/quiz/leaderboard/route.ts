@@ -4,6 +4,7 @@ import { getStudentSession } from '@/lib/auth/student-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { getActiveQuizSessionForClass, getRecentlyEndedQuizForClass } from '@/lib/db/quiz-sessions';
 import { getQuizLeaderboard, findOwnEntry, type LeaderboardEntry } from '@/lib/db/quiz-leaderboard';
+import { rateLimitGate } from '@/lib/rate-limit';
 
 // Polling-Endpunkt fürs Leaderboard (Phase S3, Spec §5.6).
 //
@@ -91,6 +92,8 @@ async function handleStudent(): Promise<NextResponse> {
 }
 
 export async function GET(request: Request) {
+  const blocked = rateLimitGate(request, 'quiz-leaderboard');
+  if (blocked) return blocked;
   const url = new URL(request.url);
   const mode = url.searchParams.get('mode');
   if (mode === 'teacher') {

@@ -220,3 +220,6 @@ export async function getQuizParticipantsForTeacher(
     joinedAt: r.joined_at as string,
   }));
 }
+
+// getQuestionProgress: Phase S2.B — siehe lib/db/quiz-question-progress.ts
+// (ausgelagert wegen max-lines).

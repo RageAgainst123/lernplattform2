@@ -3,6 +3,7 @@ import { getStudentSession } from '@/lib/auth/student-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { getActiveQuizSessionForClass, getRecentlyEndedQuizForClass } from '@/lib/db/quiz-sessions';
 import { getQuestionProgress } from '@/lib/db/quiz-question-progress';
+import { maybeAdvanceQuiz } from '@/lib/db/quiz-auto-advance';
 import { moduleContentSchema, type Block } from '@/lib/schemas/blocks';
 
 // Polling-Endpunkt für die Schüler:innen-Frage-Phase (Phase S2.B).
@@ -95,6 +96,13 @@ function remainingSecondsFor(startedAt: string | null, limitSeconds: number): nu
 export async function GET() {
   const session = await getStudentSession();
   if (!session) return noStore({ kind: 'none' });
+
+  // Lazy-Auto-Reveal-Check (Spec §5.9 + §11.12): wenn alle geantwortet ODER
+  // Zeit + 5s Karenz vorbei sind, schaltet maybeAdvanceQuiz die Session
+  // sofort auf 'between_questions' (inkl. Backfill für die Verpasser:innen).
+  // Idempotent + Race-frei. Der direkt folgende Lookup sieht dann die
+  // aktualisierte Session.
+  await maybeAdvanceQuiz(session.classId).catch(() => undefined);
 
   const quiz = await getActiveQuizSessionForClass(session.classId);
   if (!quiz) {

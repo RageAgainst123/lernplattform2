@@ -4,6 +4,7 @@ import { requireStudentSession } from '@/lib/auth/student-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { evaluateBlock, type BlockAnswer } from '@/lib/blocks/evaluate';
 import { calculatePoints } from '@/lib/blocks/points';
+import { maybeAdvanceQuiz } from '@/lib/db/quiz-auto-advance';
 import type { Block } from '@/lib/schemas/blocks';
 import { moduleContentSchema } from '@/lib/schemas/blocks';
 
@@ -61,7 +62,12 @@ type ParticipantRow = {
 
 // Lädt die aktive Quiz-Session der eigenen Klasse + validiert dass die
 // Antwort zur AKTUELLEN Frage gehört. Verhindert STALE_QUESTION-Race
-// (Lehrer:in schaltet eine Frage weiter während Schüler:in noch tippt).
+// (Lehrer:in schaltet eine Frage weiter während Schüler:in noch tippt)
+// UND späte Antworten nach Time-Limit + Karenz (Spec §5.9 — sonst kann
+// jemand 60s warten und mit dem gecappten elapsed=time_limit trotzdem
+// 500 Punkte holen).
+const SUBMIT_GRACE_MS = 5 * 1000;
+
 async function loadAndValidateSession(
   supabase: ReturnType<typeof createServiceClient>,
   classId: string,
@@ -80,6 +86,15 @@ async function loadAndValidateSession(
   if (row.status !== 'active') return { error: 'Zu spät — die Frage ist nicht mehr aktiv.' };
   if (row.current_question_index !== questionIndex) {
     return { error: 'Zu spät — diese Frage wurde schon weitergeschaltet.' };
+  }
+  // Timeout-Schutz (Spec §5.9): Antworten nach time_limit + 5s Karenz werden
+  // abgelehnt. Der Lazy-Trigger maybeAdvanceQuiz wechselt zur gleichen Zeit
+  // ohnehin auf between_questions, dieser Check ist die zweite Verteidigung.
+  if (row.current_question_started_at) {
+    const elapsed = Date.now() - new Date(row.current_question_started_at).getTime();
+    if (elapsed > row.time_limit_seconds * 1000 + SUBMIT_GRACE_MS) {
+      return { error: 'Zu spät — die Zeit für diese Frage ist abgelaufen.' };
+    }
   }
   return row;
 }
@@ -208,6 +223,13 @@ export async function submitQuizAnswer(
     newStreak,
   });
   if (writeErr) return writeErr;
+
+  // Phase S2-Bugfix (Spec §11 Punkt 12): wenn diese Antwort die letzte
+  // war (alle Teilnehmer:innen haben jetzt geantwortet), automatisch
+  // zu between_questions wechseln — Lehrer:in muss nicht mehr „Auflösen"
+  // klicken. Fire-and-forget: Fehler im Auto-Advance dürfen die
+  // erfolgreiche Antwort des Schülers nicht failen lassen.
+  void maybeAdvanceQuiz(session.classId).catch(() => undefined);
 
   return { error: null, isCorrect, points };
 }

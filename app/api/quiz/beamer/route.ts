@@ -6,6 +6,7 @@ import {
   getQuizBeamerQuestionState,
   type QuizBeamerQuestionState,
 } from '@/lib/db/quiz-beamer-state';
+import { maybeAdvanceQuiz } from '@/lib/db/quiz-auto-advance';
 
 // Polling-Endpunkt für die Lehrer:innen-Beamer-Ansicht in der Frage-Phase
 // (Phase S2.C).
@@ -64,6 +65,11 @@ async function authorizedClassId(request: Request): Promise<string | null> {
 export async function GET(request: Request) {
   const classId = await authorizedClassId(request);
   if (!classId) return noStore({ kind: 'none' });
+
+  // Lazy-Auto-Reveal-Check (Spec §5.9 + §11.12): triggert Auto-Wechsel auf
+  // 'between_questions' wenn alle geantwortet ODER Zeit-Karenz vorbei.
+  // Damit landet der Beamer ohne extra Tick im Reveal-Bildschirm.
+  await maybeAdvanceQuiz(classId).catch(() => undefined);
 
   const quiz = await getActiveQuizSessionForClass(classId);
   if (!quiz) {

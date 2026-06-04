@@ -5,6 +5,8 @@ import { getStudentSession } from '@/lib/auth/student-auth';
 import { moduleContentSchema } from '@/lib/schemas/blocks';
 import { maxScore, scoreModule, type BlockAnswer } from '@/lib/blocks/evaluate';
 import { ModuleContentError } from '@/lib/blocks/errors';
+import { publishBroadcast } from '@/lib/realtime/broadcast';
+import { channels, events } from '@/lib/realtime/channels';
 
 type SaveArgs = {
   moduleId: string;
@@ -151,5 +153,13 @@ export async function submitWorksheet(args: {
       manual_marks: {},
     },
     { onConflict: 'student_code_id,module_id' }
+  );
+  // Phase T6: Broadcast „abgabe" — lehrer-fortschrittsmatrix triggert
+  // router.refresh und sieht neue zeile sofort. payload minimal: nur
+  // moduleId fuer optionales matching, kein score / kein code.
+  void publishBroadcast(
+    channels.classProgress(session.classId),
+    events.classProgress.moduleSubmitted,
+    { moduleId: args.moduleId }
   );
 }

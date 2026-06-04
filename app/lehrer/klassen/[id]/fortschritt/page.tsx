@@ -5,6 +5,7 @@ import { requireUser } from '@/lib/auth/teacher-auth';
 import { getClass } from '@/lib/db/classes';
 import { getClassProgress } from '@/lib/db/class-progress';
 import { ClassProgressMatrix } from '@/components/teacher/ClassProgressMatrix';
+import { ProgressMatrixLive } from '@/components/teacher/ProgressMatrixLive';
 
 export const metadata: Metadata = {
   title: 'Klassen-Fortschritt — Lernplattform',
@@ -36,7 +37,9 @@ export default async function ClassProgressPage({ params }: { params: Promise<{ 
         </p>
       </div>
 
-      <ClassProgressMatrix matrix={matrix} classId={id} />
+      <ProgressMatrixLive classId={id}>
+        <ClassProgressMatrix matrix={matrix} classId={id} />
+      </ProgressMatrixLive>
     </div>
   );
 }

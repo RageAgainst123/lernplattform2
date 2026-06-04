@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useQuizQuestionPoll } from '@/components/quiz/useQuizQuestionPoll';
 import { QuizQuestionOverlay } from '@/components/student/QuizQuestionOverlay';
 import { QuizBetweenWait } from '@/components/student/QuizBetweenWait';
+import { QuizEndScreen } from '@/components/student/QuizEndScreen';
 import type { QuizQuestionState } from '@/app/api/quiz/question/route';
 
-// Schüler:innen-Live-Runner (Phase S2.D + S3). Status-bewusster Renderer:
+// Schüler:innen-Live-Runner (Phase S2.D + S3 + S4). Status-bewusster
+// Renderer:
 //   • lobby → Warte-Screen
 //   • active → QuizQuestionOverlay (Antworten)
 //   • between → QuizBetweenWait mit eigenem Rang (Phase S3, Spec §5.6)
-//   • none → Redirect zu /s (Quiz beendet)
+//   • ended → QuizEndScreen mit Total + Rang (Phase S4, Spec §5.7)
+//   • none → Redirect zu /s (5-Min-Fenster auch abgelaufen)
 //
 // Polling übernimmt useQuizQuestionPoll. Initial-State kommt server-
 // gerendert von der Page (kein Flicker).
@@ -30,6 +33,7 @@ export function QuizLiveRunner({ initial }: Props) {
 
   if (state.kind === 'lobby') return <LobbyWait />;
   if (state.kind === 'between') return <QuizBetweenWait />;
+  if (state.kind === 'ended') return <QuizEndScreen />;
   if (state.kind === 'active') {
     return (
       <QuizQuestionOverlay

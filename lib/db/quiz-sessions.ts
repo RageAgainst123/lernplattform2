@@ -130,6 +130,38 @@ export async function getActiveQuizSessionForClass(
   return rowToSession(row);
 }
 
+// „Recently-ended" Lookup für die Endbildschirm-Anzeige (Phase S4).
+//
+// Nach endQuizSession bleibt die Row mit status='ended' in der DB. Der
+// Beamer + die Schüler:innen pollen weiter und sehen so kurz das Podest /
+// die eigene Bilanz, BEVOR der Polling-Hook zurück zur Klassen-/Dashboard-
+// Seite navigiert.
+//
+// Fenster: 5 Min nach ended_at — danach gilt das Quiz als „abgeschlossen
+// und weg", die nächste Klasse oder ein erneuter Start räumen es so oder so
+// implizit weg. So lange genug, damit Lehrer:in den Beamer in Ruhe
+// schließen kann; kurz genug, damit alte Quizzes nicht ewig im Polling
+// auftauchen.
+const QUIZ_RECENTLY_ENDED_WINDOW_MS = 5 * 60 * 1000;
+
+export async function getRecentlyEndedQuizForClass(
+  classId: string
+): Promise<ActiveQuizSession | null> {
+  const supabase = createServiceClient();
+  const since = new Date(Date.now() - QUIZ_RECENTLY_ENDED_WINDOW_MS).toISOString();
+  const { data } = await supabase
+    .from('quiz_sessions')
+    .select(SESSION_SELECT + ', ended_at')
+    .eq('class_id', classId)
+    .eq('status', 'ended')
+    .gte('ended_at', since)
+    .order('ended_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  return rowToSession(data as unknown as QuizSessionRow);
+}
+
 // Teacher-seitiger Check (User-Client + RLS) ob für die Klasse gerade ein
 // Quiz läuft — für das Konflikt-Banner und die gegenseitige Sperre
 // zwischen Quiz und Live-Präsentation (Spec §3.11). Identische

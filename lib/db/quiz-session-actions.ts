@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { createClient } from '@/lib/supabase/server';
+import { backfillPendingAnswers } from '@/lib/db/quiz-end-backfill';
 import type { QuizMode, QuizQuestionRef, QuizSessionSettings } from '@/lib/schemas/quiz';
 
 // Server Actions für die Quiz-Steuerung (Lehrer:innen-Seite, Phase S).
@@ -101,9 +102,35 @@ export async function startQuiz(classId: string): Promise<QuizActionState> {
 // Beendet die laufende Quiz-Session der Klasse (Beamer-Tab klickt „Quiz
 // beenden" oder Heartbeat-Tod via Lazy-Check). Lässt 'ended'-Rows für die
 // Auswertung in der DB stehen.
+//
+// Phase S4 (Spec §5.7): Vor dem Status-Wechsel werden pending answers für
+// alle bis dahin erreichten Fragen (0..currentQuestionIndex) mit 0 Punkten
+// gefüllt — damit das Leaderboard fair zählt: wer nicht geantwortet hat,
+// bekommt 0 statt „existiert nicht". Backfill nur wenn Status active oder
+// between_questions war (aus Lobby beendet = noch keine Frage erreicht).
 export async function endQuizSession(classId: string): Promise<QuizActionState> {
   await requireUser();
   const supabase = await createClient();
+
+  // Zuerst die laufende Session laden — wir brauchen current_question_index,
+  // question_order und status, um zu wissen ob/wie viel zu backfillen ist.
+  const { data: sessionRow } = await supabase
+    .from('quiz_sessions')
+    .select('id, status, current_question_index, question_order')
+    .eq('class_id', classId)
+    .in('status', ['lobby', 'active', 'between_questions'])
+    .maybeSingle();
+
+  if (sessionRow) {
+    const status = sessionRow.status as string;
+    const sessionId = sessionRow.id as string;
+    const currentIdx = sessionRow.current_question_index as number;
+    const order = sessionRow.question_order as Array<{ blockId: string }>;
+    if (status !== 'lobby') {
+      await backfillPendingAnswers(sessionId, order, currentIdx);
+    }
+  }
+
   const { error } = await supabase
     .from('quiz_sessions')
     .update({

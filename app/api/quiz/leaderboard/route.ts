@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/auth/teacher-auth';
 import { getStudentSession } from '@/lib/auth/student-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { getActiveQuizSessionForClass } from '@/lib/db/quiz-sessions';
+import { getActiveQuizSessionForClass, getRecentlyEndedQuizForClass } from '@/lib/db/quiz-sessions';
 import { getQuizLeaderboard, findOwnEntry, type LeaderboardEntry } from '@/lib/db/quiz-leaderboard';
 
 // Polling-Endpunkt fürs Leaderboard (Phase S3, Spec §5.6).
@@ -54,7 +54,10 @@ async function handleTeacher(classId: string | null): Promise<NextResponse> {
   if (!user || !classId) return noStore({ kind: 'none' });
   if (!(await isOwnClass(user.id, classId))) return noStore({ kind: 'none' });
 
-  const quiz = await getActiveQuizSessionForClass(classId);
+  // Aktive ODER kürzlich beendete Session (Phase S4: das Podest am Quiz-
+  // Ende braucht das Final-Leaderboard, auch wenn status='ended').
+  const quiz =
+    (await getActiveQuizSessionForClass(classId)) ?? (await getRecentlyEndedQuizForClass(classId));
   if (!quiz) return noStore({ kind: 'none' });
 
   const board = await getQuizLeaderboard(quiz.id);
@@ -70,7 +73,9 @@ async function handleStudent(): Promise<NextResponse> {
   const session = await getStudentSession();
   if (!session) return noStore({ kind: 'none' });
 
-  const quiz = await getActiveQuizSessionForClass(session.classId);
+  const quiz =
+    (await getActiveQuizSessionForClass(session.classId)) ??
+    (await getRecentlyEndedQuizForClass(session.classId));
   if (!quiz) return noStore({ kind: 'none' });
 
   const board = await getQuizLeaderboard(quiz.id);

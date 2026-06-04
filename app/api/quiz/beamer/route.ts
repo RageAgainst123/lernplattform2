@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getUser } from '@/lib/auth/teacher-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { getActiveQuizSessionForClass } from '@/lib/db/quiz-sessions';
+import { getActiveQuizSessionForClass, getRecentlyEndedQuizForClass } from '@/lib/db/quiz-sessions';
 import {
   getQuizBeamerQuestionState,
   type QuizBeamerQuestionState,
@@ -31,7 +31,10 @@ export type QuizBeamerState =
   | { kind: 'none' }
   | { kind: 'lobby'; sessionId: string }
   | { kind: 'active'; sessionId: string; question: QuizBeamerQuestionState }
-  | { kind: 'between'; sessionId: string; question: QuizBeamerQuestionState };
+  | { kind: 'between'; sessionId: string; question: QuizBeamerQuestionState }
+  // Phase S4: 5-Min-Fenster nach endQuizSession — Beamer zeigt Podest mit
+  // Confetti BEVOR der Lehrer:innen-Tab manuell zurück navigiert.
+  | { kind: 'ended'; sessionId: string };
 
 function noStore(state: QuizBeamerState): NextResponse {
   return NextResponse.json(state, { headers: { 'Cache-Control': 'no-store' } });
@@ -63,7 +66,13 @@ export async function GET(request: Request) {
   if (!classId) return noStore({ kind: 'none' });
 
   const quiz = await getActiveQuizSessionForClass(classId);
-  if (!quiz) return noStore({ kind: 'none' });
+  if (!quiz) {
+    // Keine laufende Session — schauen ob eine kürzlich beendete Row
+    // existiert (Phase S4: 5-Min-Endbildschirm-Fenster).
+    const ended = await getRecentlyEndedQuizForClass(classId);
+    if (ended) return noStore({ kind: 'ended', sessionId: ended.id });
+    return noStore({ kind: 'none' });
+  }
 
   if (quiz.status === 'lobby') return noStore({ kind: 'lobby', sessionId: quiz.id });
   if (quiz.status !== 'active' && quiz.status !== 'between_questions') {

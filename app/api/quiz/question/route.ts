@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getStudentSession } from '@/lib/auth/student-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { getActiveQuizSessionForClass } from '@/lib/db/quiz-sessions';
+import { getActiveQuizSessionForClass, getRecentlyEndedQuizForClass } from '@/lib/db/quiz-sessions';
 import { getQuestionProgress } from '@/lib/db/quiz-question-progress';
 import { moduleContentSchema, type Block } from '@/lib/schemas/blocks';
 
@@ -44,7 +44,11 @@ export type QuizQuestionState =
       answered: number;
       total: number;
       ownAnswer: { isCorrect: boolean; points: number } | null;
-    };
+    }
+  // Phase S4: 5-Min-Fenster nach endQuizSession — Schüler:in sieht eigenen
+  // End-Bildschirm (Rang + Punkte + Bilanz) BEVOR der Polling-Hook
+  // automatisch zurück zu /s navigiert.
+  | { kind: 'ended'; sessionId: string };
 
 function noStore(state: QuizQuestionState): NextResponse {
   return NextResponse.json(state, { headers: { 'Cache-Control': 'no-store' } });
@@ -93,7 +97,11 @@ export async function GET() {
   if (!session) return noStore({ kind: 'none' });
 
   const quiz = await getActiveQuizSessionForClass(session.classId);
-  if (!quiz) return noStore({ kind: 'none' });
+  if (!quiz) {
+    const ended = await getRecentlyEndedQuizForClass(session.classId);
+    if (ended) return noStore({ kind: 'ended', sessionId: ended.id });
+    return noStore({ kind: 'none' });
+  }
 
   if (quiz.status === 'lobby') {
     return noStore({ kind: 'lobby', sessionId: quiz.id });

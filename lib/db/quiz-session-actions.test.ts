@@ -7,6 +7,7 @@ vi.mock('server-only', () => ({}));
 
 const rpcMock = vi.fn();
 const updateMock = vi.fn();
+const selectMock = vi.fn();
 // Filter-Methoden geben sich selbst zurück (chainable + awaitable als
 // Promise<{error: null}>). So funktionieren beliebige .eq().in().eq()-Ketten.
 const filterChain = {
@@ -19,13 +20,33 @@ const filterChain = {
 filterChain.eq.mockImplementation(() => filterChain);
 filterChain.in.mockImplementation(() => filterChain);
 
+// Select-Chain liefert per Default null zurück (= keine laufende Session
+// gefunden → Backfill wird übersprungen). Tests können selectMock
+// überschreiben falls sie eine Session simulieren wollen.
+const selectChain = {
+  eq: vi.fn(),
+  in: vi.fn(),
+  maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+};
+selectChain.eq.mockImplementation(() => selectChain);
+selectChain.in.mockImplementation(() => selectChain);
+selectMock.mockImplementation(() => selectChain);
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     rpc: rpcMock,
     from: vi.fn(() => ({
       update: updateMock,
+      select: selectMock,
     })),
   })),
+}));
+
+// quiz-end-backfill nutzt Service-Role direkt. Wir mocken es als Pure-NoOp,
+// damit endQuizSession in den Tests nicht in die echte Backfill-Logik
+// reinläuft (die ist in quiz-end-backfill.test.ts separat getestet).
+vi.mock('@/lib/db/quiz-end-backfill', () => ({
+  backfillPendingAnswers: vi.fn(async () => undefined),
 }));
 
 vi.mock('@/lib/auth/teacher-auth', () => ({
@@ -39,11 +60,19 @@ vi.mock('next/cache', () => ({
 beforeEach(() => {
   rpcMock.mockReset();
   updateMock.mockReset();
+  selectMock.mockReset();
   filterChain.eq.mockClear();
   filterChain.in.mockClear();
   filterChain.eq.mockImplementation(() => filterChain);
   filterChain.in.mockImplementation(() => filterChain);
   updateMock.mockImplementation(() => filterChain);
+  selectChain.eq.mockClear();
+  selectChain.in.mockClear();
+  selectChain.maybeSingle.mockClear();
+  selectChain.eq.mockImplementation(() => selectChain);
+  selectChain.in.mockImplementation(() => selectChain);
+  selectChain.maybeSingle.mockImplementation(async () => ({ data: null, error: null }));
+  selectMock.mockImplementation(() => selectChain);
 });
 
 afterEach(() => {

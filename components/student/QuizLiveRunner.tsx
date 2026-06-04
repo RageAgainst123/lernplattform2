@@ -32,6 +32,10 @@ export function QuizLiveRunner({ initial }: Props) {
   if (state.kind === 'active') {
     return (
       <QuizQuestionOverlay
+        // key erzwingt Remount bei jeder neuen Frage → localResult der
+        // vorherigen Antwort wird verworfen. Ohne key bleibt der Schüler
+        // im AnsweredView hängen wenn die nächste Frage kommt.
+        key={`${state.sessionId}:${state.questionIndex}`}
         block={state.block}
         questionIndex={state.questionIndex}
         sessionId={state.sessionId}

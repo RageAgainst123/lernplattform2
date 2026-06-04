@@ -80,8 +80,10 @@ function InteractionOverlay({ state }: { state: Extract<LiveState, { interactive
   );
 }
 
-export function LiveOverlay() {
-  const state = useLiveSync();
+// Phase T5: classId-prop optional (Server-Layout reicht aus jose-Session weiter).
+// Bei classId=null laeuft useLiveSync polling-only.
+export function LiveOverlay({ classId }: { classId?: string | null } = {}) {
+  const state = useLiveSync(classId ?? null);
   if (!state.active) return null;
   if (state.interactive) return <InteractionOverlay state={state} />;
   return <DimOverlay />;

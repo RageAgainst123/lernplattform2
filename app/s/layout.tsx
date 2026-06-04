@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LiveOverlay } from '@/components/student/LiveOverlay';
+import { getStudentSession } from '@/lib/auth/student-auth';
 
 // Layout für den gesamten Schüler:innen-Bereich (/s/*). Rendert die normale
 // Seite plus das Live-Overlay, das während einer Lehrer:innen-Präsentation
@@ -9,8 +10,13 @@ import { LiveOverlay } from '@/components/student/LiveOverlay';
 // Phase H1: dünner Schüler-Header mit Link zum Heft. Wir haben bewusst
 // keinen großen Site-Header im Schülerbereich (würde mit dem Modul-Runner
 // kollidieren). Nur ein einfaches Banner mit dem Heft-Link.
+//
+// Phase T5: classId aus jose-Session wird an LiveOverlay weitergereicht,
+// damit useLiveSync den richtigen Realtime-Channel abonnieren kann
+// (live_session:{classId}).
 
-export default function StudentAreaLayout({ children }: { children: React.ReactNode }) {
+export default async function StudentAreaLayout({ children }: { children: React.ReactNode }) {
+  const session = await getStudentSession();
   return (
     <>
       <div className="bg-background border-b">
@@ -28,7 +34,7 @@ export default function StudentAreaLayout({ children }: { children: React.ReactN
         </div>
       </div>
       {children}
-      <LiveOverlay />
+      <LiveOverlay classId={session?.classId ?? null} />
     </>
   );
 }

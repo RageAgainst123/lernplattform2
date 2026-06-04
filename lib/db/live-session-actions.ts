@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { createClient } from '@/lib/supabase/server';
 import { featureFlags, maintenanceMessages } from '@/lib/feature-flags';
+import { publishBroadcast } from '@/lib/realtime/broadcast';
+import { channels, events } from '@/lib/realtime/channels';
 
 // Server Actions für die Live-Präsentation (Lehrer:innen-Steuerung). Alle laufen
 // hinter requireUser() über den User-Client mit RLS — die Policy
@@ -34,6 +36,11 @@ export async function startPresentation(
   if (error) {
     return { error: 'Die Präsentation konnte nicht gestartet werden.' };
   }
+  // Phase T5: Broadcast — Schueler-tabs reagieren sofort und holen das
+  // overlay statt erst nach polling-tick.
+  void publishBroadcast(channels.liveSession(classId), events.live.blockChanged, {
+    blockIndex: 0,
+  });
   revalidatePath(`/lehrer/klassen/${classId}`);
   return { error: null };
 }
@@ -58,6 +65,11 @@ export async function setLiveBlock(classId: string, index: number): Promise<Live
   if (error) {
     return { error: 'Folie konnte nicht aktualisiert werden.' };
   }
+  // Phase T5: Broadcast „neuer Block" — Schueler-Tabs aktualisieren sofort
+  // statt nach polling-tick.
+  void publishBroadcast(channels.liveSession(classId), events.live.blockChanged, {
+    blockIndex: safeIndex,
+  });
   return { error: null };
 }
 
@@ -74,6 +86,7 @@ export async function revealResults(classId: string): Promise<LiveActionState> {
   if (error) {
     return { error: 'Ergebnis konnte nicht freigegeben werden.' };
   }
+  void publishBroadcast(channels.liveSession(classId), events.live.blockRevealed, {});
   return { error: null };
 }
 
@@ -92,6 +105,11 @@ export async function lockAndReveal(classId: string): Promise<LiveActionState> {
   if (error) {
     return { error: 'Abstimmung konnte nicht abgeschlossen werden.' };
   }
+  // Phase T5: ein Broadcast reicht — der Schueler-Hook refetcht den
+  // authoritative state via /api/live, sieht locked+revealed beide true.
+  void publishBroadcast(channels.liveSession(classId), events.live.blockRevealed, {
+    locked: true,
+  });
   return { error: null };
 }
 
@@ -109,6 +127,7 @@ export async function setBlockLocked(classId: string, locked: boolean): Promise<
   if (error) {
     return { error: 'Abstimmungsstatus konnte nicht geändert werden.' };
   }
+  void publishBroadcast(channels.liveSession(classId), events.live.blockLocked, { locked });
   return { error: null };
 }
 
@@ -143,6 +162,7 @@ export async function endPresentation(classId: string): Promise<LiveActionState>
   if (error) {
     return { error: 'Die Präsentation konnte nicht beendet werden.' };
   }
+  void publishBroadcast(channels.liveSession(classId), events.live.presentationEnded, {});
   revalidatePath(`/lehrer/klassen/${classId}`);
   return { error: null };
 }

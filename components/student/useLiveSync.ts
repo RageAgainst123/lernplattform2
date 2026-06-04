@@ -1,67 +1,41 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import type { LiveState } from '@/app/api/live/route';
+import { useRealtimeWithFallback } from '@/components/realtime/useRealtimeWithFallback';
+import { channels, events } from '@/lib/realtime/channels';
 
-// Pollt /api/live und liefert den aktuellen Live-Zustand. ADAPTIV: läuft eine
-// Präsentation, wird schnell gepollt (1 s → geringe Verzögerung beim
-// Folienwechsel); läuft keine, langsam (5 s → spart Last im Normalbetrieb,
-// wenn Kinder an Modulen arbeiten). Pausiert bei verstecktem Tab
-// (document.hidden) und holt beim Zurückkehren sofort frisch. Netzfehler sind
-// tolerant (try/catch → nächster Tick). Self-scheduling per setTimeout, damit
-// das Intervall ohne Neu-Mount zwischen aktiv/inaktiv umschalten kann.
+// Pollt /api/live und liefert den aktuellen Live-Zustand (Phase T5).
+//
+// Phase T5 (ADR-0016): Hook ist jetzt ein Wrapper über useRealtimeWithFallback.
+// Bei jedem Folien-/Reveal-/Lock-/End-Event triggert der Broadcast einen
+// sofortigen Refetch von /api/live (authoritative source mit ownVote +
+// locked-Flag, etc.). Polling-Tick 5s ist Sicherheitsnetz.
+//
+// Channel: live_session:{classId}. classId kommt vom Server-Layout
+// (jose-Session). Bei classId=null (nicht eingeloggt) wird ein
+// Disabled-Channel verwendet — Polling reicht.
 
-const ACTIVE_MS = 1000;
-const IDLE_MS = 5000;
+const POLL_FALLBACK_MS = 5000;
+const LIVE_EVENTS = [
+  events.live.blockChanged,
+  events.live.blockRevealed,
+  events.live.blockLocked,
+  events.live.presentationEnded,
+] as const;
 
-export function useLiveSync(): LiveState {
-  const [state, setState] = useState<LiveState>({ active: false });
-  // Letzter bekannter Aktiv-Zustand, damit der Scheduler das richtige Intervall
-  // wählt, ohne als Effect-Dependency einen Neustart auszulösen.
-  const activeRef = useRef(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    async function poll() {
-      if (!document.hidden) {
-        try {
-          const res = await fetch('/api/live', { cache: 'no-store' });
-          if (res.ok) {
-            const next = (await res.json()) as LiveState;
-            if (!cancelled) {
-              activeRef.current = next.active;
-              setState(next);
-            }
-          }
-        } catch {
-          // Netz-/Abbruchfehler ignorieren — der nächste Tick versucht es erneut.
-        }
-      }
-      if (!cancelled) {
-        timer = setTimeout(poll, activeRef.current ? ACTIVE_MS : IDLE_MS);
-      }
-    }
-
-    function onVisibility() {
-      // Beim Zurückkehren sofort frisch holen — aber erst den anstehenden Timer
-      // abräumen, sonst liefen zwei poll-Ketten parallel (doppelte Frequenz).
-      if (!document.hidden) {
-        if (timer) clearTimeout(timer);
-        void poll();
-      }
-    }
-
-    void poll();
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
+export function useLiveSync(classId: string | null): LiveState {
+  const fetcher = useCallback(async (): Promise<LiveState> => {
+    const res = await fetch('/api/live', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+    return (await res.json()) as LiveState;
   }, []);
 
-  return state;
+  return useRealtimeWithFallback<LiveState>({
+    channelName: classId ? channels.liveSession(classId) : 'live_session:disabled',
+    events: LIVE_EVENTS,
+    fetcher,
+    initial: { active: false },
+    pollIntervalMs: POLL_FALLBACK_MS,
+  });
 }

@@ -1,0 +1,63 @@
+{
+  "blocks": [
+    {
+      "id": "s_intro",
+      "type": "slide",
+      "title": "Showcase Live-Tools",
+      "body": "Diese Präsentation zeigt alle interaktiven Bausteine, die du als Lehrer:in am Beamer einsetzen kannst — von Live-Abstimmungen bis zur Verständnis-Ampel."
+    },
+    {
+      "id": "s_anleitung",
+      "type": "slide",
+      "title": "Wie es funktioniert",
+      "body": "Schüler:innen melden sich mit ihrem Code an und sehen auf ihrem Handy/Tablet jeweils das Eingabe-Element zur aktuellen Folie. Du wechselst die Folien — die Live-Daten erscheinen am Beamer."
+    },
+    {
+      "id": "live_poll_meinung",
+      "type": "live_poll",
+      "question": "Live-Poll (Meinungsbild — keine richtige Antwort): Welches Gerät benutzt du zu Hause am häufigsten?",
+      "options": [
+        { "id": "p1", "text": "Smartphone" },
+        { "id": "p2", "text": "Laptop / PC" },
+        { "id": "p3", "text": "Tablet" },
+        { "id": "p4", "text": "Spielkonsole" }
+      ]
+    },
+    {
+      "id": "quiz_poll_wissen",
+      "type": "quiz_poll",
+      "question": "Quiz-Poll (mit richtiger Antwort — Auflösung am Beamer): Welches dieser Geräte ist KEIN Eingabegerät?",
+      "options": [
+        { "id": "q1", "text": "Maus", "correct": false },
+        { "id": "q2", "text": "Drucker", "correct": true },
+        { "id": "q3", "text": "Tastatur", "correct": false },
+        { "id": "q4", "text": "Webcam", "correct": false }
+      ]
+    },
+    {
+      "id": "word_cloud_assoziation",
+      "type": "word_cloud",
+      "question": "Wortwolke: Nenne ein Gerät, das du selber besitzt und das mit einem Computer kommuniziert."
+    },
+    {
+      "id": "scale_schwierigkeit",
+      "type": "scale",
+      "question": "Skala 1–5: Wie schwer fielen dir die Aufgaben im Lernmodul?",
+      "min": 1,
+      "max": 5,
+      "minLabel": "ganz leicht",
+      "maxLabel": "sehr schwer"
+    },
+    {
+      "id": "understanding_ampel",
+      "type": "understanding",
+      "question": "Verständnis-Ampel: Wie sicher fühlst du dich beim EVA-Prinzip?"
+    },
+    {
+      "id": "s_outro",
+      "type": "slide",
+      "title": "Vielen Dank!",
+      "body": "Damit hast du alle Live-Bausteine kennengelernt. Im Lernmodul »Showcase Lernmodul« kannst du jetzt allein durchklicken und alle Aufgaben-Typen ausprobieren."
+    }
+  ]
+}

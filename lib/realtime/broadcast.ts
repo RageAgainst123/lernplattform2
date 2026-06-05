@@ -41,8 +41,16 @@ export async function publishBroadcast(
     });
     // subscribe() ist nötig BEVOR send() — sonst wird das Event silently
     // verworfen. Wir warten kurz auf SUBSCRIBED, dann senden, dann cleanup.
+    //
+    // Pre-Launch-Audit HIGH-3 (2026-06-04): Timeout von 3000ms auf 1000ms
+    // reduziert. Bei hängender Realtime-Verbindung kostete die Server-Action
+    // vorher bis zu 3s Vercel-Function-Zeit (auch trotz fire-and-forget,
+    // weil Promise-Settle die Invocation-Dauer beeinflusst). 1s genügt für
+    // normales Subscribe (T0-Spike: 75-115 ms), schneidet aber Cost-Drift
+    // bei Supabase-Realtime-Down ab. Bei Failure übernimmt der 5s-Polling-
+    // Fallback im Client.
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('subscribe timeout')), 3000);
+      const timer = setTimeout(() => reject(new Error('subscribe timeout')), 1000);
       channel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           clearTimeout(timer);

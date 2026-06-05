@@ -35,6 +35,23 @@ export type UseRealtimeWithFallbackArgs<T> = {
   pollIntervalMs?: number;
   /** Optional: bei Tab-versteckt pausieren? Default true. */
   pauseOnHidden?: boolean;
+  /**
+   * Pre-Launch-Audit MED-1 (2026-06-04): wenn false, wird KEIN Realtime-
+   * Channel geöffnet und KEIN Polling-Timer gestartet — der Hook gibt
+   * einfach `initial` zurück. Default true. Nutze das für Wrapper-Hooks
+   * die in einem „idle"-Zustand sind (z.B. Schüler-Tab ohne aktives Quiz),
+   * damit du keine Pseudo-Channels wie `quiz_session:idle` mit hunderten
+   * Connections sammelst.
+   */
+  enabled?: boolean;
+  /**
+   * Pre-Launch-Audit MED-3 (2026-06-04): wenn true, kein sofortiger
+   * safeFetch beim Mount — der SSR-`initial`-State wird als frisch
+   * angenommen, der erste Refetch passiert erst beim Poll-Tick oder
+   * beim ersten Broadcast-Event. Default true (vorher war es false,
+   * was 125 unnötige Calls bei 25 Schüler × 5 Hooks ergab).
+   */
+  skipInitialFetch?: boolean;
 };
 
 export type UseRealtimeWithFallbackResult<T> = {
@@ -64,11 +81,19 @@ export function useRealtimeWithFallback<T>(
 
   useEffect(() => {
     cancelledRef.current = false;
+    // Pre-Launch-Audit MED-1: enabled=false → kein channel, kein polling.
+    // Hook gibt einfach state=initial zurück, refetch() ist no-op.
+    if (args.enabled === false) {
+      return () => {
+        cancelledRef.current = true;
+      };
+    }
     const cleanup = setupRealtimeAndPolling({
       channelName: args.channelName,
       events: args.events,
       pollIntervalMs: args.pollIntervalMs ?? DEFAULT_POLL_MS,
       pauseOnHidden: args.pauseOnHidden !== false,
+      skipInitialFetch: args.skipInitialFetch !== false,
       fetcherRef,
       setState,
     });
@@ -79,7 +104,14 @@ export function useRealtimeWithFallback<T>(
     // channelName und events sollen einen neuen Subscribe triggern wenn
     // sie sich ändern. fetcher liest via Ref → keine Re-Subscribes nötig.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [args.channelName, JSON.stringify(args.events), args.pollIntervalMs, args.pauseOnHidden]);
+  }, [
+    args.channelName,
+    JSON.stringify(args.events),
+    args.pollIntervalMs,
+    args.pauseOnHidden,
+    args.enabled,
+    args.skipInitialFetch,
+  ]);
 
   // Imperative refetch — Caller (z.B. Lehrer-Button-Handler) ruft das nach
   // erfolgreicher Server-Action auf. Liest fetcher via Ref, damit der
@@ -101,6 +133,7 @@ type SetupArgs<T> = {
   events: readonly string[];
   pollIntervalMs: number;
   pauseOnHidden: boolean;
+  skipInitialFetch: boolean;
   fetcherRef: React.MutableRefObject<() => Promise<T>>;
   setState: React.Dispatch<React.SetStateAction<T>>;
 };
@@ -115,13 +148,16 @@ function setupRealtimeAndPolling<T>(setup: SetupArgs<T>): () => void {
   const safeFetch = makeSafeFetch(setup, stopper);
   const supabase = createClient();
   const channel = subscribeChannel(supabase, setup, safeFetch);
-  void safeFetch();
+  // Pre-Launch-Audit MED-3: skipInitialFetch=true (default) → SSR-State ist
+  // frisch, kein unnötiger Sofort-Call. Erster Refetch kommt mit dem ersten
+  // Broadcast-Event oder spätestens nach pollIntervalMs.
+  if (!setup.skipInitialFetch) void safeFetch();
   schedulePoll(setup, stopper, safeFetch);
   const detachVisibility = attachVisibility(setup.pauseOnHidden, safeFetch);
   return () => {
     stopper.cancelled = true;
     if (stopper.pollTimer) clearTimeout(stopper.pollTimer);
-    void supabase.removeChannel(channel);
+    if (channel) void supabase.removeChannel(channel);
     detachVisibility();
   };
 }
@@ -151,6 +187,12 @@ function subscribeChannel<T>(
   setup: SetupArgs<T>,
   safeFetch: () => Promise<void>
 ) {
+  // Pre-Launch-Audit MED-1+MED-2 (2026-06-04): Wenn channelName leer ist,
+  // KEINE Realtime-Subscription öffnen — Polling läuft trotzdem weiter und
+  // holt eine Session-id sobald sie da ist. Re-Subscribe passiert automatisch
+  // wenn der useEffect mit neuem channelName re-läuft. Spart Pseudo-Channel-
+  // Connections (war: 'quiz_session:idle' für alle idle-Tabs).
+  if (!setup.channelName) return null;
   // self: true — der publizierende Client KRIEGT seinen eigenen Broadcast
   // zurueck. Klingt komisch (warum sollte ich auf mein eigenes Event
   // lauschen?), ist aber genau richtig fuer unser pattern: der lehrer-tab

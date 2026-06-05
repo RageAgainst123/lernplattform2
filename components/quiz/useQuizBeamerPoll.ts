@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type { QuizBeamerState } from '@/app/api/quiz/beamer/route';
 import { useRealtimeWithFallback } from '@/components/realtime/useRealtimeWithFallback';
 import { channels, events } from '@/lib/realtime/channels';
@@ -27,9 +27,8 @@ const BEAMER_EVENTS = [
   events.quiz.participantJoined,
 ] as const;
 
-function channelFor(state: QuizBeamerState): string {
-  if (state.kind === 'none') return 'quiz_session:idle';
-  return channels.quizSession(state.sessionId);
+function sessionIdOf(state: QuizBeamerState): string | null {
+  return state.kind === 'none' ? null : state.sessionId;
 }
 
 export type UseQuizBeamerPollResult = {
@@ -49,10 +48,24 @@ export function useQuizBeamerPoll(
     return (await res.json()) as QuizBeamerState;
   }, [classId]);
 
+  // Pre-Launch-Audit MED-2: channelName aus aktuellem State berechnen.
+  // Lehrer-Beamer-Page läuft typischerweise mit kind='lobby' beim Mount,
+  // wechselt dann zu 'active' — Channel muss mitwechseln damit Realtime
+  // greift.
+  const [sessionId, setSessionId] = useState<string | null>(sessionIdOf(initial));
+  const wrappedFetcher = useCallback(async (): Promise<QuizBeamerState> => {
+    const next = await fetcher();
+    const nextSid = sessionIdOf(next);
+    if (nextSid !== sessionId) setSessionId(nextSid);
+    return next;
+  }, [fetcher, sessionId]);
+
+  // channelName leer wenn keine sessionId — kein Channel, aber Polling läuft
+  // weiter und re-subscribed sobald sessionId da ist.
   return useRealtimeWithFallback<QuizBeamerState>({
-    channelName: channelFor(initial),
+    channelName: sessionId ? channels.quizSession(sessionId) : '',
     events: BEAMER_EVENTS,
-    fetcher,
+    fetcher: wrappedFetcher,
     initial,
     pollIntervalMs: POLL_FALLBACK_MS,
   });

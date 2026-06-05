@@ -7,6 +7,7 @@ import { maxScore, scoreModule, type BlockAnswer } from '@/lib/blocks/evaluate';
 import { ModuleContentError } from '@/lib/blocks/errors';
 import { publishBroadcast } from '@/lib/realtime/broadcast';
 import { channels, events } from '@/lib/realtime/channels';
+import { isAssigned } from '@/lib/db/student-modules';
 
 type SaveArgs = {
   moduleId: string;
@@ -56,9 +57,17 @@ async function safeMax(
 
 // Speichert den Lern-Fortschritt. studentCodeId kommt aus der Session (nicht aus
 // Client-Input) — Schüler:innen können nur ihren eigenen Fortschritt schreiben.
+//
+// Pre-Launch-Audit HIGH-6 (2026-06-04): moduleId stammt aus Client-Input,
+// daher Prüfen ob es überhaupt zur Klasse zugewiesen ist. Sonst könnte
+// Schüler:in preemptiv Score für später zugewiesene Module schreiben oder
+// die student_progress-Tabelle mit Garbage füllen.
 export async function saveProgress(args: SaveArgs): Promise<void> {
   const session = await getStudentSession();
   if (!session) {
+    return;
+  }
+  if (!(await isAssigned(args.moduleId, session.classId))) {
     return;
   }
 
@@ -105,6 +114,7 @@ export async function saveWorksheetDraft(args: {
 }): Promise<void> {
   const session = await getStudentSession();
   if (!session) return;
+  if (!(await isAssigned(args.moduleId, session.classId))) return;
   const supabase = createServiceClient();
   if (await isAlreadySubmitted(supabase, session.studentCodeId, args.moduleId)) return;
   await supabase.from('student_progress').upsert(
@@ -134,6 +144,7 @@ export async function submitWorksheet(args: {
 }): Promise<void> {
   const session = await getStudentSession();
   if (!session) return;
+  if (!(await isAssigned(args.moduleId, session.classId))) return;
   const supabase = createServiceClient();
   if (await isAlreadySubmitted(supabase, session.studentCodeId, args.moduleId)) return;
   const { score, max } = await computeScore(supabase, args.moduleId, args.answers);

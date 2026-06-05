@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { QuizLobbyState } from '@/app/api/quiz/lobby/route';
+import type { QuizLobbyState, TeacherLobbyState } from '@/app/api/quiz/lobby/route';
 import { useRealtimeWithFallback } from '@/components/realtime/useRealtimeWithFallback';
 import { channels, events } from '@/lib/realtime/channels';
 
@@ -54,21 +54,41 @@ function useTeacherLobbyHybrid(
     return (await res.json()) as QuizLobbyState;
   }, [classId, enabled, initial]);
 
+  // Pre-Launch-Audit MED-2: sessionId aus aktuellem State tracken, damit
+  // beim Quiz-Start (none → teacher.session existiert) Realtime sofort
+  // greift. Wrap fetcher um sessionId-State zu updaten.
+  const [sessionId, setSessionId] = useState<string | null>(
+    teacherSessionId(initial as TeacherLobbyState | StudentLobbyState)
+  );
+  const wrappedFetcher = useCallback(async (): Promise<QuizLobbyState> => {
+    const next = await fetcher();
+    const nextSid = teacherSessionId(next as TeacherLobbyState | StudentLobbyState);
+    if (nextSid !== sessionId) setSessionId(nextSid);
+    return next;
+  }, [fetcher, sessionId]);
+
   const { state } = useRealtimeWithFallback<QuizLobbyState>({
-    channelName: enabled ? teacherChannelFor(initial) : 'quiz_session:disabled',
+    channelName: sessionId ? channels.quizSession(sessionId) : '',
     events: LOBBY_EVENTS,
-    fetcher,
+    fetcher: wrappedFetcher,
     initial,
     pollIntervalMs: TEACHER_POLL_FALLBACK_MS,
+    // Pre-Launch-Audit MED-1+MED-2: enabled=false (z.B. Schüler-Modus oder
+    // disabled-Pfad) → kein Channel, kein Polling. Bei enabled=true aber
+    // sessionId=null → KEIN Channel (channelName leer), aber Polling läuft
+    // weiter und holt die session-id sobald sie da ist; danach re-subscribed
+    // der Hook automatisch (channelName-Change als useEffect-dep).
+    enabled,
   });
   return state;
 }
 
-function teacherChannelFor(state: QuizLobbyState): string {
-  if (state.kind === 'teacher' && state.session) {
-    return channels.quizSession(state.session.id);
-  }
-  return 'quiz_session:idle';
+// Pure Helper: zieht die sessionId aus einem teacher-state. Null wenn
+// noch keine aktive Session läuft.
+type StudentLobbyState = Exclude<QuizLobbyState, TeacherLobbyState>;
+function teacherSessionId(state: TeacherLobbyState | StudentLobbyState): string | null {
+  if (state.kind === 'teacher' && state.session) return state.session.id;
+  return null;
 }
 
 // Schüler-Modus: 1.5s-aktiv-Polling, 5s-idle. enabled=false → kein

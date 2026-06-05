@@ -13,8 +13,8 @@ import { channels, events } from '@/lib/realtime/channels';
 // locked-Flag, etc.). Polling-Tick 5s ist Sicherheitsnetz.
 //
 // Channel: live_session:{classId}. classId kommt vom Server-Layout
-// (jose-Session). Bei classId=null (nicht eingeloggt) wird ein
-// Disabled-Channel verwendet — Polling reicht.
+// (jose-Session). Bei classId=null (nicht eingeloggt) ist der Hook
+// komplett deaktiviert — kein Channel, kein Polling, return {active:false}.
 
 const POLL_FALLBACK_MS = 5000;
 const LIVE_EVENTS = [
@@ -32,11 +32,15 @@ export function useLiveSync(classId: string | null): LiveState {
   }, []);
 
   const { state } = useRealtimeWithFallback<LiveState>({
-    channelName: classId ? channels.liveSession(classId) : 'live_session:disabled',
+    // Pre-Launch-Audit MED-1+MED-2: kein Pseudo-Channel mehr. Wenn classId
+    // unbekannt → Hook inaktiv via enabled=false (spart Supabase-Connections
+    // + verhindert Refetch-Storms bei publishes auf den disabled-Channel).
+    channelName: classId ? channels.liveSession(classId) : '',
     events: LIVE_EVENTS,
     fetcher,
     initial: { active: false },
     pollIntervalMs: POLL_FALLBACK_MS,
+    enabled: classId !== null,
   });
   return state;
 }

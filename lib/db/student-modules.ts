@@ -27,7 +27,11 @@ export type ModuleProgress = {
 };
 
 // Prüft, ob ein Modul der Klasse der Schüler:in zugewiesen ist (class_modules).
-async function isAssigned(moduleId: string, classId: string): Promise<boolean> {
+// Exportiert (Pre-Launch-Audit HIGH-6, 2026-06-04) damit progress-action.ts
+// vor jedem upsert prüfen kann, ob der vom Client geschickte moduleId
+// überhaupt zur eigenen Klasse gehört — sonst IDOR-Risiko (Schüler:in könnte
+// preemptiv Score für später zugewiesene Module schreiben).
+export async function isAssigned(moduleId: string, classId: string): Promise<boolean> {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('class_modules')

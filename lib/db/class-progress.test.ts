@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// server-only mocken — class-progress importiert class-modules, das wiederum
+// supabase/admin lädt (server-only-Markierung).
+vi.mock('server-only', () => ({}));
+
 import {
   cellKey,
   countMatrixStatuses,

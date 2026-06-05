@@ -9,6 +9,7 @@ import {
   TextInput,
   makeOptionId,
 } from './form-helpers';
+import { GradedExtensionsFields } from './GradedExtensionsFields';
 
 // Form-Editor für multiple_choice. Frage oben, darunter Optionen-Liste mit
 // Checkbox (= „diese Antwort ist richtig"), Text-Input, Lösch-Knopf.
@@ -127,6 +128,14 @@ export function MultipleChoiceForm({ value, onChange }: Props) {
           />
         </div>
       </div>
+
+      <GradedExtensionsFields
+        blockId={value.id}
+        hint={value.hint}
+        maxAttempts={value.maxAttempts}
+        category={value.category}
+        onChange={(patch) => onChange({ ...value, ...patch })}
+      />
     </div>
   );
 }

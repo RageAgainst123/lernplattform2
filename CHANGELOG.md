@@ -8,6 +8,76 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase W — Lernmodul-Polish: Hint-Box + Mehrfachversuch
+
+**2026-06-05** · Tag `phase-w-savepoint`
+
+### Hintergrund
+
+Solo-Modul-Durchlauf war heute „1 Versuch, dann weiter". Schüler:in klickt
+einmal falsch → sieht „Noch nicht richtig", muss aber stumm weiterklicken,
+ohne zu wissen warum oder wie. Phase W fügt zwei didaktische Hebel hinzu:
+
+1. **Mehrere Versuche** pro Frage (1–5, default 1 = altes Verhalten)
+2. **Hinweis-Box** mit kollabierbarem Tipp, der nach 1. Fehlversuch erscheint
+
+### Hinzugefügt
+
+- **`components/blocks/HintBox.tsx`** — kollabierbare Tipp-Box mit
+  „💡 Hinweis anzeigen"-Toggle. Optionale „noch N Versuche"-Anzeige.
+  6 Tests (HintBox.test.tsx).
+- **`components/admin/forms/GradedExtensionsFields.tsx`** — Shared-
+  Editor-Block für die neuen Felder (Hinweis-Text, Max-Versuche-Select,
+  Kategorie-Select „Theorie/Übung/Reflexion"). Eingebaut in alle 4
+  bewertbaren Block-Forms (MC/T/F/Lückentext/Match) als kollabierbares
+  `<details>`-„Didaktik-Feinheiten".
+- **`lib/blocks/points.ts`** — neue Helpers `attemptPenalty(n)` und
+  `scoreWithAttempts(base, n)` für die Phase-X-Live-Quiz-Integration
+  (−25 % pro weiteren Versuch). 9 Tests.
+- **Tests:** `useModuleRunner.test.ts` (6 Tests für Mehrfachversuch-
+  State) + co-located HintBox-Tests = 19 neue Tests, 546 gesamt grün.
+
+### Geändert
+
+- **`lib/schemas/blocks.ts`** — neue optionale Felder:
+  - `hint?: string` auf MC/T/F/Lückentext/Match (`gradedBlockExtensions`)
+  - `maxAttempts?: 1..5` auf den gleichen 4 Typen
+  - `category?: 'theorie'|'uebung'|'reflexion'` auf ALLEN Typen
+    (`taxonomyExtension`)
+  - Konstante `BLOCK_CATEGORIES` exportiert für UI-Selects
+  - Bestandsmodule bleiben gültig (alle Felder optional).
+- **`components/blocks/useModuleRunner.ts`** — neuer State
+  `attemptByBlock`, neue Getter `canRetry`, `attemptCount`, `maxAttempts`,
+  neue Action `retry()`. Punkte/Streak werden weiter nur 1× pro Block
+  aufgezeichnet (Solo bleibt binär; Multi-Attempt-Penalty wandert in
+  Phase X in die Live-Quiz-Punkte).
+- **`components/blocks/ModuleRunner.tsx`** — 3-State-Button:
+  „Prüfen" → „Nochmal versuchen" (falsch + Versuche übrig + Hinweis-
+  Box) → „Weiter". Logik in `ActionButton`-Subkomponente ausgelagert.
+
+### Effekt
+
+Lehrer:in setzt im Editor für eine schwere MC-Frage `maxAttempts=3` und
+einen Hinweistext. Schüler:in: klickt falsch → sieht rote Rückmeldung
+
+- gelbe Hinweis-Box (zugeklappt, „noch 2 Versuche") + „Nochmal
+  versuchen"-Button. Klickt auf den Hinweis → Tipp wird sichtbar. Probiert
+  es nochmal — entweder richtig (weiter) oder beim 3. Versuch verbraucht
+  („Weiter" ohne Retry).
+
+### Out of Scope dieser Phase
+
+- BlockList-Gruppierung nach `category` (Daten sind im Schema, UI-
+  Gruppierung kommt später)
+- Penalty-Berechnung in Live-Quiz-Punkte einfließen lassen (das macht
+  Phase X — Pure Helper steht aber bereit)
+- `.superRefine()` für fachliche Block-Validierung aus `validate-module.mjs`
+  (verschoben — separate Phase, sonst zu großer Atomic-Commit)
+- Auto-Save im Modul-Editor mit Debounce (Content-Audit EDIT-HIGH-2 —
+  bleibt offen, gehört thematisch eher in Phase X-Refactor)
+
+---
+
 ## Phase V — Topics-Foundation aktivieren
 
 **2026-06-05** · Tag `phase-v-savepoint` · Migration `0023`

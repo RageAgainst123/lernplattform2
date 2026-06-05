@@ -6,11 +6,35 @@ import { z } from 'zod';
 
 const blockId = z.string().min(1);
 
+// Phase W (2026-06): Didaktische Kategorisierung für die BlockList-
+// Gruppierung im Editor. Optional, damit Bestands-Blöcke gültig bleiben.
+// 'theorie' = vermittelt, 'uebung' = trainiert, 'reflexion' = lässt
+// nachdenken. Default-Anzeige in der UI: keine Sektion = „Sonstiges".
+export const BLOCK_CATEGORIES = ['theorie', 'uebung', 'reflexion'] as const;
+export type BlockCategory = (typeof BLOCK_CATEGORIES)[number];
+const blockCategorySchema = z.enum(BLOCK_CATEGORIES);
+
+// Phase W: Felder für bewertbare Blöcke (MC, T/F, Lückentext, Match).
+// `hint` erscheint nach dem 1. Fehlversuch in einer HintBox unter dem
+// Block. `maxAttempts` legt fest, wie oft Schüler:in es probieren darf;
+// undefined = altes Verhalten (1 Versuch). Pro Versuch -25 % Punkte.
+const gradedBlockExtensions = {
+  hint: z.string().optional(),
+  maxAttempts: z.number().int().min(1).max(5).optional(),
+  category: blockCategorySchema.optional(),
+};
+
+// Für Theorie-/Live-Blöcke nur die category-Erweiterung.
+const taxonomyExtension = {
+  category: blockCategorySchema.optional(),
+};
+
 export const textBlockSchema = z.object({
   id: blockId,
   type: z.literal('text'),
   content: z.string(),
   imageUrl: z.string().url().optional(),
+  ...taxonomyExtension,
 });
 
 export const infoboxBlockSchema = z.object({
@@ -18,6 +42,7 @@ export const infoboxBlockSchema = z.object({
   type: z.literal('infobox'),
   title: z.string().optional(),
   content: z.string(),
+  ...taxonomyExtension,
 });
 
 const choiceOptionSchema = z.object({
@@ -33,6 +58,7 @@ export const multipleChoiceBlockSchema = z.object({
   options: z.array(choiceOptionSchema).min(2),
   feedbackCorrect: z.string().optional(),
   feedbackWrong: z.string().optional(),
+  ...gradedBlockExtensions,
 });
 
 export const trueFalseBlockSchema = z.object({
@@ -42,6 +68,7 @@ export const trueFalseBlockSchema = z.object({
   answer: z.boolean(),
   feedbackCorrect: z.string().optional(),
   feedbackWrong: z.string().optional(),
+  ...gradedBlockExtensions,
 });
 
 export const fillBlankBlockSchema = z.object({
@@ -60,6 +87,7 @@ export const fillBlankBlockSchema = z.object({
   // docs/QUIZ-MODI-SPEZIFIKATION.md §9.
   // Optional, weil falsy === aus (default-Verhalten).
   strict: z.boolean().optional(),
+  ...gradedBlockExtensions,
 });
 
 const matchPairSchema = z.object({
@@ -73,6 +101,7 @@ export const matchBlockSchema = z.object({
   type: z.literal('match'),
   question: z.string().optional(),
   pairs: z.array(matchPairSchema).min(2),
+  ...gradedBlockExtensions,
 });
 
 export const reflectionBlockSchema = z.object({
@@ -80,6 +109,7 @@ export const reflectionBlockSchema = z.object({
   type: z.literal('reflection'),
   prompt: z.string(),
   placeholder: z.string().optional(),
+  ...taxonomyExtension,
 });
 
 // Präsentationsfolie für den geführten Stundeneinstieg (display_mode

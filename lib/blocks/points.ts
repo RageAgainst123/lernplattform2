@@ -68,3 +68,47 @@ export function calculatePoints(
   const base = Math.round(1000 * (1 - 0.5 * elapsedRatio));
   return base + streakBonus(newStreak);
 }
+
+/**
+ * Phase W (2026-06): Penalty-Faktor für Mehrfachversuch-Blöcke.
+ *
+ * Wenn eine Frage `maxAttempts > 1` erlaubt, darf Schüler:in bei
+ * falscher Antwort einen Hinweis sehen und es erneut probieren. Pro
+ * Versuch -25 % Punkte:
+ *   1. Versuch → 1.00 (volle Punkte)
+ *   2. Versuch → 0.75
+ *   3. Versuch → 0.50
+ *   4. Versuch → 0.25
+ *   5+        → 0.00 (Floor — keine negativen Punkte)
+ *
+ * Bei `attemptCount=0` (= „noch nie geantwortet") und falscher
+ * Antwort: 0. Bei `attemptCount=1` und richtig: 1.00.
+ *
+ * Diese Funktion ist UI-Helper, der Multiplikator wird auf den
+ * Basis-Score (z.B. `gradeBlock()` → 0/1) angewendet, um den
+ * effektiven Block-Score zu bekommen. Für Live-Quiz-Punkte wird
+ * dieser Faktor auch in `calculatePoints()` einfließen können
+ * (siehe Phase X/AA).
+ *
+ * @param attemptCount Anzahl Versuche, die Schüler:in gemacht hat (1-basiert).
+ *                     1 = erster Versuch, 2 = nach 1× falsch, etc.
+ * @returns Faktor zwischen 0 und 1 (0 = keine Punkte mehr).
+ */
+export function attemptPenalty(attemptCount: number): number {
+  if (attemptCount < 1) return 0;
+  const factor = 1 - 0.25 * (attemptCount - 1);
+  return Math.max(0, factor);
+}
+
+/**
+ * Wendet den Mehrfachversuch-Penalty auf einen Basis-Score an.
+ * Konvenienz-Wrapper für die häufige Kombination basePoints × attemptPenalty.
+ *
+ * @param basePoints  Basis-Score (z.B. 0 oder 1 aus gradeBlock())
+ * @param attemptCount Anzahl Versuche (1-basiert)
+ * @returns Effektive Punkte (gerundet auf 2 Nachkommastellen)
+ */
+export function scoreWithAttempts(basePoints: number, attemptCount: number): number {
+  const raw = basePoints * attemptPenalty(attemptCount);
+  return Math.round(raw * 100) / 100;
+}

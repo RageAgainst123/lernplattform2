@@ -1,6 +1,7 @@
 'use client';
 
 import type { MatchBlock } from '@/lib/schemas/blocks';
+import { GradedExtensionsFields } from './GradedExtensionsFields';
 import {
   AddButton,
   FieldLabel,
@@ -82,6 +83,14 @@ export function MatchForm({ value, onChange }: Props) {
           <AddButton onClick={addPair}>Paar hinzufügen</AddButton>
         </div>
       </div>
+
+      <GradedExtensionsFields
+        blockId={value.id}
+        hint={value.hint}
+        maxAttempts={value.maxAttempts}
+        category={value.category}
+        onChange={(patch) => onChange({ ...value, ...patch })}
+      />
     </div>
   );
 }

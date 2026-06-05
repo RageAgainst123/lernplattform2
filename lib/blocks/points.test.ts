@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { calculatePoints, streakBonus } from '@/lib/blocks/points';
+import {
+  attemptPenalty,
+  calculatePoints,
+  scoreWithAttempts,
+  streakBonus,
+} from '@/lib/blocks/points';
 
 // Punkte-Formel (siehe docs/QUIZ-MODI-SPEZIFIKATION.md §8):
 //   base = round(1000 × (1 - 0.5 × elapsed/timeLimit))  bei richtig
@@ -113,5 +118,46 @@ describe('calculatePoints — defensive guards', () => {
     // Bei timeLimit=0 ist die Formel nicht definiert — defensive: max base.
     expect(calculatePoints(true, 0, 0, 0)).toBe(1000);
     expect(calculatePoints(true, 5000, 0, 0)).toBe(1000);
+  });
+});
+
+describe('attemptPenalty (Phase W)', () => {
+  it('liefert 1.0 beim ersten Versuch', () => {
+    expect(attemptPenalty(1)).toBe(1);
+  });
+
+  it('zieht 25% pro weiteren Versuch ab', () => {
+    expect(attemptPenalty(2)).toBe(0.75);
+    expect(attemptPenalty(3)).toBe(0.5);
+    expect(attemptPenalty(4)).toBe(0.25);
+  });
+
+  it('clamped auf 0 bei zu vielen Versuchen (keine negativen Punkte)', () => {
+    expect(attemptPenalty(5)).toBe(0);
+    expect(attemptPenalty(10)).toBe(0);
+  });
+
+  it('liefert 0 bei attemptCount < 1 (defensiver Pfad)', () => {
+    expect(attemptPenalty(0)).toBe(0);
+    expect(attemptPenalty(-1)).toBe(0);
+  });
+});
+
+describe('scoreWithAttempts (Phase W)', () => {
+  it('multipliziert Basis-Punkte mit Penalty-Faktor', () => {
+    expect(scoreWithAttempts(1, 1)).toBe(1);
+    expect(scoreWithAttempts(1, 2)).toBe(0.75);
+    expect(scoreWithAttempts(1, 3)).toBe(0.5);
+  });
+
+  it('0-Basispunkte bleiben 0 unabhängig vom Versuch (falsche Antwort)', () => {
+    expect(scoreWithAttempts(0, 1)).toBe(0);
+    expect(scoreWithAttempts(0, 4)).toBe(0);
+  });
+
+  it('rundet auf 2 Nachkommastellen (vermeidet 0.7500000001-Bugs)', () => {
+    // 0.75 ist exakt repräsentierbar in float — wir nutzen einen
+    // anderen Fall der echte Rundung erzwingt.
+    expect(scoreWithAttempts(1 / 3, 1)).toBe(0.33);
   });
 });

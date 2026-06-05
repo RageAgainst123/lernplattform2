@@ -2,6 +2,7 @@
 
 import type { FillBlankBlock } from '@/lib/schemas/blocks';
 import { AddButton, FieldLabel, ItemAction, TextArea, TextInput } from './form-helpers';
+import { GradedExtensionsFields } from './GradedExtensionsFields';
 
 // Form-Editor für fill_blank (Lückentext). Textfeld mit {0}, {1}, … als
 // Platzhalter, darunter Lösungen-Liste (Reihenfolge entspricht Platzhalter-
@@ -124,6 +125,14 @@ export function FillBlankForm({ value, onChange }: Props) {
           <AddButton onClick={addDistractor}>Ablenker hinzufügen</AddButton>
         </div>
       </div>
+
+      <GradedExtensionsFields
+        blockId={value.id}
+        hint={value.hint}
+        maxAttempts={value.maxAttempts}
+        category={value.category}
+        onChange={(patch) => onChange({ ...value, ...patch })}
+      />
     </div>
   );
 }

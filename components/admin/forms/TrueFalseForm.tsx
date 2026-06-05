@@ -2,6 +2,7 @@
 
 import type { TrueFalseBlock } from '@/lib/schemas/blocks';
 import { FieldLabel, TextArea, TextInput } from './form-helpers';
+import { GradedExtensionsFields } from './GradedExtensionsFields';
 
 // Form-Editor für true_false. Frage, zwei Radio-Buttons (wahr/falsch),
 // optionale Feedback-Texte.
@@ -66,6 +67,14 @@ export function TrueFalseForm({ value, onChange }: Props) {
           />
         </div>
       </div>
+
+      <GradedExtensionsFields
+        blockId={value.id}
+        hint={value.hint}
+        maxAttempts={value.maxAttempts}
+        category={value.category}
+        onChange={(patch) => onChange({ ...value, ...patch })}
+      />
     </div>
   );
 }

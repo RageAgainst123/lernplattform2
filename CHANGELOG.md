@@ -8,6 +8,65 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase V — Topics-Foundation aktivieren
+
+**2026-06-05** · Tag `phase-v-savepoint` · Migration `0023`
+
+### Hintergrund
+
+`class_topics` lag seit Migration 0013 als tote Tabelle herum. Stattdessen
+hat `assignTopicToClass()` bei jedem „Thema zuweisen" alle published Module
+des Themas einzeln in `class_modules` upgesertet — was bedeutete: legt der
+Admin ein neues Modul zu einem Topic an, taucht es NICHT automatisch in
+zugewiesenen Klassen auf. Lehrer:in muss „neu zuweisen" klicken. (Pre-Launch-
+Audit PFAD-CRIT-1.)
+
+Phase V macht `class_topics` zur Source of Truth. Beim Lesen wird über
+`class_topics → topics → modules.topic_id` gejoint, sodass neue Module
+automatisch erscheinen.
+
+### Hinzugefügt
+
+- **`supabase/migrations/0023_class_topics_activation.sql`** — additiver
+  Index `class_topics_topic_idx`. Kein Cleanup, keine Daten-Migration.
+- **`lib/db/class-topics-internals.ts`** — pure Helpers + Typen für die
+  neue Lese-Logik (ausgelagert für eslint max-lines).
+- **`lib/db/student-topics-internals.ts`** — analog für die Schüler:innen-
+  Sicht.
+- **Tests**: `class-topics.test.ts` (7 Tests), `class-topic-actions.test.ts`
+  (6 Tests), `student-topics.test.ts` (5 Tests) — inkl. Kernregression
+  „neues Modul erscheint automatisch ohne Re-Assign".
+
+### Geändert
+
+- **`lib/db/class-topics.ts`** — `getAssignedTopicsForClass()` liest jetzt
+  `class_topics` als Phase-V-Quelle UND `class_modules` als Override-
+  und Legacy-Quelle. Topics aus Bestands-Daten (pre-V `class_modules` ohne
+  `class_topics`-Eintrag) bekommen Marker `source: 'modules_legacy'`.
+- **`lib/db/class-topic-actions.ts`** — `assignTopicToClass()` upsertet
+  ab jetzt in `class_topics` (1 Row pro Zuweisung) statt N Rows in
+  `class_modules`. `unassignTopicFromClass()` löscht beide Tabellen
+  defensiv (Override-Cleanup + Backward-Compat).
+- **`lib/db/student-topics.ts`** — `getAssignedTopicsForStudent()`
+  vereinigt beide Quellen mit Dedup-Check pro `moduleId`.
+
+### Effekt
+
+Nach Migration: Lehrer:in weist Topic „EVA" zu → in Schüler:innen-Pfad
+erscheinen alle published EVA-Module. Geo legt im Admin ein neues Modul
+mit `topic_id = topic-eva` an → ohne weiteres Klicken sichtbar in allen
+Klassen mit EVA-Zuweisung.
+
+### Out of Scope dieser Phase
+
+- `class_topics.due_date` bleibt vorerst null (separate Phase für Topic-
+  weite Fälligkeiten)
+- UI-Anzeige des `source`-Markers (Legacy-Topics werden noch nicht visuell
+  als „pre-V" gekennzeichnet)
+- Migration alter `class_modules`-Bestand → `class_topics`
+
+---
+
 ## Phase U1 — Pre-Launch Security-Blocker
 
 **2026-06-04** · Commit `9ec4626` · `docs/PRE-LAUNCH-AUDIT.md`

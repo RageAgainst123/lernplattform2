@@ -1,169 +1,157 @@
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import type { ActivityKind, DisplayMode, Kompetenzbereich } from '@/lib/schemas/entities';
+import {
+  buildTopic,
+  classifyOverrideRow,
+  shouldIncludeModuleRow,
+  sortTopics,
+  type AssignedTopicForTeacher,
+  type ClassModuleOverrideRow,
+  type ClassTopicRow,
+  type ModuleRow,
+  type OverrideMap,
+  type TopicModuleEntry,
+  type TopicRow,
+} from './class-topics-internals';
 
-// Lese-Funktionen für die Themen-Sicht einer Klasse (Phase G3). Aggregiert
-// zugewiesene Module pro Thema — damit die Lehrer:in pro Klasse Themen-Karten
-// statt einer flachen Modul-Liste sehen kann.
+// Lese-Funktionen für die Themen-Sicht einer Klasse.
 //
-// Datenfluss: class_modules.module_id → modules.topic_id → topics.id.
-// Wir laden alle zugewiesenen Module via RLS-geschütztem User-Client, dann
-// laden wir die zugehörigen Topics via Service-Role (RLS auf topics erlaubt
-// SELECT für alle — aber via Service-Role ist konsistent mit der Admin-Lese-
-// strategie und wir brauchen Topic-Metadaten auch wenn unpubliziert).
+// Phase V (2026-06): class_topics ist jetzt Source of Truth. Eine Themen-
+// Zuweisung lebt in class_topics; die zugehörigen Module ergeben sich aus
+// modules.topic_id. Damit erscheinen neue Module eines Topics automatisch
+// in allen zugewiesenen Klassen.
+//
+// class_modules bleibt parallel bestehen:
+//   1. Als Override für due_date/pass_threshold pro Modul.
+//   2. Als Fallback für Orphans (Module ohne topic_id, einzeln zugewiesen).
+//   3. Als Backward-Compat für Bestands-Zuweisungen aus pre-Phase-V.
+//
+// Pure Helpers + Typen leben in class-topics-internals.ts.
 
-export type TopicModuleEntry = {
-  moduleId: string;
-  title: string;
-  activityKind: ActivityKind;
-  displayMode: DisplayMode;
-  dueDate: string | null;
-  passThreshold: number | null;
-  sortOrder: number;
-};
+// Re-Exports für Konsumenten (bestehende Imports brechen sonst).
+export type { AssignedTopicForTeacher, TopicModuleEntry } from './class-topics-internals';
 
-export type AssignedTopicForTeacher = {
-  topicId: string;
-  slug: string;
-  label: string;
-  description: string | null;
-  schulstufe: number | null;
-  kompetenzbereich: Kompetenzbereich | null;
-  sortOrder: number;
-  // Module pro Aktivitäts-Typ, jeweils nach sort_order sortiert
-  modulesByKind: Record<ActivityKind, TopicModuleEntry[]>;
-};
-
-type ClassModuleJoinRow = {
-  module_id: string;
-  due_date: string | null;
-  pass_threshold: number | null;
-  modules: {
-    title: string;
-    topic_id: string | null;
-    activity_kind: ActivityKind;
-    display_mode: DisplayMode | null;
-    sort_order: number;
-  } | null;
-};
-
-type TopicRow = {
-  id: string;
-  slug: string;
-  label: string;
-  description: string | null;
-  schulstufe: number | null;
-  kompetenzbereich: Kompetenzbereich | null;
-  sort_order: number;
-};
-
-const EMPTY_BY_KIND = (): Record<ActivityKind, TopicModuleEntry[]> => ({
-  lernmodul: [],
-  praesentation: [],
-  quiz: [],
-  abschlusstest: [],
-});
-
-// Eine Modul-Zuweisungs-Zeile in einen TopicModuleEntry verwandeln.
-function rowToEntry(r: ClassModuleJoinRow): TopicModuleEntry | null {
-  if (!r.modules) return null;
-  return {
-    moduleId: r.module_id,
-    title: r.modules.title,
-    activityKind: r.modules.activity_kind,
-    displayMode: r.modules.display_mode ?? 'quiz',
-    dueDate: r.due_date,
-    passThreshold: r.pass_threshold,
-    sortOrder: r.modules.sort_order,
-  };
-}
-
-// Module nach topic_id gruppieren. Orphans (ohne topic) in separate Liste.
-function groupRowsByTopic(rows: ClassModuleJoinRow[]): {
-  byTopic: Map<string, TopicModuleEntry[]>;
+type OverrideClassification = {
+  overrideByModule: OverrideMap;
   orphans: TopicModuleEntry[];
-} {
-  const byTopic = new Map<string, TopicModuleEntry[]>();
-  const orphans: TopicModuleEntry[] = [];
-  for (const r of rows) {
-    const entry = rowToEntry(r);
-    if (!entry || !r.modules) continue;
-    if (r.modules.topic_id) {
-      const list = byTopic.get(r.modules.topic_id) ?? [];
-      list.push(entry);
-      byTopic.set(r.modules.topic_id, list);
-    } else {
-      orphans.push(entry);
-    }
-  }
-  return { byTopic, orphans };
-}
+  legacyTopicIds: Set<string>;
+};
 
-// Eine Topic-Zeile + ihre zugewiesenen Module zu einer fertigen
-// AssignedTopicForTeacher zusammensetzen (gruppiert + sortiert pro Aktivität).
-function buildTopic(t: TopicRow, modules: TopicModuleEntry[] | undefined): AssignedTopicForTeacher {
-  const grouped = EMPTY_BY_KIND();
-  for (const m of modules ?? []) {
-    grouped[m.activityKind].push(m);
-  }
-  for (const kind of Object.keys(grouped) as ActivityKind[]) {
-    grouped[kind].sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title, 'de'));
-  }
-  return {
-    topicId: t.id,
-    slug: t.slug,
-    label: t.label,
-    description: t.description,
-    schulstufe: t.schulstufe,
-    kompetenzbereich: t.kompetenzbereich,
-    sortOrder: t.sort_order,
-    modulesByKind: grouped,
-  };
-}
-
-function sortTopics(topics: AssignedTopicForTeacher[]): AssignedTopicForTeacher[] {
-  return topics.sort((a, b) => {
-    const stA = a.schulstufe ?? 99;
-    const stB = b.schulstufe ?? 99;
-    if (stA !== stB) return stA - stB;
-    return a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, 'de');
-  });
-}
-
-// Liefert pro Klasse die Themen mit ihren zugewiesenen Modulen gruppiert
-// nach Aktivität. Module ohne topic_id werden in einem speziellen Sammler
-// zurückgegeben (für die „Sonstiges"-Sektion in der Lehrer-UI).
-export async function getAssignedTopicsForClass(
+// class_topics laden → Topic-IDs der Klasse (Phase-V-Source-of-Truth).
+async function loadClassTopicIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   classId: string
-): Promise<{ topics: AssignedTopicForTeacher[]; orphanModules: TopicModuleEntry[] }> {
-  const supabase = await createClient();
+): Promise<Set<string>> {
   const { data, error } = await supabase
-    .from('class_modules')
-    .select(
-      'module_id, due_date, pass_threshold, modules(title, topic_id, activity_kind, display_mode, sort_order)'
-    )
+    .from('class_topics')
+    .select('topic_id, due_date')
     .eq('class_id', classId);
   if (error) {
     throw new Error(`Zugewiesene Themen konnten nicht geladen werden: ${error.message}`);
   }
-  const { byTopic, orphans } = groupRowsByTopic((data ?? []) as unknown as ClassModuleJoinRow[]);
+  return new Set(((data ?? []) as ClassTopicRow[]).map((r) => r.topic_id));
+}
 
-  const topicIds = Array.from(byTopic.keys());
-  if (topicIds.length === 0) {
-    return { topics: [], orphanModules: orphans };
+// class_modules → Override-Map + Orphans + Legacy-Topic-Marker.
+async function loadClassModuleOverrides(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classId: string,
+  phaseVTopicIds: Set<string>
+): Promise<OverrideClassification> {
+  const { data, error } = await supabase
+    .from('class_modules')
+    .select(
+      'module_id, due_date, pass_threshold, modules(title, topic_id, activity_kind, display_mode, sort_order, is_published)'
+    )
+    .eq('class_id', classId);
+  if (error) {
+    throw new Error(`Modul-Overrides konnten nicht geladen werden: ${error.message}`);
   }
-  // Topic-Metadaten via Service-Role nachladen — auch unveröffentlichte
-  // Themen sollen sichtbar sein, falls der Admin sie nachträglich verbirgt.
-  const svc = createServiceClient();
-  const { data: topicData, error: topicError } = await svc
+  const overrideByModule: OverrideMap = new Map();
+  const orphans: TopicModuleEntry[] = [];
+  const legacyTopicIds = new Set<string>();
+  for (const r of (data ?? []) as unknown as ClassModuleOverrideRow[]) {
+    overrideByModule.set(r.module_id, {
+      due_date: r.due_date,
+      pass_threshold: r.pass_threshold,
+    });
+    classifyOverrideRow(r, phaseVTopicIds, orphans, legacyTopicIds);
+  }
+  return { overrideByModule, orphans, legacyTopicIds };
+}
+
+// Module aller relevanten Topics laden + nach Topic gruppieren.
+async function loadModulesByTopic(
+  svc: ReturnType<typeof createServiceClient>,
+  phaseVTopicIds: Set<string>,
+  legacyTopicIds: Set<string>,
+  overrideByModule: OverrideMap
+): Promise<Map<string, ModuleRow[]>> {
+  const allTopicIds = new Set<string>([...phaseVTopicIds, ...legacyTopicIds]);
+  const { data, error } = await svc
+    .from('modules')
+    .select('id, title, topic_id, activity_kind, display_mode, sort_order, is_published')
+    .in('topic_id', Array.from(allTopicIds));
+  if (error) {
+    throw new Error(`Modul-Liste konnte nicht geladen werden: ${error.message}`);
+  }
+  const phaseVAssignedModuleIds = new Set(overrideByModule.keys());
+  const modulesByTopic = new Map<string, ModuleRow[]>();
+  for (const m of (data ?? []) as ModuleRow[]) {
+    if (!shouldIncludeModuleRow(m, phaseVTopicIds, legacyTopicIds, phaseVAssignedModuleIds)) {
+      continue;
+    }
+    const list = modulesByTopic.get(m.topic_id!) ?? [];
+    list.push(m);
+    modulesByTopic.set(m.topic_id!, list);
+  }
+  return modulesByTopic;
+}
+
+async function loadTopicMetadata(
+  svc: ReturnType<typeof createServiceClient>,
+  topicIds: Set<string>
+): Promise<TopicRow[]> {
+  const { data, error } = await svc
     .from('topics')
     .select('id, slug, label, description, schulstufe, kompetenzbereich, sort_order')
-    .in('id', topicIds);
-  if (topicError) {
-    throw new Error(`Themen-Metadaten konnten nicht geladen werden: ${topicError.message}`);
+    .in('id', Array.from(topicIds));
+  if (error) {
+    throw new Error(`Themen-Metadaten konnten nicht geladen werden: ${error.message}`);
   }
-  const topicRows = (topicData ?? []) as TopicRow[];
-  const topics = sortTopics(topicRows.map((t) => buildTopic(t, byTopic.get(t.id))));
+  return (data ?? []) as TopicRow[];
+}
+
+// Hauptfunktion: pro Klasse die zugewiesenen Themen + ggf. orphane Module.
+export async function getAssignedTopicsForClass(
+  classId: string
+): Promise<{ topics: AssignedTopicForTeacher[]; orphanModules: TopicModuleEntry[] }> {
+  const supabase = await createClient();
+  const phaseVTopicIds = await loadClassTopicIds(supabase, classId);
+  const { overrideByModule, orphans, legacyTopicIds } = await loadClassModuleOverrides(
+    supabase,
+    classId,
+    phaseVTopicIds
+  );
+  const allTopicIds = new Set<string>([...phaseVTopicIds, ...legacyTopicIds]);
+  if (allTopicIds.size === 0) {
+    return { topics: [], orphanModules: orphans };
+  }
+  const svc = createServiceClient();
+  const [modulesByTopic, topicRows] = await Promise.all([
+    loadModulesByTopic(svc, phaseVTopicIds, legacyTopicIds, overrideByModule),
+    loadTopicMetadata(svc, allTopicIds),
+  ]);
+  const topics = sortTopics(
+    topicRows.map((t) =>
+      buildTopic(
+        t,
+        modulesByTopic.get(t.id) ?? [],
+        overrideByModule,
+        phaseVTopicIds.has(t.id) ? 'topic' : 'modules_legacy'
+      )
+    )
+  );
   return { topics, orphanModules: orphans };
 }
 

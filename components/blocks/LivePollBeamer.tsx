@@ -2,18 +2,20 @@
 
 import { useState } from 'react';
 import type { LivePollBlock as LivePollBlockType } from '@/lib/schemas/blocks';
-import { lockAndReveal, revealResults, setBlockLocked } from '@/lib/db/live-session-actions';
+import { setBlockLocked } from '@/lib/db/live-session-actions';
 import { useLiveResults } from '@/components/blocks/beamer/useLiveResults';
 import { Button } from '@/components/ui/button';
 
-// Beamer-Darstellung einer Live-Abstimmung. Zeigt drei Phasen:
-//   1. Offene Abstimmung: Balken verborgen, Teilnehmerzähler sichtbar.
-//      „Abstimmung schließen"-Button stoppt neue Stimmen (Kind: deaktiviert).
-//   2. Geschlossene Abstimmung: Balken noch verborgen. „Ergebnis zeigen"-Button.
-//   3. Ergebnis sichtbar: Balken sichtbar, Abstimmung endgültig geschlossen.
+// Beamer-Darstellung einer Live-Abstimmung (Meinungsbild — keine richtige
+// Antwort). 2026-06-05: semantische Korrektur — Balken sind IMMER sichtbar
+// und wachsen mit jeder Stimme. Das ist der ganze Reiz eines Live-Polls.
+// Das frühere Reveal-Konzept („Ergebnis zeigen") gehört NUR zu Quiz-Poll
+// (wo die Lehrer:in die richtige Antwort auflösen will). Hier kann
+// Lehrer:in optional die Abstimmung schließen, falls sie nach einer Weile
+// keine weiteren Stimmen mehr will — oder einfach zur nächsten Folie gehen.
 //
 // Polling über /api/live/results (API-Route, nicht Server Action) → kein
-// Dev-Mode-"Rendering..."-Overlay und kein Server-Action-Wrapper-Overhead.
+// Dev-Mode-„Rendering…"-Overlay und kein Server-Action-Wrapper-Overhead.
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 function PollBar({
@@ -21,111 +23,50 @@ function PollBar({
   text,
   n,
   max,
-  revealed,
 }: {
   letter: string;
   text: string;
   n: number;
   max: number;
-  revealed: boolean;
 }) {
   return (
     <li className="bg-muted relative overflow-hidden rounded-lg">
-      {revealed && (
-        <div
-          className="bg-primary/20 absolute inset-y-0 left-0 transition-all duration-500"
-          style={{ width: `${(n / max) * 100}%` }}
-          aria-hidden
-        />
-      )}
+      <div
+        className="bg-primary/20 absolute inset-y-0 left-0 transition-[width] duration-500"
+        style={{ width: `${(n / max) * 100}%` }}
+        aria-hidden
+      />
       <div className="relative flex items-center gap-4 px-6 py-4 text-2xl">
         <span className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-md font-bold">
           {letter}
         </span>
         <span className="flex-1">{text}</span>
-        {revealed && <span className="text-muted-foreground tabular-nums">{n}</span>}
+        <span className="text-muted-foreground tabular-nums">{n}</span>
       </div>
     </li>
   );
 }
 
-// Hauptworkflow: Abstimmung offen → ein Klick schließt UND zeigt Ergebnis.
-// Sekundär „Nur schließen“ für den Pausen-Workflow (kurz sperren, später zeigen).
-function OpenControls({ classId, pending, run }: ControlSubProps) {
-  return (
-    <div className="flex gap-3">
-      <Button
-        onClick={() => void run(() => lockAndReveal(classId))}
-        disabled={pending}
-        className="h-10"
-      >
-        Abschließen &amp; Ergebnis zeigen
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => void run(() => setBlockLocked(classId, true))}
-        disabled={pending}
-        className="h-10"
-      >
-        Nur schließen
-      </Button>
-    </div>
-  );
-}
-
-// Lock-Phase (gesperrt, noch nicht enthüllt): zurück öffnen oder jetzt zeigen.
-function LockedControls({ classId, pending, run }: ControlSubProps) {
-  return (
-    <div className="flex gap-3">
-      <Button
-        variant="outline"
-        onClick={() => void run(() => setBlockLocked(classId, false))}
-        disabled={pending}
-        className="h-10"
-      >
-        Abstimmung öffnen
-      </Button>
-      <Button
-        onClick={() => void run(() => revealResults(classId))}
-        disabled={pending}
-        className="h-10"
-      >
-        Ergebnis zeigen
-      </Button>
-    </div>
-  );
-}
-
-type ControlSubProps = {
-  classId: string;
-  pending: boolean;
-  run: (fn: () => Promise<unknown>) => void;
-};
-
-function BeamerControls({
-  classId,
-  locked,
-  revealed,
-}: {
-  classId: string;
-  locked: boolean;
-  revealed: boolean;
-}) {
+// Eine einzige Kontrolle: Abstimmung sperren oder wieder öffnen. Kein Reveal-
+// Workflow — Balken sind ohnehin schon sichtbar.
+function LockControl({ classId, locked }: { classId: string; locked: boolean }) {
   const [pending, setPending] = useState(false);
-  if (revealed) return null;
-  const run = (fn: () => Promise<unknown>) => {
+  const toggle = () => {
     setPending(true);
-    void fn().finally(() => setPending(false));
+    void setBlockLocked(classId, !locked).finally(() => setPending(false));
   };
-  return locked ? (
-    <LockedControls classId={classId} pending={pending} run={run} />
-  ) : (
-    <OpenControls classId={classId} pending={pending} run={run} />
+  return (
+    <Button onClick={toggle} variant="outline" disabled={pending} className="h-10">
+      {locked ? 'Abstimmung wieder öffnen' : 'Abstimmung schließen'}
+    </Button>
   );
 }
 
 export function LivePollBeamer({ block, classId }: { block: LivePollBlockType; classId: string }) {
-  const { counts, revealed, locked, present, voters } = useLiveResults(classId, block.id);
+  const { counts, locked, present, voters } = useLiveResults(classId, block.id);
+  // Balken-Breite proportional zur Max-Stimme. Wenn noch keine Stimmen da
+  // sind, ist max=1 (Math.max-Defensive) → alle Balken sind 0% breit, was
+  // korrekt aussieht (leere Balken-Slots).
   const max = Math.max(1, ...Object.values(counts));
 
   return (
@@ -141,22 +82,21 @@ export function LivePollBeamer({ block, classId }: { block: LivePollBlockType; c
             text={opt.text}
             n={counts[opt.id] ?? 0}
             max={max}
-            revealed={revealed}
           />
         ))}
       </ul>
-      {!revealed && (
-        <p className="text-muted-foreground text-center text-sm">
-          Ergebnisse sind verborgen — klicke „Abschließen &amp; Ergebnis zeigen“ wenn alle
-          abgestimmt haben.
-        </p>
-      )}
       <div className="text-muted-foreground flex items-center gap-4 text-sm">
         <span>🟢 {present} verbunden</span>
         <span>·</span>
         <span>{voters} abgestimmt</span>
+        {locked && (
+          <>
+            <span>·</span>
+            <span className="text-amber-700">🔒 geschlossen</span>
+          </>
+        )}
       </div>
-      <BeamerControls classId={classId} locked={locked} revealed={revealed} />
+      <LockControl classId={classId} locked={locked} />
     </div>
   );
 }

@@ -16,6 +16,11 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 // Lädt die richtigen Antwort-IDs einmalig nach Reveal. Eigener Hook, weil
 // das nur ein Mal pro Reveal-Übergang nötig ist (nicht im Poll-Loop).
+//
+// 2026-06-05: ids werden nach dem Fetch nur GESETZT, nie zurückgesetzt —
+// in Kombination mit dem sticky-revealed in useLiveResults wird der
+// „grün → blau"-Flash beim Auflösen vermieden, auch wenn ein zwischen-
+// liegender Poll-Tick mal eine inkonsistente Server-Antwort liefert.
 function useCorrectIds(classId: string, blockId: string, revealed: boolean): string[] {
   const [ids, setIds] = useState<string[]>([]);
   useEffect(() => {
@@ -23,7 +28,9 @@ function useCorrectIds(classId: string, blockId: string, revealed: boolean): str
     let cancelled = false;
     void (async () => {
       const result = await getQuizCorrectOptionsAction(classId, blockId);
-      if (!cancelled && Array.isArray(result)) setIds(result);
+      if (!cancelled && Array.isArray(result) && result.length > 0) {
+        setIds(result);
+      }
     })();
     return () => {
       cancelled = true;
@@ -52,7 +59,7 @@ function QuizBar({
     <li className="bg-muted relative overflow-hidden rounded-lg">
       {revealed && (
         <div
-          className={`${highlight} absolute inset-y-0 left-0 transition-all duration-500`}
+          className={`${highlight} absolute inset-y-0 left-0 transition-[width] duration-500`}
           style={{ width: `${(n / max) * 100}%` }}
           aria-hidden
         />

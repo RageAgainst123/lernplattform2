@@ -55,7 +55,23 @@ export type TeacherLobbyState =
 export type QuizLobbyState = StudentLobbyState | TeacherLobbyState;
 
 function noStore(state: QuizLobbyState): NextResponse {
-  return NextResponse.json(state, { headers: { 'Cache-Control': 'no-store' } });
+  // Pre-Launch-Scale-Audit QW-4 (2026-06-05): Wenn keine Session aktiv ist
+  // (kind='none' oder banner=null / session=null), darf der Browser die
+  // Antwort 60s cachen. Das spart ca. 80% Idle-Polling-Traffic auf
+  // Schüler-Banner (/s) und Lehrer-Dashboards. Wenn ein Quiz startet,
+  // dauert es maximal 60s + Polling-Tick bis es sichtbar wird — akzeptabel
+  // im Idle-Modus (Realtime-Broadcast greift ohnehin sofort sobald
+  // Schüler/Lehrer in einer aktiven Session sind und subscriben).
+  // private: nur Browser-Cache, kein Vercel/CDN (da User-spezifisch).
+  const isIdle =
+    state.kind === 'none' ||
+    (state.kind === 'student' && state.banner === null) ||
+    (state.kind === 'teacher' && state.session === null);
+  return NextResponse.json(state, {
+    headers: {
+      'Cache-Control': isIdle ? 'private, max-age=60' : 'no-store',
+    },
+  });
 }
 
 // Schüler:innen-Sicht: gleiche Daten wie der Banner auf /s.

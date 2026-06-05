@@ -17,7 +17,13 @@ import { channels, events } from '@/lib/realtime/channels';
 // auch nicht auf einen Channel subscriben).
 
 const STUDENT_ACTIVE_MS = 1500;
-const STUDENT_IDLE_MS = 5000;
+// Pre-Launch-Scale-Audit QW-3 (2026-06-05): IDLE-Polling von 5s auf 30s
+// erhöht. Wenn kein Quiz für die Klasse läuft (Banner = null), pollt der
+// Schüler-Tab nur alle 30s. Das spart bei 100 Schulen × 25 idle Schüler:innen
+// = 2500 Tabs ca. 25000 Requests/Min. Realtime-Broadcast greift sofort
+// sobald ein Quiz startet (T2 publish'ed question_started), Polling ist
+// nur das Sicherheitsnetz wenn Realtime aussetzt.
+const STUDENT_IDLE_MS = 30000;
 const TEACHER_POLL_FALLBACK_MS = 5000;
 const LOBBY_EVENTS = [
   events.quiz.participantJoined,

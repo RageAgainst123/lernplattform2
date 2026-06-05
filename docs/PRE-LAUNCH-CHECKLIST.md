@@ -36,6 +36,19 @@ Cap, der die App pausiert sobald $50 ausgegeben wurden.
 
 **Aufwand:** 5 Min, einmalig.
 
+**Tier-Strategie (siehe `docs/SCALE-100-SCHOOLS-AUDIT.md` für Details):**
+
+- **Heute (Solo-Test)**: Vercel Hobby + Supabase Free reichen — $50 Cap
+  ist reine Schutzmaßnahme, sollte nie erreicht werden.
+- **5+ Schulen**: Vercel Pro ($20) + Supabase Pro ($25) = ~€42/Monat
+  fix → Cap auf $100 erhöhen.
+- **20+ Schulen**: Postgres-RPCs + Edge-Runtime nötig (Plan steht in
+  `SCALE-100-SCHOOLS-AUDIT.md` Phase „Stufe-1-RPC").
+- **50+ Schulen**: Cloudflare-Migration prüfen.
+- **70+ Schulen**: Self-Hosted Hetzner (Realtime-Connection-Limit wird zum
+  Killer-Trigger — Hosted-Realtime kostet ab 500 Connections €599/Monat,
+  Self-Hosted €27/Monat für 10.000+ Connections).
+
 ### C2-Folge-Setup — Better Stack Uptime-Monitor
 
 Better Stack Free-Tier (oder UptimeRobot) für externes Uptime-Monitoring

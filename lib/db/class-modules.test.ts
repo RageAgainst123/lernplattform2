@@ -201,6 +201,59 @@ describe('getAssignedModulesForClass — Phase-V Topic-Pfad', () => {
     expect(result[0]?.passThreshold).toBe(75);
   });
 
+  it('filtert Präsentationen aus dem Topic-Pfad (Lehrer-Tool, nicht bewertbar)', async () => {
+    userResponses.class_modules = { data: [], error: null };
+    userResponses.class_topics = {
+      data: [{ topic_id: 'topic-show', assigned_at: '2026-06-05T08:00:00Z' }],
+      error: null,
+    };
+    svcResponses.modules = {
+      data: [
+        {
+          id: 'mod-lern',
+          title: 'Lernmodul',
+          description: null,
+          schulstufe: 6,
+          topic: 'Showcase',
+          topic_id: 'topic-show',
+          activity_kind: 'lernmodul',
+          display_mode: 'worksheet',
+        },
+        {
+          id: 'mod-pres',
+          title: 'Beamer-Präsentation',
+          description: null,
+          schulstufe: 6,
+          topic: 'Showcase',
+          topic_id: 'topic-show',
+          activity_kind: 'praesentation',
+          display_mode: 'presentation',
+        },
+      ],
+      error: null,
+    };
+
+    const result = await getAssignedModulesForClass('class-1');
+    expect(result.map((m) => m.moduleId)).toEqual(['mod-lern']);
+  });
+
+  it('filtert Präsentationen auch aus dem direkten class_modules-Pfad', async () => {
+    userResponses.class_modules = {
+      data: [
+        rowEva,
+        {
+          ...rowEva,
+          module_id: 'pres-id',
+          modules: { ...rowEva.modules, activity_kind: 'praesentation' },
+        },
+      ],
+      error: null,
+    };
+    userResponses.class_topics = { data: [], error: null };
+    const result = await getAssignedModulesForClass('class-1');
+    expect(result.map((m) => m.moduleId)).toEqual(['eva-id']);
+  });
+
   it('vereinigt direkte + Topic-Zuweisungen ohne Duplikate', async () => {
     userResponses.class_modules = { data: [rowEva], error: null };
     userResponses.class_topics = {

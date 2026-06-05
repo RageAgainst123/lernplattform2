@@ -86,6 +86,15 @@ function topicRowToAssigned(m: TopicModuleRow, assignedAt: string): AssignedModu
   };
 }
 
+// Präsentationen sind Lehrer-Tools für den Stundeneinstieg — sie werden
+// am Beamer abgespielt, NICHT von Schüler:innen bearbeitet und fließen
+// nicht in die Bewertung ein. Sie gehören weder in die Fortschritts-
+// matrix noch in die „Sonstiges"-Orphan-Liste der Lehrer:in. Filter
+// gilt für beide Lese-Pfade (direkt + Topic).
+function isAssignableModule(kind: ActivityKind | undefined): boolean {
+  return kind !== undefined && kind !== 'praesentation';
+}
+
 // (1) direkter class_modules-Pfad — RLS-geschützt.
 async function loadDirectAssignments(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -101,7 +110,9 @@ async function loadDirectAssignments(
     throw new Error(`Zugewiesene Module konnten nicht geladen werden: ${error.message}`);
   }
   const rows = (data ?? []) as unknown as AssignmentRow[];
-  return rows.map(rowToAssigned).filter((m): m is AssignedModuleForTeacher => m !== null);
+  return rows
+    .map(rowToAssigned)
+    .filter((m): m is AssignedModuleForTeacher => m !== null && isAssignableModule(m.activityKind));
 }
 
 // (2) Phase-V-Topic-Pfad — class_topics → published Module per topic_id.
@@ -135,7 +146,9 @@ async function loadTopicAssignments(
     throw new Error(`Modul-Liste konnte nicht geladen werden: ${modError.message}`);
   }
   const modRows = (modData ?? []) as (TopicModuleRow & { topic_id: string })[];
-  return modRows.map((m) => topicRowToAssigned(m, assignedAtByTopic.get(m.topic_id) ?? ''));
+  return modRows
+    .filter((m) => isAssignableModule(m.activity_kind))
+    .map((m) => topicRowToAssigned(m, assignedAtByTopic.get(m.topic_id) ?? ''));
 }
 
 // Lädt alle der Klasse zugewiesenen Module — vereinigt aus direkter

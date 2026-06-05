@@ -53,6 +53,30 @@ export async function getModuleById(id: string): Promise<Module | null> {
   return data ? toModule(data as ModuleRow) : null;
 }
 
+// Lehrer:in-Variante: liefert ein veröffentlichtes Modul auch dann, wenn die
+// RLS-Policy-Auswertung mit dem User-Client kein Match liefert (z.B. weil der
+// Lehrer:innen-User-Context die NULL-Klassen-Zuweisung in `class_modules`
+// nicht durchgrooved hat). Wir nutzen Service-Role und filtern manuell auf
+// is_published=true — Lehrer:innen dürfen alle veröffentlichten Module sehen
+// (Plattform-Annahme, siehe RLS-Policy „modules_select_published_or_own"
+// in Migration 0002 — gleicher Effekt, aber RLS-bypass-stabil).
+//
+// Phase-V-Hotfix (2026-06-05): nötig nachdem getModuleById in
+// Lehrer-Page-Routen (praesentation, quiz-setup) gelegentlich null
+// zurückgab obwohl is_published=true — Symptom: 404 nach Klick auf
+// „Präsentieren" der via class_topics zugewiesenen Module.
+export async function getPublishedModuleByIdForTeacher(id: string): Promise<Module | null> {
+  const svc = createServiceClient();
+  const { data, error } = await svc
+    .from('modules')
+    .select('*')
+    .eq('id', id)
+    .eq('is_published', true)
+    .maybeSingle();
+  if (error) throw new Error(`Modul konnte nicht geladen werden: ${error.message}`);
+  return data ? toModule(data as ModuleRow) : null;
+}
+
 // Admin-Variante von getModuleById — umgeht RLS via Service-Role, damit der
 // Autor:in-Editor JEDES Modul sehen + bearbeiten kann (auch Module die
 // `is_published = false` sind UND von anderen Autor:innen erstellt wurden,

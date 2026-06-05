@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { getClass } from '@/lib/db/classes';
-import { getModuleById } from '@/lib/db/modules';
+import { getPublishedModuleByIdForTeacher } from '@/lib/db/modules';
 import {
   getActiveQuizSessionForClass,
   getQuizParticipantsForTeacher,
@@ -33,7 +33,7 @@ export default async function QuizRunPage({
 
   const [schoolClass, moduleData, session] = await Promise.all([
     getClass(id),
-    getModuleById(moduleId),
+    getPublishedModuleByIdForTeacher(moduleId),
     getActiveQuizSessionForClass(id),
   ]);
 

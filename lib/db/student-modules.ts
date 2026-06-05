@@ -26,20 +26,44 @@ export type ModuleProgress = {
   teacherFeedback: string | null;
 };
 
-// Prüft, ob ein Modul der Klasse der Schüler:in zugewiesen ist (class_modules).
+// Prüft, ob ein Modul der Klasse der Schüler:in zugewiesen ist.
+//
+// Phase V (2026-06): prüft ZWEI Quellen:
+//   1. class_modules (direkte Zuweisung — Bestand + Override-Pfad)
+//   2. class_topics + modules.topic_id (Phase-V-Source-of-Truth)
+//
+// Ohne (2) würden Module, die nur via Topic-Zuweisung der Klasse
+// zugeordnet sind, mit 404 antworten — Pre-Phase-V-Code prüfte nur (1).
+//
 // Exportiert (Pre-Launch-Audit HIGH-6, 2026-06-04) damit progress-action.ts
 // vor jedem upsert prüfen kann, ob der vom Client geschickte moduleId
 // überhaupt zur eigenen Klasse gehört — sonst IDOR-Risiko (Schüler:in könnte
 // preemptiv Score für später zugewiesene Module schreiben).
 export async function isAssigned(moduleId: string, classId: string): Promise<boolean> {
   const supabase = createServiceClient();
-  const { data } = await supabase
+  // (1) Direkte Zuweisung in class_modules
+  const { data: directMatch } = await supabase
     .from('class_modules')
     .select('id')
     .eq('module_id', moduleId)
     .eq('class_id', classId)
     .maybeSingle();
-  return !!data;
+  if (directMatch) return true;
+  // (2) Topic-basierte Zuweisung (Phase V): modul → topic → class_topics
+  const { data: modRow } = await supabase
+    .from('modules')
+    .select('topic_id')
+    .eq('id', moduleId)
+    .maybeSingle();
+  const topicId = (modRow as { topic_id: string | null } | null)?.topic_id ?? null;
+  if (!topicId) return false;
+  const { data: topicMatch } = await supabase
+    .from('class_topics')
+    .select('class_id')
+    .eq('topic_id', topicId)
+    .eq('class_id', classId)
+    .maybeSingle();
+  return !!topicMatch;
 }
 
 // Lädt ein der Klasse zugewiesenes, veröffentlichtes Modul. Null, wenn nicht

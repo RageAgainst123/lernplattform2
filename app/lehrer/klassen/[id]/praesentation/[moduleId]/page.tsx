@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth/teacher-auth';
 import { getClass } from '@/lib/db/classes';
-import { getModuleById } from '@/lib/db/modules';
+import { getPublishedModuleByIdForTeacher } from '@/lib/db/modules';
 import { moduleContentSchema } from '@/lib/schemas/blocks';
 import { PresentationRunner } from '@/components/blocks/PresentationRunner';
 
@@ -21,7 +21,10 @@ export default async function PresentationPage({
   await requireUser();
   const { id, moduleId } = await params;
 
-  const [schoolClass, moduleData] = await Promise.all([getClass(id), getModuleById(moduleId)]);
+  const [schoolClass, moduleData] = await Promise.all([
+    getClass(id),
+    getPublishedModuleByIdForTeacher(moduleId),
+  ]);
   // Phase E: Primärprüfung über activityKind. Altes Verhalten (displayMode-Check)
   // war fragil — neue Präsentationen haben displayMode='quiz' als Default, aber
   // activityKind='praesentation'. Wir prüfen jetzt auf den primären Diskriminator.

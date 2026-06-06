@@ -10,15 +10,16 @@ import { TrueFalseBlock } from '@/components/blocks/TrueFalseBlock';
 import { FillBlankBlock } from '@/components/blocks/FillBlankBlock';
 import { MatchBlock } from '@/components/blocks/MatchBlock';
 import { CategorizeBlock } from '@/components/blocks/CategorizeBlock';
+import { MarkWordsBlock } from '@/components/blocks/MarkWordsBlock';
 import { ReflectionBlock } from '@/components/blocks/ReflectionBlock';
 import { SlideBlock } from '@/components/blocks/SlideBlock';
 import { LivePollBlock } from '@/components/blocks/LivePollBlock';
-import type {
-  QuizPollBlock as QuizPollBlockType,
-  WordCloudBlock as WordCloudBlockType,
-  ScaleBlock as ScaleBlockType,
-  UnderstandingBlock as UnderstandingBlockType,
-} from '@/lib/schemas/blocks';
+import {
+  QuizPollPreview,
+  ScalePreview,
+  UnderstandingPreview,
+  WordCloudPreview,
+} from '@/components/blocks/block-live-previews';
 
 type CommonProps = {
   answer: BlockAnswer | undefined;
@@ -52,74 +53,6 @@ function renderMC(block: Extract<Block, { type: 'multiple_choice' }>, p: CommonP
   );
 }
 
-// Statische Admin-Vorschauen für die interaktiven Live-Block-Typen — keine
-// Beamer-Polling-Logik, nur die Frage + die Auswahlmöglichkeiten als Karten,
-// damit Lehrer:innen den Modul-Inhalt sehen können bevor sie präsentieren.
-function QuizPollPreview({ block }: { block: QuizPollBlockType }) {
-  return (
-    <div className="flex w-full max-w-3xl flex-col gap-4">
-      <h3 className="text-2xl font-bold">{block.question}</h3>
-      <ul className="flex flex-col gap-2">
-        {block.options.map((o) => (
-          <li
-            key={o.id}
-            className={`bg-muted rounded-md px-4 py-3 ${o.correct ? 'border-l-4 border-green-500' : ''}`}
-          >
-            {o.text}
-            {o.correct && <span className="text-muted-foreground ml-2 text-xs">(richtig)</span>}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function WordCloudPreview({ block }: { block: WordCloudBlockType }) {
-  return (
-    <div className="flex w-full max-w-3xl flex-col gap-4">
-      <h3 className="text-2xl font-bold">{block.question}</h3>
-      <p className="text-muted-foreground text-sm">
-        Wortwolke — Schüler:innen tippen Freitext (max 40 Zeichen).
-      </p>
-    </div>
-  );
-}
-
-function ScalePreview({ block }: { block: ScaleBlockType }) {
-  const steps = Array.from({ length: block.max - block.min + 1 }, (_, i) => block.min + i);
-  return (
-    <div className="flex w-full max-w-3xl flex-col gap-4">
-      <h3 className="text-2xl font-bold">{block.question}</h3>
-      <div className="flex items-center gap-2">
-        {steps.map((v) => (
-          <span key={v} className="bg-muted rounded-md px-4 py-2 font-semibold">
-            {v}
-          </span>
-        ))}
-      </div>
-      {(block.minLabel ?? block.maxLabel) && (
-        <div className="text-muted-foreground flex justify-between text-sm">
-          <span>{block.minLabel ?? ''}</span>
-          <span>{block.maxLabel ?? ''}</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UnderstandingPreview({ block }: { block: UnderstandingBlockType }) {
-  return (
-    <div className="flex w-full max-w-3xl flex-col gap-4">
-      <h3 className="text-2xl font-bold">{block.question ?? 'Wie gut hast du das verstanden?'}</h3>
-      <div className="flex gap-2">
-        <span className="bg-muted rounded-md px-4 py-2">🟢 Verstanden</span>
-        <span className="bg-muted rounded-md px-4 py-2">🟡 Unsicher</span>
-        <span className="bg-muted rounded-md px-4 py-2">🔴 Noch nicht</span>
-      </div>
-    </div>
-  );
-}
-
 function renderFillBlank(block: Extract<Block, { type: 'fill_blank' }>, p: CommonProps) {
   const filled = (p.answer as (string | null)[]) ?? block.solutions.map(() => null);
   return (
@@ -129,6 +62,45 @@ function renderFillBlank(block: Extract<Block, { type: 'fill_blank' }>, p: Commo
       checked={p.checked}
       readOnly={p.readOnly}
       onFill={p.onAnswer}
+    />
+  );
+}
+
+// Zuordnungs-/Markier-Blöcke (match, categorize, mark_words) — gemeinsam
+// ausgelagert, damit der Haupt-Dispatcher unter der Zeilen-Grenze bleibt.
+function renderAssignment(
+  block: Extract<Block, { type: 'match' | 'categorize' | 'mark_words' }>,
+  p: CommonProps
+) {
+  if (block.type === 'match') {
+    return (
+      <MatchBlock
+        block={block}
+        assignment={(p.answer as Record<string, string>) ?? {}}
+        checked={p.checked}
+        readOnly={p.readOnly}
+        onAssign={p.onAnswer}
+      />
+    );
+  }
+  if (block.type === 'categorize') {
+    return (
+      <CategorizeBlock
+        block={block}
+        answer={(p.answer as Record<string, string>) ?? {}}
+        checked={p.checked}
+        readOnly={p.readOnly}
+        onAssign={p.onAnswer}
+      />
+    );
+  }
+  return (
+    <MarkWordsBlock
+      block={block}
+      answer={(p.answer as number[]) ?? []}
+      checked={p.checked}
+      readOnly={p.readOnly}
+      onMark={p.onAnswer}
     />
   );
 }
@@ -189,24 +161,8 @@ export function BlockView({ block, answer, checked, readOnly = false, onAnswer }
     case 'fill_blank':
       return renderFillBlank(block, c);
     case 'match':
-      return (
-        <MatchBlock
-          block={block}
-          assignment={(answer as Record<string, string>) ?? {}}
-          checked={checked}
-          readOnly={readOnly}
-          onAssign={onAnswer}
-        />
-      );
     case 'categorize':
-      return (
-        <CategorizeBlock
-          block={block}
-          answer={(answer as Record<string, string>) ?? {}}
-          checked={checked}
-          readOnly={readOnly}
-          onAssign={onAnswer}
-        />
-      );
+    case 'mark_words':
+      return renderAssignment(block, c);
   }
 }

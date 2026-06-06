@@ -277,3 +277,41 @@ describe('categorize — Teilpunkte (PARTIAL_GRADERS)', () => {
     expect(maxScore(blocks)).toBe(2);
   });
 });
+
+// A4: mark_words — Anteil korrekt markierter Wörter minus Falschmarkierungen.
+// Text „Anna wohnt in Wien" → Wörter [Anna(0) wohnt(1) in(2) Wien(3)].
+// Richtig markiert: Anna(0) + Wien(3).
+const markWords: Block = {
+  id: 'mw',
+  type: 'mark_words',
+  instruction: 'Markiere alle persönlichen Daten.',
+  text: 'Anna wohnt in Wien',
+  correctIndices: [0, 3],
+};
+
+describe('mark_words — Teilpunkte (PARTIAL_GRADERS)', () => {
+  it('beide richtig markiert → 1', () => {
+    expect(gradeBlock(markWords, [0, 3])).toBe(1);
+  });
+  it('eines von zwei richtig → 0.5', () => {
+    expect(gradeBlock(markWords, [0])).toBe(0.5);
+  });
+  it('eine Falschmarkierung zieht ab: 1 richtig − 1 falsch / 2 = 0', () => {
+    expect(gradeBlock(markWords, [0, 1])).toBe(0);
+  });
+  it('alles markieren lohnt nicht: 2 richtig − 2 falsch / 2 = 0', () => {
+    expect(gradeBlock(markWords, [0, 1, 2, 3])).toBe(0);
+  });
+  it('nur falsche markiert → auf 0 geclampt (nicht negativ)', () => {
+    expect(gradeBlock(markWords, [1, 2])).toBe(0);
+  });
+  it('keine Antwort → 0', () => {
+    expect(gradeBlock(markWords, [])).toBe(0);
+    expect(gradeBlock(markWords, undefined)).toBe(0);
+  });
+  it('blockResult: voll = correct, teils = partial, null = wrong', () => {
+    expect(blockResult(markWords, [0, 3])).toBe('correct');
+    expect(blockResult(markWords, [0])).toBe('partial');
+    expect(blockResult(markWords, [1, 2])).toBe('wrong');
+  });
+});

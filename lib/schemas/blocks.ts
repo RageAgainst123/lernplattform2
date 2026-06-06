@@ -128,6 +128,22 @@ export const categorizeBlockSchema = z.object({
   ...gradedBlockExtensions,
 });
 
+// Markieren-im-Text: Schüler:in tippt im Text die Wörter an, die zu einem
+// Kriterium passen (z.B. „markiere alle persönlichen Daten"). `text` wird per
+// lib/blocks/tokenize.ts in Wort-Tokens zerlegt; `correctIndices` referenziert
+// die 0-basierten wordIndex der richtigen Wörter. Antwort = number[]. Teilpunkte.
+export const markWordsBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('mark_words'),
+  // Aufgabenstellung („Markiere alle …").
+  instruction: z.string(),
+  // Der zu markierende Fließtext.
+  text: z.string().min(1),
+  // 0-basierte wordIndex der richtig zu markierenden Wörter (≥ 1).
+  correctIndices: z.array(z.number().int().min(0)).min(1),
+  ...gradedBlockExtensions,
+});
+
 export const reflectionBlockSchema = z.object({
   id: blockId,
   type: z.literal('reflection'),
@@ -210,6 +226,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   fillBlankBlockSchema,
   matchBlockSchema,
   categorizeBlockSchema,
+  markWordsBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -232,6 +249,7 @@ export type TrueFalseBlock = z.infer<typeof trueFalseBlockSchema>;
 export type FillBlankBlock = z.infer<typeof fillBlankBlockSchema>;
 export type MatchBlock = z.infer<typeof matchBlockSchema>;
 export type CategorizeBlock = z.infer<typeof categorizeBlockSchema>;
+export type MarkWordsBlock = z.infer<typeof markWordsBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;
 export type SlideBlock = z.infer<typeof slideBlockSchema>;

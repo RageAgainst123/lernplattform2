@@ -13,8 +13,16 @@
 
 import { readFileSync } from 'node:fs';
 import { moduleContentSchema } from '../lib/schemas/blocks.ts';
+import { wordCount } from '../lib/blocks/tokenize.ts';
 
-const GRADED = new Set(['multiple_choice', 'true_false', 'fill_blank', 'match', 'categorize']);
+const GRADED = new Set([
+  'multiple_choice',
+  'true_false',
+  'fill_blank',
+  'match',
+  'categorize',
+  'mark_words',
+]);
 
 function readInput() {
   const file = process.argv[2];
@@ -127,6 +135,24 @@ for (const b of blocks) {
       if (!bucketSet.has(it.bucketId)) {
         errors.push(`${b.id} (categorize): item "${it.id}" zeigt auf unbekannten Behälter.`);
       }
+    }
+  }
+
+  if (b.type === 'mark_words') {
+    const total = wordCount(b.text);
+    if (total === 0) {
+      errors.push(`${b.id} (mark_words): text enthält kein markierbares Wort.`);
+    }
+    // Jeder correctIndex muss auf ein existierendes Wort zeigen.
+    for (const idx of b.correctIndices) {
+      if (idx >= total) {
+        errors.push(
+          `${b.id} (mark_words): correctIndex ${idx} liegt außerhalb (nur ${total} Wörter).`
+        );
+      }
+    }
+    if (new Set(b.correctIndices).size !== b.correctIndices.length) {
+      errors.push(`${b.id} (mark_words): doppelter correctIndex.`);
     }
   }
 }

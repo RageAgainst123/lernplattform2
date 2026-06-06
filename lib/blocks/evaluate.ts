@@ -2,6 +2,7 @@ import type {
   Block,
   CategorizeBlock,
   FillBlankBlock,
+  MarkWordsBlock,
   MatchBlock,
   MultipleChoiceBlock,
   TrueFalseBlock,
@@ -15,12 +16,14 @@ export type TrueFalseAnswer = boolean;
 export type FillBlankAnswer = (string | null)[];
 export type MatchAnswer = Record<string, string>; // pairId → zugeordnete Kategorie
 export type CategorizeAnswer = Record<string, string>; // itemId → gewählter bucketId
+export type MarkWordsAnswer = number[]; // markierte wordIndex
 export type BlockAnswer =
   | MultipleChoiceAnswer
   | TrueFalseAnswer
   | FillBlankAnswer
   | MatchAnswer
   | CategorizeAnswer
+  | MarkWordsAnswer
   | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
@@ -79,6 +82,22 @@ function evalCategorize(block: CategorizeBlock, answer: CategorizeAnswer): numbe
   return correct / block.items.length;
 }
 
+// Markieren-im-Text: Anteil korrekt markierter Wörter, abzüglich Falschmarkierungen.
+// Score = (richtig markiert − falsch markiert) / Anzahl-richtige, geclampt auf [0,1].
+// So lohnt sich „alles markieren" nicht (jede Falschmarkierung kostet einen Punkt).
+function evalMarkWords(block: MarkWordsBlock, answer: MarkWordsAnswer): number {
+  const correctSet = new Set(block.correctIndices);
+  if (correctSet.size === 0) return 0;
+  const marked = new Set(answer);
+  let hits = 0;
+  let misses = 0; // markiert, aber falsch
+  for (const idx of marked) {
+    if (correctSet.has(idx)) hits += 1;
+    else misses += 1;
+  }
+  return (hits - misses) / correctSet.size;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Erweiterbarkeit — einen NEUEN Block-Typ ins Scoring aufnehmen:
 //   1. lib/schemas/blocks.ts  → Block-Typ + Antwort-Format (Zod) definieren
@@ -110,6 +129,7 @@ const CHECKERS: Record<string, (block: Block, answer: BlockAnswer | undefined) =
 // HIER. Voraussetzung: numeric-Persistenz (Migration 0024).
 const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => number> = {
   categorize: (b, a) => evalCategorize(b as CategorizeBlock, (a as CategorizeAnswer) ?? {}),
+  mark_words: (b, a) => evalMarkWords(b as MarkWordsBlock, (a as MarkWordsAnswer) ?? []),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

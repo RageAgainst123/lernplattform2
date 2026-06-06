@@ -53,14 +53,21 @@ describe('CategorizeBlock', () => {
     expect(screen.getByText(/Alle Begriffe einsortiert/i)).toBeInTheDocument();
   });
 
-  it('sortiert per Ein-Klick-Knopf in den gewählten Behälter ein', () => {
+  it('sortiert per Chip-antippen → Behälter-antippen ein', () => {
     const onAssign = vi.fn();
     render(<CategorizeBlock block={BLOCK} answer={{}} checked={false} onAssign={onAssign} />);
-    // Jeder Pool-Begriff hat einen Knopf pro Behälter — „→ Eingabe" gibt es 3×.
-    const buttons = screen.getAllByRole('button', { name: '→ Eingabe' });
-    expect(buttons).toHaveLength(3);
-    fireEvent.click(buttons[0]); // Tastatur → Eingabe
+    // Chip „Tastatur" aktivieren …
+    fireEvent.click(screen.getByRole('button', { name: 'Tastatur' }));
+    // … dann erscheint der Hinweis + die Behälter werden anklickbar.
+    expect(screen.getByText(/in welchen Behälter/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Eingabe/ }));
     expect(onAssign).toHaveBeenCalledWith({ i1: 'b-ein' });
+  });
+
+  it('ohne aktiven Chip sind die Behälter nicht anklickbar', () => {
+    render(<CategorizeBlock block={BLOCK} answer={{}} checked={false} onAssign={vi.fn()} />);
+    // Behälter sind reine divs (kein button), solange kein Chip aktiv ist.
+    expect(screen.queryByRole('button', { name: /Eingabe/ })).not.toBeInTheDocument();
   });
 
   it('legt ein einsortiertes Item per „↩"-Knopf zurück', () => {
@@ -72,7 +79,7 @@ describe('CategorizeBlock', () => {
     expect(onAssign).toHaveBeenCalledWith({});
   });
 
-  it('zeigt im read-only-Modus keine Einsortier-Knöpfe', () => {
+  it('zeigt im read-only-Modus keine Pool-Chips oder Zurücklegen-Knöpfe', () => {
     render(
       <CategorizeBlock
         block={BLOCK}
@@ -82,7 +89,8 @@ describe('CategorizeBlock', () => {
         onAssign={vi.fn()}
       />
     );
-    expect(screen.queryByRole('button', { name: '→ Eingabe' })).not.toBeInTheDocument();
+    // Tastatur ist nur im Behälter (als Text), nicht als Pool-Chip-Button.
+    expect(screen.queryByRole('button', { name: 'Drucker' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /zurücklegen/i })).not.toBeInTheDocument();
   });
 });

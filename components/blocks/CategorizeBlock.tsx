@@ -1,14 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import type { CategorizeBlock as CategorizeBlockType } from '@/lib/schemas/blocks';
-import { cn } from '@/lib/utils';
+import { AssignedChip, PoolChip } from '@/components/blocks/categorize-chips';
 
 // Kategorisieren (Bucket-Sort): Items in benannte Behälter einsortieren.
-// Ein-Klick-Modell (Sek-I-tauglich): jeder Begriff im Pool zeigt direkt
-// einen Knopf pro Behälter („→ Eingabe", „→ Ausgabe"). Ein Tipp sortiert
-// sofort ein — kein versteckter „aktiv markiert"-Zwischenschritt. Einsortierte
-// Items haben einen klaren „↩ zurück"-Knopf (kein versehentliches Löschen
-// durch Antippen).
+// „Chip + Behälter-Auswahl"-Modell (Sek-I-tauglich, ruhige Optik):
+//   1. Noch nicht einsortierte Begriffe stehen als Chips in einer Reihe.
+//   2. Chip antippen → wird hervorgehoben, darunter werden die Behälter zu
+//      aktiven, farbig umrandeten Ablege-Zielen + Hinweis „[Begriff] → wohin?".
+//   3. Behälter antippen → Chip wandert hinein, Auswahl schließt sich.
+//   4. Einsortierter Chip hat ein „×" zum Zurücklegen (kein versehentliches
+//      Löschen durch bloßes Antippen).
 //
 // answer: Record<itemId, bucketId>. checked = grün/rot-Bewertung (Quiz),
 // readOnly = gesperrt (Worksheet nach Abgabe).
@@ -17,94 +20,28 @@ type Block = CategorizeBlockType;
 type Item = Block['items'][number];
 type Bucket = Block['buckets'][number];
 
-// Ein noch nicht einsortierter Begriff mit je einem Knopf pro Behälter.
-function PoolRow({
-  item,
-  buckets,
-  onAssign,
-}: {
-  item: Item;
-  buckets: Bucket[];
-  onAssign: (itemId: string, bucketId: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2">
-      <span className="mr-1 text-lg font-medium">{item.text}</span>
-      <span className="flex flex-wrap gap-2">
-        {buckets.map((b) => (
-          <button
-            key={b.id}
-            type="button"
-            onClick={() => onAssign(item.id, b.id)}
-            className="border-primary/40 text-primary hover:bg-primary/10 rounded-md border px-3 py-1 text-sm font-medium"
-          >
-            → {b.label}
-          </button>
-        ))}
-      </span>
-    </div>
-  );
-}
-
-// Ein einsortiertes Item im Behälter (read-only oder mit „zurück"-Knopf).
-function BucketItem({
-  item,
-  bucketId,
-  checked,
-  locked,
-  onUnassign,
-}: {
-  item: Item;
-  bucketId: string;
-  checked: boolean;
-  locked: boolean;
-  onUnassign: (itemId: string) => void;
-}) {
-  return (
-    <li
-      className={cn(
-        'flex items-center justify-between gap-2 rounded border px-2 py-1',
-        checked &&
-          (item.bucketId === bucketId
-            ? 'border-green-600 text-green-700'
-            : 'border-red-600 text-red-700')
-      )}
-    >
-      <span>{item.text}</span>
-      {!locked && (
-        <button
-          type="button"
-          onClick={() => onUnassign(item.id)}
-          aria-label={`${item.text} zurücklegen`}
-          className="text-muted-foreground hover:text-foreground text-sm"
-        >
-          ↩
-        </button>
-      )}
-    </li>
-  );
-}
-
-// Ein Behälter mit den einsortierten Items.
-function BucketColumn({
+// Innenleben eines Behälters: Label + einsortierte Chips.
+function BucketInner({
   bucket,
   items,
   checked,
   locked,
+  armed,
   onUnassign,
 }: {
   bucket: Bucket;
   items: Item[];
   checked: boolean;
   locked: boolean;
+  armed: boolean;
   onUnassign: (itemId: string) => void;
 }) {
   return (
-    <div className="min-h-24 rounded-lg border border-dashed p-3">
-      <span className="text-muted-foreground text-sm">{bucket.label}</span>
-      <ul className="mt-2 space-y-1">
+    <>
+      <span className="text-muted-foreground text-sm font-medium">{bucket.label}</span>
+      <div className="mt-2 flex flex-wrap gap-1.5">
         {items.map((it) => (
-          <BucketItem
+          <AssignedChip
             key={it.id}
             item={it}
             bucketId={bucket.id}
@@ -114,9 +51,75 @@ function BucketColumn({
           />
         ))}
         {items.length === 0 && (
-          <li className="text-muted-foreground/60 text-sm italic">noch leer</li>
+          <span className="text-muted-foreground/60 text-sm italic">
+            {armed ? 'hier ablegen' : 'noch leer'}
+          </span>
         )}
-      </ul>
+      </div>
+    </>
+  );
+}
+
+// Ein Behälter — als Ablege-Ziel (wenn ein Chip aktiv ist) oder als ruhige
+// Sammel-Karte (sonst). Klick legt den aktiven Chip hinein.
+function BucketDrop(props: {
+  bucket: Bucket;
+  items: Item[];
+  checked: boolean;
+  locked: boolean;
+  armed: boolean; // ein Chip ist aktiv → Behälter ist Ablege-Ziel
+  onDrop: () => void;
+  onUnassign: (itemId: string) => void;
+}) {
+  const { armed, onDrop, ...inner } = props;
+  if (armed) {
+    return (
+      <button
+        type="button"
+        onClick={onDrop}
+        className="border-primary bg-primary/5 hover:bg-primary/10 min-h-24 rounded-lg border-2 p-3 text-left transition-colors"
+      >
+        <BucketInner {...inner} armed={armed} />
+      </button>
+    );
+  }
+  return (
+    <div className="min-h-24 rounded-lg border border-dashed p-3">
+      <BucketInner {...inner} armed={armed} />
+    </div>
+  );
+}
+
+// Der Pool noch-nicht-einsortierter Chips + der „wohin?"-Hinweis.
+function Pool({
+  unassigned,
+  active,
+  activeItem,
+  onToggle,
+}: {
+  unassigned: Item[];
+  active: string | null;
+  activeItem: Item | null;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {unassigned.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {unassigned.map((it) => (
+            <PoolChip key={it.id} item={it} active={active === it.id} onToggle={onToggle} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-muted-foreground text-sm">Alle Begriffe einsortiert. ✓</p>
+      )}
+      {activeItem && (
+        <p className="text-primary text-sm font-medium">
+          {'„'}
+          {activeItem.text}
+          {'“'} → in welchen Behälter?
+        </p>
+      )}
     </div>
   );
 }
@@ -130,11 +133,15 @@ type Props = {
 };
 
 export function CategorizeBlock({ block, answer, checked, readOnly = false, onAssign }: Props) {
+  const [active, setActive] = useState<string | null>(null);
   const locked = checked || readOnly;
   const unassigned = block.items.filter((it) => !answer[it.id]);
+  const activeItem = unassigned.find((it) => it.id === active) ?? null;
 
-  function assign(itemId: string, bucketId: string) {
-    onAssign({ ...answer, [itemId]: bucketId });
+  function dropInto(bucketId: string) {
+    if (!active) return;
+    onAssign({ ...answer, [active]: bucketId });
+    setActive(null);
   }
   function unassign(itemId: string) {
     const next = { ...answer };
@@ -145,24 +152,24 @@ export function CategorizeBlock({ block, answer, checked, readOnly = false, onAs
   return (
     <div className="space-y-4">
       {block.question && <p className="text-lg font-medium">{block.question}</p>}
-      {!locked && unassigned.length > 0 && (
-        <div className="space-y-2">
-          {unassigned.map((it) => (
-            <PoolRow key={it.id} item={it} buckets={block.buckets} onAssign={assign} />
-          ))}
-        </div>
-      )}
-      {!locked && unassigned.length === 0 && (
-        <p className="text-muted-foreground text-sm">Alle Begriffe einsortiert.</p>
+      {!locked && (
+        <Pool
+          unassigned={unassigned}
+          active={active}
+          activeItem={activeItem}
+          onToggle={(id) => setActive(active === id ? null : id)}
+        />
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         {block.buckets.map((bucket) => (
-          <BucketColumn
+          <BucketDrop
             key={bucket.id}
             bucket={bucket}
             items={block.items.filter((it) => answer[it.id] === bucket.id)}
             checked={checked}
             locked={locked}
+            armed={!locked && activeItem !== null}
+            onDrop={() => dropInto(bucket.id)}
             onUnassign={unassign}
           />
         ))}

@@ -8,6 +8,7 @@ import { ReflectionForm } from './ReflectionForm';
 import { TextForm } from './TextForm';
 import { InfoboxForm } from './InfoboxForm';
 import { MatchForm } from './MatchForm';
+import { CategorizeForm } from './CategorizeForm';
 
 // Dispatcher: rendert das passende Form für den Block-Typ. Wenn kein
 // dediziertes Form existiert (z.B. live-Blöcke wie slide, live_poll), wird
@@ -29,6 +30,7 @@ const FORM_TYPES = new Set([
   'text',
   'infobox',
   'match',
+  'categorize',
 ] as const);
 
 export function hasForm(type: Block['type']): boolean {
@@ -53,6 +55,8 @@ export function BlockForm({ block, onChange }: Props): React.ReactElement | null
       return <InfoboxForm value={block} onChange={onChange} />;
     case 'match':
       return <MatchForm value={block} onChange={onChange} />;
+    case 'categorize':
+      return <CategorizeForm value={block} onChange={onChange} />;
     default:
       return null;
   }

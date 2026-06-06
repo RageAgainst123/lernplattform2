@@ -1,4 +1,19 @@
-{
+-- Seed-Update 0008: Showcase-Lernmodul um categorize-Block erweitern (A1)
+--
+-- Das Showcase-Lernmodul (aus Seed 0007) bekommt einen neuen
+-- „Kategorien-Zuordnung"-Block (categorize) — der erste Aufgabentyp mit
+-- TEILPUNKTEN. Damit zeigt das Showcase auch die neue Lernformen-2.0-Funktion.
+--
+-- UPDATE statt INSERT, weil das Modul (feste UUID …c5e1ea7) bereits existiert.
+-- Idempotent: mehrfaches Ausführen setzt denselben content erneut (kein Schaden).
+--
+-- VORAUSSETZUNG: Migration 0024 (numeric scores) sollte eingespielt sein, damit
+-- die Teilpunkte (z.B. „4 von 6 richtig" = 0.67) exakt gespeichert werden.
+--
+-- STOP-PUNKT für Geo: Diese Migration im Supabase-Dashboard ausführen.
+
+update public.modules
+set content = $${
   "blocks": [
     {
       "id": "intro",
@@ -143,4 +158,5 @@
       "category": "theorie"
     }
   ]
-}
+}$$::jsonb
+where id = '00000000-0000-4000-8000-00000c5e1ea7';

@@ -42,6 +42,22 @@ const match: Block = {
   ],
 };
 
+const categorize: Block = {
+  id: 'cat',
+  type: 'categorize',
+  question: 'Sortiere ein.',
+  buckets: [
+    { id: 'b-ein', label: 'Eingabe' },
+    { id: 'b-aus', label: 'Ausgabe' },
+  ],
+  items: [
+    { id: 'i1', text: 'Tastatur', bucketId: 'b-ein' },
+    { id: 'i2', text: 'Maus', bucketId: 'b-ein' },
+    { id: 'i3', text: 'Drucker', bucketId: 'b-aus' },
+    { id: 'i4', text: 'Bildschirm', bucketId: 'b-aus' },
+  ],
+};
+
 describe('isGraded', () => {
   it('marks content/reflection blocks as not graded', () => {
     expect(isGraded({ id: 't', type: 'text', content: 'x' })).toBe(false);
@@ -215,5 +231,49 @@ describe('blockResult — 3-Wege-Klassifikation (Teilpunkte-bereit)', () => {
   });
   it('null Score → wrong', () => {
     expect(blockResult(mc, [])).toBe('wrong');
+  });
+});
+
+describe('categorize — Teilpunkte (PARTIAL_GRADERS)', () => {
+  it('alle 4 richtig → gradeBlock 1', () => {
+    expect(gradeBlock(categorize, { i1: 'b-ein', i2: 'b-ein', i3: 'b-aus', i4: 'b-aus' })).toBe(1);
+  });
+  it('3 von 4 richtig → gradeBlock 0.75', () => {
+    expect(gradeBlock(categorize, { i1: 'b-ein', i2: 'b-ein', i3: 'b-aus', i4: 'b-ein' })).toBe(
+      0.75
+    );
+  });
+  it('2 von 4 richtig → gradeBlock 0.5', () => {
+    expect(gradeBlock(categorize, { i1: 'b-ein', i2: 'b-aus', i3: 'b-ein', i4: 'b-aus' })).toBe(
+      0.5
+    );
+  });
+  it('keine Antwort → gradeBlock 0', () => {
+    expect(gradeBlock(categorize, {})).toBe(0);
+    expect(gradeBlock(categorize, undefined)).toBe(0);
+  });
+  it('blockResult: voll = correct, teils = partial, null = wrong', () => {
+    expect(blockResult(categorize, { i1: 'b-ein', i2: 'b-ein', i3: 'b-aus', i4: 'b-aus' })).toBe(
+      'correct'
+    );
+    expect(blockResult(categorize, { i1: 'b-ein', i2: 'b-ein', i3: 'b-aus', i4: 'b-ein' })).toBe(
+      'partial'
+    );
+    expect(blockResult(categorize, {})).toBe('wrong');
+  });
+  it('blockScore liefert den rohen Anteil', () => {
+    expect(blockScore(categorize, { i1: 'b-ein', i2: 'b-ein', i3: 'b-aus', i4: 'b-ein' })).toBe(
+      0.75
+    );
+  });
+  it('zählt im scoreModule als Teilpunkt mit', () => {
+    // categorize (0.75) + mc richtig (1) = 1.75 von max 2
+    const blocks = [categorize, mc];
+    const answers = {
+      cat: { i1: 'b-ein', i2: 'b-ein', i3: 'b-aus', i4: 'b-ein' },
+      mc: ['o1', 'o3'],
+    };
+    expect(scoreModule(blocks, answers)).toBe(1.75);
+    expect(maxScore(blocks)).toBe(2);
   });
 });

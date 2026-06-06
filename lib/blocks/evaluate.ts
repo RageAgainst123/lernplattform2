@@ -1,5 +1,6 @@
 import type {
   Block,
+  CategorizeBlock,
   FillBlankBlock,
   MatchBlock,
   MultipleChoiceBlock,
@@ -13,11 +14,13 @@ export type TrueFalseAnswer = boolean;
 // Wörter in Platzhalter-Reihenfolge; null = noch leere Lücke (UI-Zustand).
 export type FillBlankAnswer = (string | null)[];
 export type MatchAnswer = Record<string, string>; // pairId → zugeordnete Kategorie
+export type CategorizeAnswer = Record<string, string>; // itemId → gewählter bucketId
 export type BlockAnswer =
   | MultipleChoiceAnswer
   | TrueFalseAnswer
   | FillBlankAnswer
   | MatchAnswer
+  | CategorizeAnswer
   | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
@@ -68,6 +71,14 @@ function evalMatch(block: MatchBlock, answer: MatchAnswer): boolean {
   return block.pairs.every((pair) => answer[pair.id] === pair.category);
 }
 
+// Teilpunkte: Anteil korrekt einsortierter Items (0.0–1.0). Ein leeres Modul
+// (keine Items) wäre durch das Schema-min(2) ausgeschlossen, defensiv → 0.
+function evalCategorize(block: CategorizeBlock, answer: CategorizeAnswer): number {
+  if (block.items.length === 0) return 0;
+  const correct = block.items.filter((item) => answer[item.id] === item.bucketId).length;
+  return correct / block.items.length;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Erweiterbarkeit — einen NEUEN Block-Typ ins Scoring aufnehmen:
 //   1. lib/schemas/blocks.ts  → Block-Typ + Antwort-Format (Zod) definieren
@@ -97,8 +108,9 @@ const CHECKERS: Record<string, (block: Block, answer: BlockAnswer | undefined) =
 // steht entweder hier ODER in CHECKERS, nie in beiden. Neue Aufgabentypen
 // mit Teilpunkten (categorize, order, mark_words, hotspot) registrieren sich
 // HIER. Voraussetzung: numeric-Persistenz (Migration 0024).
-const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => number> =
-  {};
+const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => number> = {
+  categorize: (b, a) => evalCategorize(b as CategorizeBlock, (a as CategorizeAnswer) ?? {}),
+};
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {
   const partial = PARTIAL_GRADERS[block.type];

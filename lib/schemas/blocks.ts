@@ -104,6 +104,30 @@ export const matchBlockSchema = z.object({
   ...gradedBlockExtensions,
 });
 
+// Kategorisieren (Bucket-Sort): Items in benannte Behälter einsortieren.
+// Anders als `match` sind Behälter EIGENE Objekte mit id+label (nicht im Item
+// inline) — das erlaubt mehrere Items pro Behälter sauber + Teilpunkte
+// (Anteil korrekt einsortierter Items). bucketId jedes Items zeigt auf die
+// korrekte Lösung.
+const categorizeBucketSchema = z.object({
+  id: z.string().min(1),
+  label: z.string(),
+});
+const categorizeItemSchema = z.object({
+  id: z.string().min(1),
+  text: z.string(),
+  bucketId: z.string().min(1), // korrekter Behälter (Lösung)
+});
+
+export const categorizeBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('categorize'),
+  question: z.string().optional(),
+  buckets: z.array(categorizeBucketSchema).min(2).max(4),
+  items: z.array(categorizeItemSchema).min(2),
+  ...gradedBlockExtensions,
+});
+
 export const reflectionBlockSchema = z.object({
   id: blockId,
   type: z.literal('reflection'),
@@ -185,6 +209,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   trueFalseBlockSchema,
   fillBlankBlockSchema,
   matchBlockSchema,
+  categorizeBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -206,6 +231,7 @@ export type MultipleChoiceBlock = z.infer<typeof multipleChoiceBlockSchema>;
 export type TrueFalseBlock = z.infer<typeof trueFalseBlockSchema>;
 export type FillBlankBlock = z.infer<typeof fillBlankBlockSchema>;
 export type MatchBlock = z.infer<typeof matchBlockSchema>;
+export type CategorizeBlock = z.infer<typeof categorizeBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;
 export type SlideBlock = z.infer<typeof slideBlockSchema>;

@@ -13,9 +13,9 @@ const ALL_TYPES: BlockType[] = [
 ].map((e) => e.type);
 
 describe('BLOCK_CATALOG', () => {
-  it('deckt alle 13 Block-Typen genau einmal ab', () => {
-    expect(ALL_TYPES).toHaveLength(13);
-    expect(new Set(ALL_TYPES).size).toBe(13);
+  it('deckt alle 14 Block-Typen genau einmal ab', () => {
+    expect(ALL_TYPES).toHaveLength(14);
+    expect(new Set(ALL_TYPES).size).toBe(14);
   });
 
   it('hat in jeder Gruppe nur passende Typen', () => {
@@ -25,6 +25,7 @@ describe('BLOCK_CATALOG', () => {
       'true_false',
       'fill_blank',
       'match',
+      'categorize',
       'reflection',
     ]);
     expect(BLOCK_CATALOG.live.map((e) => e.type)).toEqual([

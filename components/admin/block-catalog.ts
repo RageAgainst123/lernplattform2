@@ -53,6 +53,12 @@ export const BLOCK_CATALOG = {
         'Begriffe einer Kategorie zuordnen. Mind. 2 unterschiedliche Kategorien. Auto-bewertet.',
     },
     {
+      type: 'categorize',
+      label: 'Kategorien-Zuordnung (categorize)',
+      description:
+        'Begriffe in 2–4 benannte Behälter einsortieren (z.B. „Eingabe / Verarbeitung / Ausgabe"). Mehrere Begriffe pro Behälter möglich. Auto-bewertet mit Teilpunkten.',
+    },
+    {
       type: 'reflection',
       label: 'Reflexion (Freitext)',
       description: 'Offene Frage, freie Antwort. Nicht auto-bewertet — Lehrer:in liest selbst.',
@@ -114,6 +120,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   true_false: 'tf',
   fill_blank: 'fb',
   match: 'm',
+  categorize: 'cat',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -153,6 +160,19 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
     pairs: [
       { id: 'p1', term: 'Begriff A', category: 'Kategorie 1' },
       { id: 'p2', term: 'Begriff B', category: 'Kategorie 2' },
+    ],
+  }),
+  categorize: (id) => ({
+    id,
+    type: 'categorize',
+    question: 'Sortiere in die richtigen Behälter.',
+    buckets: [
+      { id: 'b1', label: 'Behälter 1' },
+      { id: 'b2', label: 'Behälter 2' },
+    ],
+    items: [
+      { id: 'i1', text: 'Begriff A', bucketId: 'b1' },
+      { id: 'i2', text: 'Begriff B', bucketId: 'b2' },
     ],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),

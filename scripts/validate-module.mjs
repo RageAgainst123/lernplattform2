@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { moduleContentSchema } from '../lib/schemas/blocks.ts';
 
-const GRADED = new Set(['multiple_choice', 'true_false', 'fill_blank', 'match']);
+const GRADED = new Set(['multiple_choice', 'true_false', 'fill_blank', 'match', 'categorize']);
 
 function readInput() {
   const file = process.argv[2];
@@ -111,6 +111,24 @@ for (const b of blocks) {
       errors.push(`${b.id} (match): doppelte pair-id.`);
     }
   }
+
+  if (b.type === 'categorize') {
+    const bucketIds = b.buckets.map((bk) => bk.id);
+    if (new Set(bucketIds).size !== bucketIds.length) {
+      errors.push(`${b.id} (categorize): doppelte bucket-id.`);
+    }
+    const itemIds = b.items.map((it) => it.id);
+    if (new Set(itemIds).size !== itemIds.length) {
+      errors.push(`${b.id} (categorize): doppelte item-id.`);
+    }
+    // Jedes Item muss auf einen existierenden Behälter zeigen.
+    const bucketSet = new Set(bucketIds);
+    for (const it of b.items) {
+      if (!bucketSet.has(it.bucketId)) {
+        errors.push(`${b.id} (categorize): item "${it.id}" zeigt auf unbekannten Behälter.`);
+      }
+    }
+  }
 }
 
 // Presentation-Heuristik: wenn ALLE Blöcke Live-/Folien-Typen sind, ist das
@@ -144,9 +162,7 @@ if (gradedCount === 0) {
 // Mix-Warnung: Live-Blöcke + Worksheet-Aufgaben gemischt funktioniert weder im
 // Worksheet- noch im Presentation-Modus sauber. Lieber in zwei Module trennen.
 const hasLive = blocks.some((b) => LIVE_TYPES.has(b.type));
-const hasWorksheetTask = blocks.some((b) =>
-  ['multiple_choice', 'true_false', 'fill_blank', 'match'].includes(b.type)
-);
+const hasWorksheetTask = blocks.some((b) => GRADED.has(b.type));
 if (hasLive && hasWorksheetTask) {
   warnings.push(
     'Mix erkannt: das Modul enthält Live-Blöcke UND Worksheet-Aufgaben. Im Worksheet-Modus werden Live-Blöcke nicht angezeigt; im Presentation-Modus werden Worksheet-Aufgaben nicht angezeigt. Bitte in zwei Module trennen.'

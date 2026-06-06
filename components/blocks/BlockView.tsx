@@ -9,6 +9,7 @@ import { MultipleChoiceBlock } from '@/components/blocks/MultipleChoiceBlock';
 import { TrueFalseBlock } from '@/components/blocks/TrueFalseBlock';
 import { FillBlankBlock } from '@/components/blocks/FillBlankBlock';
 import { MatchBlock } from '@/components/blocks/MatchBlock';
+import { CategorizeBlock } from '@/components/blocks/CategorizeBlock';
 import { ReflectionBlock } from '@/components/blocks/ReflectionBlock';
 import { SlideBlock } from '@/components/blocks/SlideBlock';
 import { LivePollBlock } from '@/components/blocks/LivePollBlock';
@@ -192,6 +193,16 @@ export function BlockView({ block, answer, checked, readOnly = false, onAnswer }
         <MatchBlock
           block={block}
           assignment={(answer as Record<string, string>) ?? {}}
+          checked={checked}
+          readOnly={readOnly}
+          onAssign={onAnswer}
+        />
+      );
+    case 'categorize':
+      return (
+        <CategorizeBlock
+          block={block}
+          answer={(answer as Record<string, string>) ?? {}}
           checked={checked}
           readOnly={readOnly}
           onAssign={onAnswer}

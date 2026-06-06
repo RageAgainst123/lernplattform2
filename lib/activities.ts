@@ -98,6 +98,7 @@ const LERNMODUL_BLOCKS: ReadonlySet<BlockType> = new Set([
   'true_false',
   'fill_blank',
   'match',
+  'categorize',
   'reflection',
 ]);
 
@@ -123,6 +124,7 @@ const TEST_BLOCKS: ReadonlySet<BlockType> = new Set([
   'true_false',
   'fill_blank',
   'match',
+  'categorize',
 ]);
 
 const ALLOWED_BLOCKS_BY_KIND: Record<ActivityKind, ReadonlySet<BlockType>> = {

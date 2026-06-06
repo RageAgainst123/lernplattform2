@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { CategorizeBlock } from './CategorizeBlock';
 import type { CategorizeBlock as CategorizeBlockType } from '@/lib/schemas/blocks';
 
@@ -51,5 +51,38 @@ describe('CategorizeBlock', () => {
       />
     );
     expect(screen.getByText(/Alle Begriffe einsortiert/i)).toBeInTheDocument();
+  });
+
+  it('sortiert per Ein-Klick-Knopf in den gewählten Behälter ein', () => {
+    const onAssign = vi.fn();
+    render(<CategorizeBlock block={BLOCK} answer={{}} checked={false} onAssign={onAssign} />);
+    // Jeder Pool-Begriff hat einen Knopf pro Behälter — „→ Eingabe" gibt es 3×.
+    const buttons = screen.getAllByRole('button', { name: '→ Eingabe' });
+    expect(buttons).toHaveLength(3);
+    fireEvent.click(buttons[0]); // Tastatur → Eingabe
+    expect(onAssign).toHaveBeenCalledWith({ i1: 'b-ein' });
+  });
+
+  it('legt ein einsortiertes Item per „↩"-Knopf zurück', () => {
+    const onAssign = vi.fn();
+    render(
+      <CategorizeBlock block={BLOCK} answer={{ i1: 'b-ein' }} checked={false} onAssign={onAssign} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Tastatur zurücklegen/i }));
+    expect(onAssign).toHaveBeenCalledWith({});
+  });
+
+  it('zeigt im read-only-Modus keine Einsortier-Knöpfe', () => {
+    render(
+      <CategorizeBlock
+        block={BLOCK}
+        answer={{ i1: 'b-ein' }}
+        checked={false}
+        readOnly
+        onAssign={vi.fn()}
+      />
+    );
+    expect(screen.queryByRole('button', { name: '→ Eingabe' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /zurücklegen/i })).not.toBeInTheDocument();
   });
 });

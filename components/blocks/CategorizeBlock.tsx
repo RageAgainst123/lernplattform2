@@ -1,21 +1,52 @@
 'use client';
 
-import { useState } from 'react';
 import type { CategorizeBlock as CategorizeBlockType } from '@/lib/schemas/blocks';
 import { cn } from '@/lib/utils';
 
 // Kategorisieren (Bucket-Sort): Items in benannte Behälter einsortieren.
-// Tap-basiert (kein Drag): Item antippen → aktiv markiert → Behälter antippen
-// → Item wandert hinein. Item im Behälter antippen → zurück in den Pool.
-// Folgt dem MatchBlock-Interaktionsmuster, ist aber bewusst eigenständig
-// (eigene Bausteine), damit Änderungen hier den Match-Block nicht berühren.
+// Ein-Klick-Modell (Sek-I-tauglich): jeder Begriff im Pool zeigt direkt
+// einen Knopf pro Behälter („→ Eingabe", „→ Ausgabe"). Ein Tipp sortiert
+// sofort ein — kein versteckter „aktiv markiert"-Zwischenschritt. Einsortierte
+// Items haben einen klaren „↩ zurück"-Knopf (kein versehentliches Löschen
+// durch Antippen).
 //
 // answer: Record<itemId, bucketId>. checked = grün/rot-Bewertung (Quiz),
 // readOnly = gesperrt (Worksheet nach Abgabe).
 
-type Item = CategorizeBlockType['items'][number];
+type Block = CategorizeBlockType;
+type Item = Block['items'][number];
+type Bucket = Block['buckets'][number];
 
-// Ein einsortiertes Item im Behälter. checked färbt richtig/falsch.
+// Ein noch nicht einsortierter Begriff mit je einem Knopf pro Behälter.
+function PoolRow({
+  item,
+  buckets,
+  onAssign,
+}: {
+  item: Item;
+  buckets: Bucket[];
+  onAssign: (itemId: string, bucketId: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2">
+      <span className="mr-1 text-lg font-medium">{item.text}</span>
+      <span className="flex flex-wrap gap-2">
+        {buckets.map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            onClick={() => onAssign(item.id, b.id)}
+            className="border-primary/40 text-primary hover:bg-primary/10 rounded-md border px-3 py-1 text-sm font-medium"
+          >
+            → {b.label}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+}
+
+// Ein einsortiertes Item im Behälter (read-only oder mit „zurück"-Knopf).
 function BucketItem({
   item,
   bucketId,
@@ -31,105 +62,67 @@ function BucketItem({
 }) {
   return (
     <li
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!locked) onUnassign(item.id);
-      }}
       className={cn(
-        'rounded border px-2 py-1',
+        'flex items-center justify-between gap-2 rounded border px-2 py-1',
         checked &&
           (item.bucketId === bucketId
             ? 'border-green-600 text-green-700'
             : 'border-red-600 text-red-700')
       )}
     >
-      {item.text}
+      <span>{item.text}</span>
+      {!locked && (
+        <button
+          type="button"
+          onClick={() => onUnassign(item.id)}
+          aria-label={`${item.text} zurücklegen`}
+          className="text-muted-foreground hover:text-foreground text-sm"
+        >
+          ↩
+        </button>
+      )}
     </li>
   );
 }
 
 // Ein Behälter mit den einsortierten Items.
-function Bucket({
-  label,
+function BucketColumn({
+  bucket,
   items,
-  bucketId,
   checked,
-  readOnly,
-  disabled,
-  onAssign,
+  locked,
   onUnassign,
 }: {
-  label: string;
+  bucket: Bucket;
   items: Item[];
-  bucketId: string;
   checked: boolean;
-  readOnly: boolean;
-  disabled: boolean;
-  onAssign: () => void;
+  locked: boolean;
   onUnassign: (itemId: string) => void;
 }) {
-  const locked = checked || readOnly;
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onAssign}
-      className="min-h-24 rounded-lg border border-dashed p-3 text-left"
-    >
-      <span className="text-muted-foreground text-sm">{label}</span>
+    <div className="min-h-24 rounded-lg border border-dashed p-3">
+      <span className="text-muted-foreground text-sm">{bucket.label}</span>
       <ul className="mt-2 space-y-1">
         {items.map((it) => (
           <BucketItem
             key={it.id}
             item={it}
-            bucketId={bucketId}
+            bucketId={bucket.id}
             checked={checked}
             locked={locked}
             onUnassign={onUnassign}
           />
         ))}
+        {items.length === 0 && (
+          <li className="text-muted-foreground/60 text-sm italic">noch leer</li>
+        )}
       </ul>
-    </button>
-  );
-}
-
-// Pool der noch nicht einsortierten Items zum Antippen.
-function Pool({
-  items,
-  active,
-  locked,
-  onToggle,
-}: {
-  items: Item[];
-  active: string | null;
-  locked: boolean;
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((it) => (
-        <button
-          key={it.id}
-          type="button"
-          disabled={locked}
-          onClick={() => onToggle(it.id)}
-          className={cn(
-            'rounded-md border px-3 py-2 text-lg',
-            active === it.id && 'border-primary bg-primary/10'
-          )}
-        >
-          {it.text}
-        </button>
-      ))}
-      {items.length === 0 && (
-        <span className="text-muted-foreground text-sm">Alle Begriffe einsortiert.</span>
-      )}
     </div>
   );
 }
 
 type Props = {
-  block: CategorizeBlockType;
+  block: Block;
   answer: Record<string, string>; // itemId → gewählter bucketId
   checked: boolean;
   readOnly?: boolean;
@@ -137,14 +130,11 @@ type Props = {
 };
 
 export function CategorizeBlock({ block, answer, checked, readOnly = false, onAssign }: Props) {
-  const [active, setActive] = useState<string | null>(null);
   const locked = checked || readOnly;
   const unassigned = block.items.filter((it) => !answer[it.id]);
 
-  function assignTo(bucketId: string) {
-    if (!active) return;
-    onAssign({ ...answer, [active]: bucketId });
-    setActive(null);
+  function assign(itemId: string, bucketId: string) {
+    onAssign({ ...answer, [itemId]: bucketId });
   }
   function unassign(itemId: string) {
     const next = { ...answer };
@@ -155,23 +145,24 @@ export function CategorizeBlock({ block, answer, checked, readOnly = false, onAs
   return (
     <div className="space-y-4">
       {block.question && <p className="text-lg font-medium">{block.question}</p>}
-      <Pool
-        items={unassigned}
-        active={active}
-        locked={locked}
-        onToggle={(id) => setActive(active === id ? null : id)}
-      />
+      {!locked && unassigned.length > 0 && (
+        <div className="space-y-2">
+          {unassigned.map((it) => (
+            <PoolRow key={it.id} item={it} buckets={block.buckets} onAssign={assign} />
+          ))}
+        </div>
+      )}
+      {!locked && unassigned.length === 0 && (
+        <p className="text-muted-foreground text-sm">Alle Begriffe einsortiert.</p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         {block.buckets.map((bucket) => (
-          <Bucket
+          <BucketColumn
             key={bucket.id}
-            label={bucket.label}
-            bucketId={bucket.id}
+            bucket={bucket}
             items={block.items.filter((it) => answer[it.id] === bucket.id)}
             checked={checked}
-            readOnly={readOnly}
-            disabled={locked || !active}
-            onAssign={() => assignTo(bucket.id)}
+            locked={locked}
             onUnassign={unassign}
           />
         ))}

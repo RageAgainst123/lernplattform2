@@ -141,6 +141,13 @@ function ResultBadge({ result }: { result: BlockResult }) {
       </span>
     );
   }
+  if (result === 'partial') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-600/30 ring-inset">
+        ◐ teilweise
+      </span>
+    );
+  }
   return (
     <span className="bg-muted text-muted-foreground ring-border inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset">
       nicht bewertet

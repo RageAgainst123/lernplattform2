@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Block } from '@/lib/schemas/blocks';
 import {
   blockResult,
+  blockScore,
   evaluateBlock,
   gradeBlock,
   isGraded,
@@ -187,5 +188,32 @@ describe('blockResult', () => {
   it('returns ungraded for text/infobox/reflection', () => {
     expect(blockResult({ id: 't', type: 'text', content: 'x' }, undefined)).toBe('ungraded');
     expect(blockResult({ id: 'r', type: 'reflection', prompt: '?' }, 'text')).toBe('ungraded');
+  });
+});
+
+describe('blockScore (Teilpunkte-Anzeige für Lehrer:innen)', () => {
+  it('liefert 1 bei voller Korrektheit', () => {
+    expect(blockScore(mc, ['o1', 'o3'])).toBe(1);
+  });
+  it('liefert 0 bei falscher Antwort', () => {
+    expect(blockScore(mc, ['o1'])).toBe(0);
+  });
+  it('liefert null für nicht-bewertbare Blöcke', () => {
+    expect(blockScore({ id: 't', type: 'text', content: 'x' }, undefined)).toBeNull();
+    expect(blockScore({ id: 'r', type: 'reflection', prompt: '?' }, 'text')).toBeNull();
+  });
+});
+
+// Phase Lernformen-2.0: blockResult unterscheidet jetzt 4 Zustände
+// (correct/partial/wrong/ungraded). Die 'partial'-Schwelle (0 < score < 1)
+// wird mit echten Teilpunkte-Blöcken in A1 (categorize) end-to-end getestet;
+// hier sichern wir die binäre Klassifikation ab, damit der Übergang sauber
+// bleibt: voll = correct, null = wrong, dazwischen = partial.
+describe('blockResult — 3-Wege-Klassifikation (Teilpunkte-bereit)', () => {
+  it('voller Score → correct', () => {
+    expect(blockResult(mc, ['o1', 'o3'])).toBe('correct');
+  });
+  it('null Score → wrong', () => {
+    expect(blockResult(mc, [])).toBe('wrong');
   });
 });

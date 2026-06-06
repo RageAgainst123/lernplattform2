@@ -74,9 +74,15 @@ function renderQuiz(id: string, moduleData: StudentModule, progress: ModuleProgr
 function renderWrongOnly(id: string, moduleData: StudentModule, progress: ModuleProgress | null) {
   const allBlocks = moduleData.content.blocks;
   const previousAnswers: Record<string, BlockAnswer> = progress?.answers ?? {};
+  // „Falsche Fragen wiederholen": alles was nicht voll korrekt ist (wrong ODER
+  // partial — eine teilweise richtige Aufgabe ist „noch nicht ganz").
   const wrongIds = new Set(
     allBlocks
-      .filter((b) => isGraded(b) && blockResult(b, previousAnswers[b.id]) === 'wrong')
+      .filter((b) => {
+        if (!isGraded(b)) return false;
+        const r = blockResult(b, previousAnswers[b.id]);
+        return r === 'wrong' || r === 'partial';
+      })
       .map((b) => b.id)
   );
   if (wrongIds.size === 0) {

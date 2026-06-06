@@ -83,6 +83,7 @@ function evalMatch(block: MatchBlock, answer: MatchAnswer): boolean {
 // ─────────────────────────────────────────────────────────────────────────
 // Korrektheits-Prüfer pro auswertbarem Block-Typ, gibt boolean zurück. Ein neuer
 // auto-bewertbarer Block-Typ braucht hier genau einen Eintrag (+ Schema + Renderer).
+// BINÄRE Blöcke (alles oder nichts) gehören hierher.
 const CHECKERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => boolean> = {
   multiple_choice: (b, a) =>
     evalMultipleChoice(b as MultipleChoiceBlock, (a as MultipleChoiceAnswer) ?? []),
@@ -91,7 +92,20 @@ const CHECKERS: Record<string, (block: Block, answer: BlockAnswer | undefined) =
   match: (b, a) => evalMatch(b as MatchBlock, (a as MatchAnswer) ?? {}),
 };
 
+// Phase-Lernformen-2.0: TEILPUNKTE-Prüfer geben direkt 0.0–1.0 zurück (z.B.
+// „3 von 4 Zuordnungen" = 0.75). Hat Vorrang vor CHECKERS — ein Block-Typ
+// steht entweder hier ODER in CHECKERS, nie in beiden. Neue Aufgabentypen
+// mit Teilpunkten (categorize, order, mark_words, hotspot) registrieren sich
+// HIER. Voraussetzung: numeric-Persistenz (Migration 0024).
+const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => number> =
+  {};
+
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {
+  const partial = PARTIAL_GRADERS[block.type];
+  if (partial) {
+    // Defensiv auf [0,1] clampen — kein Prüfer darf außerhalb liefern.
+    return Math.max(0, Math.min(1, partial(block, answer)));
+  }
   const checker = CHECKERS[block.type];
   if (!checker) {
     // Nicht-bewertbare Blöcke (text/infobox/reflection) tragen nichts bei.
@@ -110,8 +124,9 @@ export function evaluateBlock(block: Block, answer: BlockAnswer): boolean {
   return gradeBlock(block, answer) === 1;
 }
 
-// Punkte = Summe der Teilergebnisse über alle bewertbaren Blöcke. Solange
-// gradeBlock binär ist, ist das ganzzahlig (smallint-kompatibel).
+// Punkte = Summe der Teilergebnisse über alle bewertbaren Blöcke. Mit
+// Teilpunkte-Blöcken kann das Brüche enthalten (z.B. 7.5) — die
+// student_progress.score-Spalte ist seit Migration 0024 numeric(6,2).
 export function scoreModule(blocks: Block[], answers: Record<string, BlockAnswer>): number {
   return blocks
     .filter(isGraded)
@@ -147,11 +162,24 @@ export function isPassed(score: number, max: number, threshold: number | null): 
 }
 
 // Ergebnis eines einzelnen Blocks für die Lehrer:innen-Detailansicht.
-export type BlockResult = 'correct' | 'wrong' | 'ungraded';
+// 'partial' (Teilpunkte) für Aufgabentypen, die einen Bruchwert liefern können
+// (categorize, order, mark_words, hotspot) — z.B. „3 von 4 richtig".
+export type BlockResult = 'correct' | 'partial' | 'wrong' | 'ungraded';
 
 export function blockResult(block: Block, answer: BlockAnswer | undefined): BlockResult {
   if (!isGraded(block)) {
     return 'ungraded';
   }
-  return gradeBlock(block, answer) === 1 ? 'correct' : 'wrong';
+  const score = gradeBlock(block, answer);
+  if (score >= 1) return 'correct';
+  if (score <= 0) return 'wrong';
+  return 'partial';
+}
+
+// Roher Score eines Blocks als 0.0–1.0 — für die Teilpunkte-Anzeige in der
+// Lehrer:innen-Korrektur (z.B. „75 %" oder „3 von 4"). Nicht-bewertbare
+// Blöcke liefern null (Anteil nicht anwendbar).
+export function blockScore(block: Block, answer: BlockAnswer | undefined): number | null {
+  if (!isGraded(block)) return null;
+  return gradeBlock(block, answer);
 }

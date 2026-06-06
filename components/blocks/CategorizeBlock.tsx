@@ -73,14 +73,24 @@ function BucketDrop(props: {
 }) {
   const { armed, onDrop, ...inner } = props;
   if (armed) {
+    // role="button"-div (kein <button>), damit die „×"-Knöpfe der einsortierten
+    // Chips legal darin verschachtelt werden können (sonst button-in-button →
+    // Hydration-Error).
     return (
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onDrop}
-        className="border-primary bg-primary/5 hover:bg-primary/10 min-h-24 rounded-lg border-2 p-3 text-left transition-colors"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onDrop();
+          }
+        }}
+        className="border-primary bg-primary/5 hover:bg-primary/10 focus-visible:ring-ring min-h-24 cursor-pointer rounded-lg border-2 p-3 text-left transition-colors focus:outline-none focus-visible:ring-2"
       >
         <BucketInner {...inner} armed={armed} />
-      </button>
+      </div>
     );
   }
   return (

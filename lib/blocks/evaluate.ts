@@ -5,6 +5,7 @@ import type {
   MarkWordsBlock,
   MatchBlock,
   MultipleChoiceBlock,
+  OrderBlock,
   TrueFalseBlock,
 } from '@/lib/schemas/blocks';
 import { isFuzzyMatch } from '@/lib/blocks/levenshtein';
@@ -17,6 +18,7 @@ export type FillBlankAnswer = (string | null)[];
 export type MatchAnswer = Record<string, string>; // pairId → zugeordnete Kategorie
 export type CategorizeAnswer = Record<string, string>; // itemId → gewählter bucketId
 export type MarkWordsAnswer = number[]; // markierte wordIndex
+export type OrderAnswer = string[]; // itemIds in gewählter Reihenfolge
 export type BlockAnswer =
   | MultipleChoiceAnswer
   | TrueFalseAnswer
@@ -24,6 +26,7 @@ export type BlockAnswer =
   | MatchAnswer
   | CategorizeAnswer
   | MarkWordsAnswer
+  | OrderAnswer
   | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
@@ -98,6 +101,31 @@ function evalMarkWords(block: MarkWordsBlock, answer: MarkWordsAnswer): number {
   return (hits - misses) / correctSet.size;
 }
 
+// Reihenfolge: Anteil korrekter Nachbarpaare. block.items ist die KORREKTE
+// Reihenfolge; answer ist die Schüler:innen-Reihenfolge (itemIds). Bei N Items
+// gibt es N-1 Nachbarpaare in der Lösung — der Score ist der Anteil dieser
+// Paare, die in der Antwort direkt hintereinander + in der richtigen Richtung
+// stehen. Fairer als reine Positionsgleichheit (ein früher Fehler verschiebt
+// nicht alle Folgepositionen). Antwort muss vollständig sein (alle Items),
+// sonst zählen fehlende Paare als falsch.
+function evalOrder(block: OrderBlock, answer: OrderAnswer): number {
+  const n = block.items.length;
+  if (n < 2) return 0;
+  // Position jedes Items in der Schüler:innen-Antwort.
+  const pos = new Map<string, number>();
+  answer.forEach((id, i) => pos.set(id, i));
+  let correctPairs = 0;
+  for (let i = 0; i < n - 1; i++) {
+    const a = block.items[i]!.id;
+    const b = block.items[i + 1]!.id;
+    const pa = pos.get(a);
+    const pb = pos.get(b);
+    // Paar zählt, wenn beide vorhanden sind UND b direkt nach a steht.
+    if (pa !== undefined && pb !== undefined && pb === pa + 1) correctPairs += 1;
+  }
+  return correctPairs / (n - 1);
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Erweiterbarkeit — einen NEUEN Block-Typ ins Scoring aufnehmen:
 //   1. lib/schemas/blocks.ts  → Block-Typ + Antwort-Format (Zod) definieren
@@ -130,6 +158,7 @@ const CHECKERS: Record<string, (block: Block, answer: BlockAnswer | undefined) =
 const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => number> = {
   categorize: (b, a) => evalCategorize(b as CategorizeBlock, (a as CategorizeAnswer) ?? {}),
   mark_words: (b, a) => evalMarkWords(b as MarkWordsBlock, (a as MarkWordsAnswer) ?? []),
+  order: (b, a) => evalOrder(b as OrderBlock, (a as OrderAnswer) ?? []),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

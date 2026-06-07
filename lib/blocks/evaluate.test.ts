@@ -315,3 +315,44 @@ describe('mark_words — Teilpunkte (PARTIAL_GRADERS)', () => {
     expect(blockResult(markWords, [1, 2])).toBe('wrong');
   });
 });
+
+// A2: order — Anteil korrekter Nachbarpaare. Korrekte Reihenfolge a→b→c→d
+// (3 Nachbarpaare: a-b, b-c, c-d).
+const order: Block = {
+  id: 'ord',
+  type: 'order',
+  instruction: 'Bring in die richtige Reihenfolge.',
+  items: [
+    { id: 'a', text: 'Erstens' },
+    { id: 'b', text: 'Zweitens' },
+    { id: 'c', text: 'Drittens' },
+    { id: 'd', text: 'Viertens' },
+  ],
+};
+
+describe('order — Teilpunkte (Anteil korrekter Nachbarpaare)', () => {
+  it('perfekte Reihenfolge → 1', () => {
+    expect(gradeBlock(order, ['a', 'b', 'c', 'd'])).toBe(1);
+  });
+  it('komplett umgekehrt → 0 (kein Paar in richtiger Richtung)', () => {
+    expect(gradeBlock(order, ['d', 'c', 'b', 'a'])).toBe(0);
+  });
+  it('ein Paar vertauscht: a-b ok, dann d-c falsch → 1 von 3 ≈ 0.33', () => {
+    // ['a','b','d','c']: a-b ✓, b-c ✗ (b→d), c-d ✗ (d→c) → 1/3
+    expect(gradeBlock(order, ['a', 'b', 'd', 'c'])).toBeCloseTo(1 / 3, 5);
+  });
+  it('zwei von drei Paaren korrekt → 2/3', () => {
+    // ['a','b','c'] hat nur 3 von 4 Items; aber teste vollständig:
+    // ['b','c','d','a']: a-b ✗, b-c ✓, c-d ✓ → 2/3
+    expect(gradeBlock(order, ['b', 'c', 'd', 'a'])).toBeCloseTo(2 / 3, 5);
+  });
+  it('keine Antwort → 0', () => {
+    expect(gradeBlock(order, [])).toBe(0);
+    expect(gradeBlock(order, undefined)).toBe(0);
+  });
+  it('blockResult: voll = correct, teils = partial, null = wrong', () => {
+    expect(blockResult(order, ['a', 'b', 'c', 'd'])).toBe('correct');
+    expect(blockResult(order, ['a', 'b', 'd', 'c'])).toBe('partial');
+    expect(blockResult(order, ['d', 'c', 'b', 'a'])).toBe('wrong');
+  });
+});

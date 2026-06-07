@@ -28,6 +28,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   match: 'm',
   categorize: 'cat',
   mark_words: 'mw',
+  order: 'ord',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -86,6 +87,17 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
     instruction: 'Markiere alle persönlichen Daten.',
     text: 'Anna wohnt in Wien',
     correctIndices: [0, 3],
+  }),
+  order: (id) => ({
+    id,
+    type: 'order',
+    instruction: 'Bring die Schritte in die richtige Reihenfolge.',
+    // items in KORREKTER Reihenfolge — im Renderer werden sie gemischt.
+    items: [
+      { id: 'i1', text: 'Erster Schritt' },
+      { id: 'i2', text: 'Zweiter Schritt' },
+      { id: 'i3', text: 'Dritter Schritt' },
+    ],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),
   live_poll: (id) => ({

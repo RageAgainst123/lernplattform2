@@ -11,6 +11,7 @@ const INTERACTIVE_TYPES: ReadonlySet<BlockType> = new Set([
   'match',
   'categorize',
   'mark_words',
+  'order',
   'reflection',
 ]);
 

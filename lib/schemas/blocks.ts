@@ -144,6 +144,21 @@ export const markWordsBlockSchema = z.object({
   ...gradedBlockExtensions,
 });
 
+// Reihenfolge: Schüler:in bringt Items in die richtige Reihenfolge. `items`
+// sind in der KORREKTEN Reihenfolge angegeben (so wie der/die Autor:in sie
+// eingibt). Im Renderer werden sie gemischt angezeigt. Antwort = string[] der
+// itemIds in gewählter Reihenfolge. Teilpunkte via Anteil korrekter
+// Nachbarpaare (fairer als Positionsgleichheit — ein früher Fehler ruiniert
+// nicht alles).
+const orderItemSchema = z.object({ id: z.string().min(1), text: z.string() });
+export const orderBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('order'),
+  instruction: z.string(),
+  items: z.array(orderItemSchema).min(2),
+  ...gradedBlockExtensions,
+});
+
 export const reflectionBlockSchema = z.object({
   id: blockId,
   type: z.literal('reflection'),
@@ -227,6 +242,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   matchBlockSchema,
   categorizeBlockSchema,
   markWordsBlockSchema,
+  orderBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -250,6 +266,7 @@ export type FillBlankBlock = z.infer<typeof fillBlankBlockSchema>;
 export type MatchBlock = z.infer<typeof matchBlockSchema>;
 export type CategorizeBlock = z.infer<typeof categorizeBlockSchema>;
 export type MarkWordsBlock = z.infer<typeof markWordsBlockSchema>;
+export type OrderBlock = z.infer<typeof orderBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;
 export type SlideBlock = z.infer<typeof slideBlockSchema>;

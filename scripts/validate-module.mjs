@@ -22,6 +22,7 @@ const GRADED = new Set([
   'match',
   'categorize',
   'mark_words',
+  'order',
 ]);
 
 function readInput() {
@@ -153,6 +154,16 @@ for (const b of blocks) {
     }
     if (new Set(b.correctIndices).size !== b.correctIndices.length) {
       errors.push(`${b.id} (mark_words): doppelter correctIndex.`);
+    }
+  }
+
+  if (b.type === 'order') {
+    const ids = b.items.map((it) => it.id);
+    if (new Set(ids).size !== ids.length) {
+      errors.push(`${b.id} (order): doppelte item-id.`);
+    }
+    if (b.items.some((it) => it.text.trim() === '')) {
+      errors.push(`${b.id} (order): leerer item-text.`);
     }
   }
 }

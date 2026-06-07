@@ -1,4 +1,18 @@
-{
+-- Seed-Update 0010: Showcase-Lernmodul um order-Block erweitern (A2)
+--
+-- Das Showcase-Lernmodul bekommt einen neuen „Reihenfolge"-Block (order) —
+-- Schüler:innen bringen Schritte in die richtige Reihenfolge (antippen + ▲▼).
+-- Teilpunkte über den Anteil korrekter Nachbarpaare.
+--
+-- UPDATE statt INSERT, weil das Modul (feste UUID …c5e1ea7) bereits existiert.
+-- Idempotent: mehrfaches Ausführen setzt denselben content erneut.
+--
+-- VORAUSSETZUNG: Migration 0024 (numeric scores) muss eingespielt sein.
+--
+-- STOP-PUNKT für Geo: Dieses Update im Supabase-Dashboard ausführen.
+
+update public.modules
+set content = $${
   "blocks": [
     {
       "id": "intro",
@@ -162,8 +176,8 @@
       "id": "outro",
       "type": "infobox",
       "title": "Geschafft!",
-      "content": "Du hast jetzt alle Aufgaben-Typen kennengelernt, die in einem Lernmodul vorkommen können. Live-Polls, Wortwolken und Verständnis-Ampeln gibt es in der zugehörigen Präsentation »Showcase Live-Tools« — die zeigt dir deine Lehrerin am Beamer.",
-      "category": "theorie"
+      "content": "Du hast jetzt alle Aufgaben-Typen kennengelernt, die in einem Lernmodul vorkommen können. Live-Polls, Wortwolken und Verständnis-Ampeln gibt es in der zugehörigen Präsentation »Showcase Live-Tools« — die zeigt dir deine Lehrerin am Beamer."
     }
   ]
-}
+}$$::jsonb
+where id = '00000000-0000-4000-8000-00000c5e1ea7';

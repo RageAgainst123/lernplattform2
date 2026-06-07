@@ -65,6 +65,12 @@ export const BLOCK_CATALOG = {
         'Wörter im Fließtext antippen, die zu einem Kriterium passen (z.B. „Markiere alle persönlichen Daten"). Teilpunkte, Falschmarkierungen ziehen ab.',
     },
     {
+      type: 'order',
+      label: 'Reihenfolge (order)',
+      description:
+        'Begriffe/Schritte in die richtige Reihenfolge bringen (antippen + ▲▼). Teilpunkte über den Anteil korrekter Nachbarpaare.',
+    },
+    {
       type: 'reflection',
       label: 'Reflexion (Freitext)',
       description: 'Offene Frage, freie Antwort. Nicht auto-bewertet — Lehrer:in liest selbst.',

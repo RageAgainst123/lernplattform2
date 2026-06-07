@@ -10,6 +10,7 @@ import { InfoboxForm } from './InfoboxForm';
 import { MatchForm } from './MatchForm';
 import { CategorizeForm } from './CategorizeForm';
 import { MarkWordsForm } from './MarkWordsForm';
+import { OrderForm } from './OrderForm';
 
 // Dispatcher: rendert das passende Form für den Block-Typ. Wenn kein
 // dediziertes Form existiert (z.B. live-Blöcke wie slide, live_poll), wird
@@ -33,15 +34,15 @@ const FORM_TYPES = new Set([
   'match',
   'categorize',
   'mark_words',
+  'order',
 ] as const);
 
 export function hasForm(type: Block['type']): boolean {
   return (FORM_TYPES as ReadonlySet<string>).has(type);
 }
 
-export function BlockForm({ block, onChange }: Props): React.ReactElement | null {
-  // Switch ist erschöpfend für die FORM_TYPES — TS bleibt happy weil
-  // onChange-Typ-Argumente in jedem Branch passen (gemeinsamer Block-Diskriminator).
+// Theorie- + Basis-Aufgaben-Forms (text/infobox/mc/tf/fill_blank/reflection).
+function renderBasicForm({ block, onChange }: Props): React.ReactElement | null {
   switch (block.type) {
     case 'multiple_choice':
       return <MultipleChoiceForm value={block} onChange={onChange} />;
@@ -55,13 +56,27 @@ export function BlockForm({ block, onChange }: Props): React.ReactElement | null
       return <TextForm value={block} onChange={onChange} />;
     case 'infobox':
       return <InfoboxForm value={block} onChange={onChange} />;
+    default:
+      return null;
+  }
+}
+
+// Interaktive Zuordnungs-/Reihenfolge-Forms (match/categorize/mark_words/order).
+function renderTaskForm({ block, onChange }: Props): React.ReactElement | null {
+  switch (block.type) {
     case 'match':
       return <MatchForm value={block} onChange={onChange} />;
     case 'categorize':
       return <CategorizeForm value={block} onChange={onChange} />;
     case 'mark_words':
       return <MarkWordsForm value={block} onChange={onChange} />;
+    case 'order':
+      return <OrderForm value={block} onChange={onChange} />;
     default:
       return null;
   }
+}
+
+export function BlockForm(props: Props): React.ReactElement | null {
+  return renderBasicForm(props) ?? renderTaskForm(props);
 }

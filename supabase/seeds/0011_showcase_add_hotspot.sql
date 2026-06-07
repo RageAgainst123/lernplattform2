@@ -1,4 +1,22 @@
-{
+-- Seed-Update 0011: Showcase-Lernmodul um hotspot-Block erweitern (A3)
+--
+-- Das Showcase-Lernmodul bekommt einen neuen „Bild-Hotspots"-Block (hotspot) —
+-- Schüler:innen tippen die richtigen Stellen im Bild an. Teilpunkte über
+-- (richtig − falsch) / Anzahl-richtige; Falschklicks ziehen ab.
+--
+-- UPDATE statt INSERT, weil das Modul (feste UUID …c5e1ea7) bereits existiert.
+-- Idempotent: mehrfaches Ausführen setzt denselben content erneut.
+--
+-- Bild-URL: feste Pexels-URL (Laptop/Arbeitsplatz, frei nutzbar). Stabil, damit
+-- der Seed deterministisch bleibt. Im echten Autoren-Workflow ersetzt man sie
+-- per Upload oder Pexels-Suche im Editor.
+--
+-- VORAUSSETZUNG: Migration 0024 (numeric scores) muss eingespielt sein.
+--
+-- STOP-PUNKT für Geo: Dieses Update im Supabase-Dashboard ausführen.
+
+update public.modules
+set content = $${
   "blocks": [
     {
       "id": "intro",
@@ -158,23 +176,9 @@
       "imageUrl": "https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg",
       "imageAlt": "Ein Arbeitsplatz mit Laptop, Tastatur und Maus",
       "areas": [
-        {
-          "id": "hs-tastatur",
-          "label": "Tastatur",
-          "x": 0.5,
-          "y": 0.78,
-          "r": 0.18,
-          "isCorrect": true
-        },
+        { "id": "hs-tastatur", "label": "Tastatur", "x": 0.5, "y": 0.78, "r": 0.18, "isCorrect": true },
         { "id": "hs-maus", "label": "Maus", "x": 0.85, "y": 0.7, "r": 0.1, "isCorrect": true },
-        {
-          "id": "hs-bildschirm",
-          "label": "Bildschirm",
-          "x": 0.5,
-          "y": 0.32,
-          "r": 0.16,
-          "isCorrect": false
-        }
+        { "id": "hs-bildschirm", "label": "Bildschirm", "x": 0.5, "y": 0.32, "r": 0.16, "isCorrect": false }
       ],
       "hint": "Eingabegeräte geben dem Computer etwas. Der Bildschirm zeigt nur etwas an.",
       "maxAttempts": 2,
@@ -191,8 +195,8 @@
       "id": "outro",
       "type": "infobox",
       "title": "Geschafft!",
-      "content": "Du hast jetzt alle Aufgaben-Typen kennengelernt, die in einem Lernmodul vorkommen können. Live-Polls, Wortwolken und Verständnis-Ampeln gibt es in der zugehörigen Präsentation »Showcase Live-Tools« — die zeigt dir deine Lehrerin am Beamer.",
-      "category": "theorie"
+      "content": "Du hast jetzt alle Aufgaben-Typen kennengelernt, die in einem Lernmodul vorkommen können. Live-Polls, Wortwolken und Verständnis-Ampeln gibt es in der zugehörigen Präsentation »Showcase Live-Tools« — die zeigt dir deine Lehrerin am Beamer."
     }
   ]
-}
+}$$::jsonb
+where id = '00000000-0000-4000-8000-00000c5e1ea7';

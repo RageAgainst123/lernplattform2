@@ -375,8 +375,9 @@ OPTIONALE Block-Varianten (nutze NUR wenn passend, statt dem obigen Default):
     { "id": "i1", "type": "infobox", "title": "Merke", "content": "Kurzer Satz." }
 
 VERBOTEN in Live-Modulen:
-- multiple_choice, true_false, fill_blank, match, reflection — diese
-  Worksheet-Aufgaben haben keine Beamer-Renderer.
+- multiple_choice, true_false, fill_blank, match, categorize, mark_words,
+  order, hotspot, reflection — diese Worksheet-Aufgaben haben keine
+  Beamer-Renderer.
 
 GIB MIR NUR DAS JSON ZURÜCK, kein Drumherum. Alle IDs eindeutig.
 ```

@@ -356,3 +356,45 @@ describe('order — Teilpunkte (Anteil korrekter Nachbarpaare)', () => {
     expect(blockResult(order, ['d', 'c', 'b', 'a'])).toBe('wrong');
   });
 });
+
+// A3: hotspot — Anteil korrekt angetippter Zonen minus Falschklicks.
+// 4 Zonen: z1+z2 richtig, z3+z4 falsch (Distraktoren).
+const hotspot: Block = {
+  id: 'hs',
+  type: 'hotspot',
+  instruction: 'Tippe alle Eingabegeräte an.',
+  imageUrl: 'https://example.com/bild.jpg',
+  areas: [
+    { id: 'z1', x: 0.2, y: 0.2, r: 0.1, isCorrect: true },
+    { id: 'z2', x: 0.5, y: 0.5, r: 0.1, isCorrect: true },
+    { id: 'z3', x: 0.8, y: 0.2, r: 0.1, isCorrect: false },
+    { id: 'z4', x: 0.8, y: 0.8, r: 0.1, isCorrect: false },
+  ],
+};
+
+describe('hotspot — Teilpunkte (PARTIAL_GRADERS)', () => {
+  it('beide richtigen angetippt → 1', () => {
+    expect(gradeBlock(hotspot, ['z1', 'z2'])).toBe(1);
+  });
+  it('eine von zwei richtig → 0.5', () => {
+    expect(gradeBlock(hotspot, ['z1'])).toBe(0.5);
+  });
+  it('ein Falschklick zieht ab: 2 richtig − 1 falsch / 2 = 0.5', () => {
+    expect(gradeBlock(hotspot, ['z1', 'z2', 'z3'])).toBe(0.5);
+  });
+  it('alle antippen lohnt nicht: 2 richtig − 2 falsch / 2 = 0', () => {
+    expect(gradeBlock(hotspot, ['z1', 'z2', 'z3', 'z4'])).toBe(0);
+  });
+  it('nur falsche → auf 0 geclampt (nicht negativ)', () => {
+    expect(gradeBlock(hotspot, ['z3', 'z4'])).toBe(0);
+  });
+  it('keine Antwort → 0', () => {
+    expect(gradeBlock(hotspot, [])).toBe(0);
+    expect(gradeBlock(hotspot, undefined)).toBe(0);
+  });
+  it('blockResult: voll = correct, teils = partial, null = wrong', () => {
+    expect(blockResult(hotspot, ['z1', 'z2'])).toBe('correct');
+    expect(blockResult(hotspot, ['z1'])).toBe('partial');
+    expect(blockResult(hotspot, ['z3', 'z4'])).toBe('wrong');
+  });
+});

@@ -23,6 +23,7 @@ const GRADED = new Set([
   'categorize',
   'mark_words',
   'order',
+  'hotspot',
 ]);
 
 function readInput() {
@@ -164,6 +165,21 @@ for (const b of blocks) {
     }
     if (b.items.some((it) => it.text.trim() === '')) {
       errors.push(`${b.id} (order): leerer item-text.`);
+    }
+  }
+
+  if (b.type === 'hotspot') {
+    const ids = b.areas.map((a) => a.id);
+    if (new Set(ids).size !== ids.length) {
+      errors.push(`${b.id} (hotspot): doppelte area-id.`);
+    }
+    if (!b.areas.some((a) => a.isCorrect)) {
+      errors.push(`${b.id} (hotspot): mindestens eine Zone muss richtig (isCorrect) sein.`);
+    }
+    for (const a of b.areas) {
+      if (a.x < 0 || a.x > 1 || a.y < 0 || a.y > 1) {
+        errors.push(`${b.id} (hotspot): area "${a.id}" Koordinate außerhalb [0,1].`);
+      }
     }
   }
 }

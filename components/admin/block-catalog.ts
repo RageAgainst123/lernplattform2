@@ -71,6 +71,12 @@ export const BLOCK_CATALOG = {
         'Begriffe/Schritte in die richtige Reihenfolge bringen (antippen + ▲▼). Teilpunkte über den Anteil korrekter Nachbarpaare.',
     },
     {
+      type: 'hotspot',
+      label: 'Bild-Hotspots (hotspot)',
+      description:
+        'Auf richtige Stellen im Bild tippen. Du legst Kreis-Zonen aufs Bild (Upload oder Pexels) und markierst die richtigen. Teilpunkte, Falschklicks ziehen ab.',
+    },
+    {
       type: 'reflection',
       label: 'Reflexion (Freitext)',
       description: 'Offene Frage, freie Antwort. Nicht auto-bewertet — Lehrer:in liest selbst.',

@@ -101,6 +101,7 @@ const LERNMODUL_BLOCKS: ReadonlySet<BlockType> = new Set([
   'categorize',
   'mark_words',
   'order',
+  'hotspot',
   'reflection',
 ]);
 

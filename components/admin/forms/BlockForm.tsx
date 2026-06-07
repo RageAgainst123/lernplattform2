@@ -11,6 +11,7 @@ import { MatchForm } from './MatchForm';
 import { CategorizeForm } from './CategorizeForm';
 import { MarkWordsForm } from './MarkWordsForm';
 import { OrderForm } from './OrderForm';
+import { HotspotForm } from './HotspotForm';
 
 // Dispatcher: rendert das passende Form für den Block-Typ. Wenn kein
 // dediziertes Form existiert (z.B. live-Blöcke wie slide, live_poll), wird
@@ -35,6 +36,7 @@ const FORM_TYPES = new Set([
   'categorize',
   'mark_words',
   'order',
+  'hotspot',
 ] as const);
 
 export function hasForm(type: Block['type']): boolean {
@@ -72,6 +74,8 @@ function renderTaskForm({ block, onChange }: Props): React.ReactElement | null {
       return <MarkWordsForm value={block} onChange={onChange} />;
     case 'order':
       return <OrderForm value={block} onChange={onChange} />;
+    case 'hotspot':
+      return <HotspotForm value={block} onChange={onChange} />;
     default:
       return null;
   }

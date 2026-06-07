@@ -2,6 +2,7 @@ import type {
   Block,
   CategorizeBlock,
   FillBlankBlock,
+  HotspotBlock,
   MarkWordsBlock,
   MatchBlock,
   MultipleChoiceBlock,
@@ -19,6 +20,7 @@ export type MatchAnswer = Record<string, string>; // pairId → zugeordnete Kate
 export type CategorizeAnswer = Record<string, string>; // itemId → gewählter bucketId
 export type MarkWordsAnswer = number[]; // markierte wordIndex
 export type OrderAnswer = string[]; // itemIds in gewählter Reihenfolge
+export type HotspotAnswer = string[]; // angetippte areaIds
 export type BlockAnswer =
   | MultipleChoiceAnswer
   | TrueFalseAnswer
@@ -27,6 +29,7 @@ export type BlockAnswer =
   | CategorizeAnswer
   | MarkWordsAnswer
   | OrderAnswer
+  | HotspotAnswer
   | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
@@ -126,6 +129,22 @@ function evalOrder(block: OrderBlock, answer: OrderAnswer): number {
   return correctPairs / (n - 1);
 }
 
+// Bild-Hotspots: Anteil korrekt angetippter Zonen minus Falschklicks.
+// Score = (richtig angetippt − falsch angetippt) / Anzahl-richtige, geclampt
+// auf [0,1] (durch gradeBlock). „Alle Zonen antippen" lohnt nicht.
+function evalHotspot(block: HotspotBlock, answer: HotspotAnswer): number {
+  const correctIds = new Set(block.areas.filter((a) => a.isCorrect).map((a) => a.id));
+  if (correctIds.size === 0) return 0;
+  const picked = new Set(answer);
+  let hits = 0;
+  let misses = 0;
+  for (const id of picked) {
+    if (correctIds.has(id)) hits += 1;
+    else misses += 1;
+  }
+  return (hits - misses) / correctIds.size;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Erweiterbarkeit — einen NEUEN Block-Typ ins Scoring aufnehmen:
 //   1. lib/schemas/blocks.ts  → Block-Typ + Antwort-Format (Zod) definieren
@@ -159,6 +178,7 @@ const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undef
   categorize: (b, a) => evalCategorize(b as CategorizeBlock, (a as CategorizeAnswer) ?? {}),
   mark_words: (b, a) => evalMarkWords(b as MarkWordsBlock, (a as MarkWordsAnswer) ?? []),
   order: (b, a) => evalOrder(b as OrderBlock, (a as OrderAnswer) ?? []),
+  hotspot: (b, a) => evalHotspot(b as HotspotBlock, (a as HotspotAnswer) ?? []),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

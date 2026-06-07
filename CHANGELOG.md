@@ -8,6 +8,46 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase A — Reiche Aufgabentypen mit Teilpunkten (A1–A3)
+
+**2026-06-07** · Tags `phase-a1-savepoint` … `phase-a3-savepoint`
+
+### Hintergrund
+
+Bisher waren alle bewertbaren Aufgaben binär (richtig/falsch) und textbasiert.
+Die **Lernmodul-Vision 2.0** fügt vier neue Aufgabentypen mit **Teilpunkten**
+hinzu (Fundament: Phase P0 — numerische Scores + `PARTIAL_GRADERS`-Map), damit
+Schüler:innen für teilweise richtige Lösungen anteilig Punkte bekommen.
+
+### Hinzugefügt
+
+- **`categorize`** (A1) — Items in benannte Behälter einsortieren (Chip-UI).
+  Teilpunkte = Anteil korrekt einsortierter Items.
+- **`mark_words`** (A4) — Wörter im Fließtext antippen (geteilte `tokenize.ts`).
+  Teilpunkte = (Treffer − Fehlklicks) / Anzahl-richtige.
+- **`order`** (A2) — Items in die richtige Reihenfolge bringen (Tippen + ▲▼,
+  kein Drag). Teilpunkte = Anteil korrekter Nachbarpaare.
+- **`hotspot`** (A3) — richtige Stellen im Bild antippen. Sichtbare Kreis-Zonen
+  über einem `<img>` (relative 0–1-Koordinaten, responsive). Teilpunkte =
+  (Treffer − Fehlklicks) / Anzahl-richtige, Falschklicks ziehen ab.
+  - Admin-Editor mit **Klick-aufs-Bild → Zone**, Radius-Slider, „richtig"-Haken.
+  - Bildquelle: **Upload** (materials-Bucket) **oder Pexels-Suche**, beide
+    admin-geschützt (`lib/db/hotspot-image-actions.ts`, `requireAdmin`).
+- Showcase-Modul (`…c5e1ea7`) per Seeds `0008`–`0011` um je eine Aufgabe pro
+  neuem Typ erweitert.
+
+### Geändert
+
+- `lib/schemas/blocks.ts`: Live-Block-Schemas (slide/live_poll/quiz_poll/
+  word_cloud/scale/understanding) nach `blocks-live.ts` ausgelagert
+  (Zeilen-Limit). `allowImportingTsExtensions` in `tsconfig.json` aktiviert,
+  damit der Node-Strip-Types-Loader von `validate-module.mjs` den internen
+  `.ts`-Import auflöst.
+- `BlockView.tsx`: Zuordnungs-/Reihenfolge-/Hotspot-Dispatcher nach
+  `block-assignment-renderers.tsx` ausgelagert.
+
+---
+
 ## Phase W — Lernmodul-Polish: Hint-Box + Mehrfachversuch
 
 **2026-06-05** · Tag `phase-w-savepoint`

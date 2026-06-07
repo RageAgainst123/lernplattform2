@@ -21,8 +21,8 @@
 
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
-(diskriminierte Union). 13 Block-Typen total — verteilt auf **drei Gruppen**:
-Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (4 davon auto-bewertbar),
+(diskriminierte Union). 17 Block-Typen total — verteilt auf **drei Gruppen**:
+Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (8 davon auto-bewertbar),
 und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
 nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
 
@@ -57,13 +57,17 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 
 **Gruppe B — Worksheet-Aufgaben** (Eingabefelder, automatisch bewertet außer `reflection`):
 
-| `type`            | Zweck                       | Auto-bewertbar? | Wo die Lösung steht                          |
-| ----------------- | --------------------------- | --------------- | -------------------------------------------- |
-| `multiple_choice` | Mehrfachauswahl             | ✅ ja           | `options[].correct: true`                    |
-| `true_false`      | Wahr/Falsch                 | ✅ ja           | `answer: true \| false`                      |
-| `fill_blank`      | Lückentext                  | ✅ ja           | `solutions[]` (Reihenfolge der `{0}`,`{1}`…) |
-| `match`           | Zuordnung Begriff→Kategorie | ✅ ja           | `pairs[].category`                           |
-| `reflection`      | Freie offene Antwort        | ❌ nein         | — (manuell von Lehrer:in beurteilt)          |
+| `type`            | Zweck                             | Auto-bewertbar?    | Wo die Lösung steht                          |
+| ----------------- | --------------------------------- | ------------------ | -------------------------------------------- |
+| `multiple_choice` | Mehrfachauswahl                   | ✅ ja              | `options[].correct: true`                    |
+| `true_false`      | Wahr/Falsch                       | ✅ ja              | `answer: true \| false`                      |
+| `fill_blank`      | Lückentext                        | ✅ ja              | `solutions[]` (Reihenfolge der `{0}`,`{1}`…) |
+| `match`           | Zuordnung Begriff→Kategorie       | ✅ ja              | `pairs[].category`                           |
+| `categorize`      | Items in Behälter einsortieren    | ✅ ja (Teilpunkte) | `items[].bucketId`                           |
+| `mark_words`      | Wörter im Text markieren          | ✅ ja (Teilpunkte) | `correctIndices[]` (wordIndex)               |
+| `order`           | Items in Reihenfolge bringen      | ✅ ja (Teilpunkte) | `items[]` in korrekter Reihenfolge           |
+| `hotspot`         | Richtige Stellen im Bild antippen | ✅ ja (Teilpunkte) | `areas[].isCorrect`                          |
+| `reflection`      | Freie offene Antwort              | ❌ nein            | — (manuell von Lehrer:in beurteilt)          |
 
 **Gruppe C — Live-Interaktionen** (nur `display_mode='presentation'`, Stimmen in `live_votes`, **nicht bewertet** — zählen nicht zu `max_score`):
 
@@ -83,7 +87,7 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 ## 3. Felder pro Block-Typ
 
 Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
-Modul) und `type` (einer der 13 Werte aus der Tabelle in §2).
+Modul) und `type` (einer der 17 Werte aus der Tabelle in §2).
 
 ### 3.1 `text` — Erklärtext (nicht bewertet)
 
@@ -389,15 +393,15 @@ Sie ist **typ-agnostisch**: jede Auswertung läuft über `gradeBlock()` +
 > Für eine bewertbare Quiz-Frage nimm `multiple_choice` oder `true_false` im
 > Worksheet-Modus.
 
-| Funktion                          | Was sie liefert                                                         |
-| --------------------------------- | ----------------------------------------------------------------------- |
-| `isGraded(block)`                 | `true` für die 4 bewertbaren Worksheet-Typen, `false` für alle anderen. |
-| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0** (heute binär: 0 oder 1).                       |
-| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.    |
-| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                |
-| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                     |
-| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.     |
-| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).           |
+| Funktion                          | Was sie liefert                                                                                                                                |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                          |
+| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
+| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                           |
+| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                       |
+| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                            |
+| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                            |
+| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                  |
 
 **Bestehens-Schwelle** (`pass_threshold`) lebt **pro Klassen-Zuweisung**, nicht
 pro Modul (siehe ADR-0011). Ein Modul mit `max_score = 0` kann nie „bestanden"
@@ -408,13 +412,17 @@ oder „nicht bestanden" sein — die Anzeige bleibt neutral.
 Wichtig, falls du Seed-Daten oder Tests von Hand schreibst. Die Antworten liegen
 als `Record<blockId, answer>` in `student_progress.answers`:
 
-| Block-Typ         | Antwort-Format          | Beispiel                                  |
-| ----------------- | ----------------------- | ----------------------------------------- |
-| `multiple_choice` | `string[]` (Option-IDs) | `["o1"]` bzw. `["o1","o3"]`               |
-| `true_false`      | `boolean`               | `false`                                   |
-| `fill_blank`      | `(string\|null)[]`      | `["Crawler","Index"]` (Reihenfolge `{i}`) |
-| `match`           | `Record<pairId,cat>`    | `{ "p1":"Technik", "p3":"Vorsicht" }`     |
-| `reflection`      | `string`                | `"Ich nutze sie für …"`                   |
+| Block-Typ         | Antwort-Format                  | Beispiel                                  |
+| ----------------- | ------------------------------- | ----------------------------------------- |
+| `multiple_choice` | `string[]` (Option-IDs)         | `["o1"]` bzw. `["o1","o3"]`               |
+| `true_false`      | `boolean`                       | `false`                                   |
+| `fill_blank`      | `(string\|null)[]`              | `["Crawler","Index"]` (Reihenfolge `{i}`) |
+| `match`           | `Record<pairId,cat>`            | `{ "p1":"Technik", "p3":"Vorsicht" }`     |
+| `categorize`      | `Record<itemId,bucketId>`       | `{ "ci1":"b-ein", "ci4":"b-aus" }`        |
+| `mark_words`      | `number[]` (wordIndex)          | `[2, 5, 22]`                              |
+| `order`           | `string[]` (itemId-Reihenfolge) | `["oe1","oe2","oe3"]`                     |
+| `hotspot`         | `string[]` (areaId)             | `["hs-tastatur","hs-maus"]`               |
+| `reflection`      | `string`                        | `"Ich nutze sie für …"`                   |
 
 ## 5. Pflicht-Checkliste vor dem Import
 

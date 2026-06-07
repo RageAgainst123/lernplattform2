@@ -8,10 +8,7 @@ import { InfoboxBlock } from '@/components/blocks/InfoboxBlock';
 import { MultipleChoiceBlock } from '@/components/blocks/MultipleChoiceBlock';
 import { TrueFalseBlock } from '@/components/blocks/TrueFalseBlock';
 import { FillBlankBlock } from '@/components/blocks/FillBlankBlock';
-import { MatchBlock } from '@/components/blocks/MatchBlock';
-import { CategorizeBlock } from '@/components/blocks/CategorizeBlock';
-import { MarkWordsBlock } from '@/components/blocks/MarkWordsBlock';
-import { OrderBlock } from '@/components/blocks/OrderBlock';
+import { renderAssignment } from '@/components/blocks/block-assignment-renderers';
 import { ReflectionBlock } from '@/components/blocks/ReflectionBlock';
 import { SlideBlock } from '@/components/blocks/SlideBlock';
 import { LivePollBlock } from '@/components/blocks/LivePollBlock';
@@ -63,57 +60,6 @@ function renderFillBlank(block: Extract<Block, { type: 'fill_blank' }>, p: Commo
       checked={p.checked}
       readOnly={p.readOnly}
       onFill={p.onAnswer}
-    />
-  );
-}
-
-// Zuordnungs-/Markier-/Reihenfolge-Blöcke (match, categorize, mark_words,
-// order) — gemeinsam ausgelagert, damit der Haupt-Dispatcher unter der
-// Zeilen-Grenze bleibt.
-function renderAssignment(
-  block: Extract<Block, { type: 'match' | 'categorize' | 'mark_words' | 'order' }>,
-  p: CommonProps
-) {
-  if (block.type === 'match') {
-    return (
-      <MatchBlock
-        block={block}
-        assignment={(p.answer as Record<string, string>) ?? {}}
-        checked={p.checked}
-        readOnly={p.readOnly}
-        onAssign={p.onAnswer}
-      />
-    );
-  }
-  if (block.type === 'categorize') {
-    return (
-      <CategorizeBlock
-        block={block}
-        answer={(p.answer as Record<string, string>) ?? {}}
-        checked={p.checked}
-        readOnly={p.readOnly}
-        onAssign={p.onAnswer}
-      />
-    );
-  }
-  if (block.type === 'mark_words') {
-    return (
-      <MarkWordsBlock
-        block={block}
-        answer={(p.answer as number[]) ?? []}
-        checked={p.checked}
-        readOnly={p.readOnly}
-        onMark={p.onAnswer}
-      />
-    );
-  }
-  return (
-    <OrderBlock
-      block={block}
-      answer={(p.answer as string[]) ?? []}
-      checked={p.checked}
-      readOnly={p.readOnly}
-      onReorder={p.onAnswer}
     />
   );
 }
@@ -177,6 +123,7 @@ export function BlockView({ block, answer, checked, readOnly = false, onAnswer }
     case 'categorize':
     case 'mark_words':
     case 'order':
+    case 'hotspot':
       return renderAssignment(block, c);
   }
 }

@@ -106,7 +106,7 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
     type: 'hotspot',
     instruction: 'Tippe die richtige Stelle im Bild an.',
     imageUrl: 'https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg',
-    areas: [{ id: 'a1', x: 0.5, y: 0.5, r: 0.1, isCorrect: true }],
+    areas: [{ id: 'a1', x: 0.5, y: 0.5, shape: 'circle', r: 0.1, rotation: 0, isCorrect: true }],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),
   live_poll: (id) => ({

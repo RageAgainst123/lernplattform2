@@ -365,10 +365,10 @@ const hotspot: Block = {
   instruction: 'Tippe alle Eingabegeräte an.',
   imageUrl: 'https://example.com/bild.jpg',
   areas: [
-    { id: 'z1', x: 0.2, y: 0.2, r: 0.1, isCorrect: true },
-    { id: 'z2', x: 0.5, y: 0.5, r: 0.1, isCorrect: true },
-    { id: 'z3', x: 0.8, y: 0.2, r: 0.1, isCorrect: false },
-    { id: 'z4', x: 0.8, y: 0.8, r: 0.1, isCorrect: false },
+    { id: 'z1', x: 0.2, y: 0.2, shape: 'circle', r: 0.1, rotation: 0, isCorrect: true },
+    { id: 'z2', x: 0.5, y: 0.5, shape: 'circle', r: 0.1, rotation: 0, isCorrect: true },
+    { id: 'z3', x: 0.8, y: 0.2, shape: 'circle', r: 0.1, rotation: 0, isCorrect: false },
+    { id: 'z4', x: 0.8, y: 0.8, shape: 'circle', r: 0.1, rotation: 0, isCorrect: false },
   ],
 };
 

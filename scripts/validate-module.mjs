@@ -180,6 +180,19 @@ for (const b of blocks) {
       if (a.x < 0 || a.x > 1 || a.y < 0 || a.y > 1) {
         errors.push(`${b.id} (hotspot): area "${a.id}" Koordinate außerhalb [0,1].`);
       }
+      const shape = a.shape ?? 'circle';
+      if (shape === 'rect') {
+        if (typeof a.width !== 'number' || typeof a.height !== 'number') {
+          errors.push(`${b.id} (hotspot): Rechteck-Zone "${a.id}" braucht width + height.`);
+        } else if (a.width <= 0 || a.width > 1 || a.height <= 0 || a.height > 1) {
+          errors.push(`${b.id} (hotspot): Rechteck-Zone "${a.id}" width/height außerhalb (0,1].`);
+        }
+      } else if (typeof a.r !== 'number') {
+        errors.push(`${b.id} (hotspot): Kreis-Zone "${a.id}" braucht r.`);
+      }
+      if (a.rotation !== undefined && (a.rotation < 0 || a.rotation > 359)) {
+        errors.push(`${b.id} (hotspot): area "${a.id}" rotation außerhalb [0,359].`);
+      }
     }
   }
 }

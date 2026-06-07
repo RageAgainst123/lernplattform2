@@ -6,8 +6,10 @@ import { uploadHotspotImage } from '@/lib/db/hotspot-image-actions';
 import { Button } from '@/components/ui/button';
 import { GradedExtensionsFields } from './GradedExtensionsFields';
 import { AddButton, FieldLabel, TextInput, makeOptionId } from './form-helpers';
-import { DEFAULT_R, HotspotImageEditor, ZoneRow } from './hotspot-editor';
+import { DEFAULT_R, HotspotImageEditor } from './hotspot-editor';
+import { ZoneRow } from './hotspot-zone-row';
 import { HotspotPexelsPicker } from './hotspot-image-picker';
+import { NewZoneToggle, ShapeToggle, type HotspotShape } from './hotspot-toolbar';
 
 // Admin-Editor für hotspot. Bildquelle (Upload + Pexels) → Klick-Editor →
 // Zonen-Liste. Relative Koordinaten 0–1, identisch zum Renderer.
@@ -63,57 +65,47 @@ function ImageSourceBar({ onPicked }: { onPicked: (url: string) => void }) {
   );
 }
 
-// Umschalter über dem Bild: bestimmt, ob die NÄCHSTE per Klick gesetzte Zone
-// richtig (grün) oder ein Ablenker (grau) wird.
-function NewZoneToggle({
-  isCorrect,
-  onChange,
-}: {
-  isCorrect: boolean;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-muted-foreground">Neue Zone ist:</span>
-      <div className="inline-flex overflow-hidden rounded-md border">
-        <button
-          type="button"
-          onClick={() => onChange(true)}
-          aria-pressed={isCorrect}
-          className={
-            isCorrect ? 'bg-green-600 px-3 py-1 font-medium text-white' : 'hover:bg-muted px-3 py-1'
-          }
-        >
-          ✓ richtig
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange(false)}
-          aria-pressed={!isCorrect}
-          className={
-            !isCorrect ? 'bg-gray-500 px-3 py-1 font-medium text-white' : 'hover:bg-muted px-3 py-1'
-          }
-        >
-          Ablenker
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export function HotspotForm({ value, onChange }: Props) {
   // Bestimmt, ob die NÄCHSTE per Klick gesetzte Zone richtig (grün) oder ein
   // Ablenker (grau) ist. Default „richtig", weil jede Hotspot-Aufgabe mindestens
   // eine Lösung braucht (alter Bug: neue Zonen waren immer grau → wirkte, als
   // sei die erste Zone fix die einzige Lösung).
   const [newIsCorrect, setNewIsCorrect] = useState(true);
+  const [drawShape, setDrawShape] = useState<HotspotShape>('circle');
 
-  function addArea(x: number, y: number) {
+  function addCircle(x: number, y: number) {
     onChange({
       ...value,
       areas: [
         ...value.areas,
-        { id: makeOptionId(value.areas, 'a'), x, y, r: DEFAULT_R, isCorrect: newIsCorrect },
+        {
+          id: makeOptionId(value.areas, 'a'),
+          x,
+          y,
+          shape: 'circle',
+          r: DEFAULT_R,
+          rotation: 0,
+          isCorrect: newIsCorrect,
+        },
+      ],
+    });
+  }
+
+  function addRect(x: number, y: number, width: number, height: number) {
+    onChange({
+      ...value,
+      areas: [
+        ...value.areas,
+        {
+          id: makeOptionId(value.areas, 'a'),
+          x,
+          y,
+          shape: 'rect',
+          width,
+          height,
+          rotation: 0,
+          isCorrect: newIsCorrect,
+        },
       ],
     });
   }
@@ -144,13 +136,23 @@ export function HotspotForm({ value, onChange }: Props) {
 
       {value.imageUrl ? (
         <>
-          <NewZoneToggle isCorrect={newIsCorrect} onChange={setNewIsCorrect} />
+          <div className="flex flex-wrap items-center gap-4">
+            <NewZoneToggle isCorrect={newIsCorrect} onChange={setNewIsCorrect} />
+            <ShapeToggle shape={drawShape} onChange={setDrawShape} />
+          </div>
           <p className="text-muted-foreground text-xs">
-            Stelle oben „richtig“ oder „Ablenker“ ein, dann klick ins Bild, um eine Zone zu setzen.
-            Du kannst mehrere richtige Zonen setzen (z.B. „tippe alle Eingabegeräte an“). Bei jeder
-            Zone unten lässt sich „richtig“ nachträglich umschalten.
+            Stelle oben Form und „richtig/Ablenker“ ein. <strong>Kreis:</strong> ins Bild klicken.{' '}
+            <strong>Rechteck:</strong> mit gedrückter Maustaste aufziehen. Du kannst mehrere
+            richtige Zonen setzen (z.B. „tippe alle Eingabegeräte an“). Größe, Drehung und „richtig“
+            lassen sich bei jeder Zone unten nachjustieren.
           </p>
-          <HotspotImageEditor imageUrl={value.imageUrl} areas={value.areas} onAddArea={addArea} />
+          <HotspotImageEditor
+            imageUrl={value.imageUrl}
+            areas={value.areas}
+            drawShape={drawShape}
+            onAddCircle={addCircle}
+            onAddRect={addRect}
+          />
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium">Zonen</span>
@@ -167,7 +169,7 @@ export function HotspotForm({ value, onChange }: Props) {
               ))}
             </ul>
             {value.areas.length === 0 && (
-              <AddButton onClick={() => addArea(0.5, 0.5)}>Zone in der Mitte</AddButton>
+              <AddButton onClick={() => addCircle(0.5, 0.5)}>Zone in der Mitte</AddButton>
             )}
           </div>
         </>

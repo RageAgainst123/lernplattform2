@@ -2,6 +2,7 @@
 
 import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
 import { cn } from '@/lib/utils';
+import { zoneBoxStyle, zoneShapeClass } from '@/lib/blocks/hotspot-geometry';
 
 // Sub-Komponenten des HotspotBlock (ausgelagert wegen Zeilen-Limit):
 // eine klickbare Zone als absolut positionierter Kreis über dem Bild.
@@ -44,7 +45,6 @@ export function HotspotZone({
   index: number;
   onToggle: (id: string) => void;
 }) {
-  const size = `${area.r * 2 * 100}%`;
   return (
     <button
       type="button"
@@ -52,15 +52,10 @@ export function HotspotZone({
       aria-label={area.label ?? `Bereich ${index + 1}`}
       aria-pressed={picked}
       onClick={() => onToggle(area.id)}
-      style={{
-        left: `${area.x * 100}%`,
-        top: `${area.y * 100}%`,
-        width: size,
-        // Höhe == Breite in px → über aspect-square + translate zentriert.
-        transform: 'translate(-50%, -50%)',
-      }}
+      style={zoneBoxStyle(area)}
       className={cn(
-        'absolute aspect-square rounded-full border-2 transition-colors',
+        'absolute border-2 transition-colors',
+        zoneShapeClass(area),
         zoneClass({ picked, checked, isCorrect: area.isCorrect, locked })
       )}
     />

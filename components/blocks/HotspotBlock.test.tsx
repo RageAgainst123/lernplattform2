@@ -10,9 +10,36 @@ const BLOCK: HotspotBlockType = {
   imageUrl: 'https://example.com/bild.jpg',
   imageAlt: 'Ein Schreibtisch',
   areas: [
-    { id: 'z1', label: 'Tastatur', x: 0.2, y: 0.5, r: 0.1, isCorrect: true },
-    { id: 'z2', label: 'Maus', x: 0.5, y: 0.5, r: 0.1, isCorrect: true },
-    { id: 'z3', label: 'Monitor', x: 0.8, y: 0.3, r: 0.1, isCorrect: false },
+    {
+      id: 'z1',
+      label: 'Tastatur',
+      x: 0.2,
+      y: 0.5,
+      shape: 'circle',
+      r: 0.1,
+      rotation: 0,
+      isCorrect: true,
+    },
+    {
+      id: 'z2',
+      label: 'Maus',
+      x: 0.5,
+      y: 0.5,
+      shape: 'circle',
+      r: 0.1,
+      rotation: 0,
+      isCorrect: true,
+    },
+    {
+      id: 'z3',
+      label: 'Monitor',
+      x: 0.8,
+      y: 0.3,
+      shape: 'circle',
+      r: 0.1,
+      rotation: 0,
+      isCorrect: false,
+    },
   ],
 };
 
@@ -67,7 +94,7 @@ describe('HotspotBlock', () => {
   it('nutzt einen Fallback-Namen, wenn kein Label gesetzt ist', () => {
     const block: HotspotBlockType = {
       ...BLOCK,
-      areas: [{ id: 'z1', x: 0.5, y: 0.5, r: 0.1, isCorrect: true }],
+      areas: [{ id: 'z1', x: 0.5, y: 0.5, shape: 'circle', r: 0.1, rotation: 0, isCorrect: true }],
     };
     render(<HotspotBlock block={block} answer={[]} checked={false} onSelect={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Bereich 1' })).toBeInTheDocument();

@@ -1,102 +1,128 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import type { HotspotBlock } from '@/lib/schemas/blocks';
 import { cn } from '@/lib/utils';
-import { ItemAction, TextInput } from './form-helpers';
+import { zoneBoxStyle, zoneShapeClass } from '@/lib/blocks/hotspot-geometry';
 
-// Visueller Hotspot-Editor (Admin): Klick aufs Bild → neue Zone an relativer
-// Position; Zonen-Liste mit Label, Radius-Slider, „richtig"-Haken, Löschen.
-// Relative Koordinaten 0–1 via getBoundingClientRect — identisch zum Renderer.
+// Visueller Hotspot-Editor (Admin): Kreis per Klick, Rechteck per Aufziehen
+// (mousedown → ziehen → loslassen). Relative Koordinaten 0–1 via
+// getBoundingClientRect — identisch zum Renderer (gemeinsamer zoneBoxStyle).
 
 type Area = HotspotBlock['areas'][number];
 const DEFAULT_R = 0.08;
+const DEFAULT_RECT = { width: 0.2, height: 0.12 };
+// Kleiner als das wird als „nur geklickt" (kein echtes Aufziehen) gewertet.
+const MIN_DRAG = 0.03;
 
-// Klickbare Bild-Fläche mit SVG-Vorschau der Zonen.
+function relPos(e: { clientX: number; clientY: number }, el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+  const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+  return { x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000 };
+}
+
+// Live-Vorschau eines Rechtecks während des Aufziehens.
+type DragState = { x0: number; y0: number; x1: number; y1: number };
+
+function dragRect(d: DragState) {
+  const x = (d.x0 + d.x1) / 2;
+  const y = (d.y0 + d.y1) / 2;
+  const width = Math.abs(d.x1 - d.x0);
+  const height = Math.abs(d.y1 - d.y0);
+  return { x, y, width, height };
+}
+
+// Klickbare/aufziehbare Bild-Fläche mit Vorschau aller gesetzten Zonen.
 export function HotspotImageEditor({
   imageUrl,
   areas,
-  onAddArea,
+  drawShape,
+  onAddCircle,
+  onAddRect,
 }: {
   imageUrl: string;
   areas: Area[];
-  onAddArea: (x: number, y: number) => void;
+  drawShape: 'circle' | 'rect';
+  onAddCircle: (x: number, y: number) => void;
+  onAddRect: (x: number, y: number, width: number, height: number) => void;
 }) {
-  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
-    onAddArea(Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000);
+  const ref = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!ref.current) return;
+    const p = relPos(e, ref.current);
+    if (drawShape === 'circle') {
+      onAddCircle(p.x, p.y);
+      return;
+    }
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
   }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!drag || !ref.current) return;
+    const p = relPos(e, ref.current);
+    setDrag((d) => (d ? { ...d, x1: p.x, y1: p.y } : d));
+  }
+
+  function onPointerUp() {
+    if (!drag) return;
+    const r = dragRect(drag);
+    setDrag(null);
+    // Zu kleines Ziehen → Default-Rechteck am Startpunkt (verhindert 0-Größe).
+    if (r.width < MIN_DRAG || r.height < MIN_DRAG) {
+      onAddRect(drag.x0, drag.y0, DEFAULT_RECT.width, DEFAULT_RECT.height);
+    } else {
+      onAddRect(
+        Math.round(r.x * 1000) / 1000,
+        Math.round(r.y * 1000) / 1000,
+        Math.round(r.width * 1000) / 1000,
+        Math.round(r.height * 1000) / 1000
+      );
+    }
+  }
+
+  const preview = drag ? dragRect(drag) : null;
   return (
     <div
-      onClick={handleClick}
-      className="relative w-full cursor-crosshair overflow-hidden rounded-md border"
+      ref={ref}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      className={cn(
+        'relative w-full touch-none overflow-hidden rounded-md border',
+        drawShape === 'circle' ? 'cursor-crosshair' : 'cursor-cell'
+      )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- Editor-Vorschau */}
       <img src={imageUrl} alt="" className="block w-full select-none" draggable={false} />
       {areas.map((a) => (
         <span
           key={a.id}
-          style={{
-            left: `${a.x * 100}%`,
-            top: `${a.y * 100}%`,
-            width: `${a.r * 2 * 100}%`,
-            transform: 'translate(-50%, -50%)',
-          }}
+          style={zoneBoxStyle(a)}
           className={cn(
-            'pointer-events-none absolute aspect-square rounded-full border-2',
+            'pointer-events-none absolute border-2',
+            zoneShapeClass(a),
             a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20'
           )}
         />
       ))}
+      {preview && (
+        <span
+          style={{
+            left: `${preview.x * 100}%`,
+            top: `${preview.y * 100}%`,
+            width: `${preview.width * 100}%`,
+            aspectRatio: `${preview.width || 0.01} / ${preview.height || 0.01}`,
+            transform: 'translate(-50%, -50%)',
+          }}
+          className="border-primary bg-primary/20 pointer-events-none absolute rounded-md border-2 border-dashed"
+        />
+      )}
     </div>
   );
 }
 
-// Eine Zeile in der Zonen-Liste.
-export function ZoneRow({
-  area,
-  index,
-  onUpdate,
-  onRemove,
-}: {
-  area: Area;
-  index: number;
-  onUpdate: (patch: Partial<Area>) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <li className="flex flex-wrap items-center gap-2 rounded-md border p-2">
-      <span className="text-muted-foreground w-5 text-xs tabular-nums">{index + 1}.</span>
-      <TextInput
-        id={`zone-${area.id}-label`}
-        value={area.label ?? ''}
-        onChange={(v) => onUpdate({ label: v || undefined })}
-        placeholder="Label (optional)"
-      />
-      <label className="flex items-center gap-1 text-xs">
-        Größe
-        <input
-          type="range"
-          min={0.02}
-          max={0.5}
-          step={0.01}
-          value={area.r}
-          onChange={(e) => onUpdate({ r: Number(e.target.value) })}
-          aria-label={`Radius Zone ${index + 1}`}
-        />
-      </label>
-      <label className="flex items-center gap-1 text-xs">
-        <input
-          type="checkbox"
-          checked={area.isCorrect}
-          onChange={(e) => onUpdate({ isCorrect: e.target.checked })}
-        />
-        richtig
-      </label>
-      <ItemAction onClick={onRemove} label="✕" tone="destructive" />
-    </li>
-  );
-}
-
-export { DEFAULT_R };
+export { DEFAULT_R, DEFAULT_RECT };

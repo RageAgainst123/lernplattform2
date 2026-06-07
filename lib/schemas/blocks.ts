@@ -7,6 +7,10 @@ import {
   scaleBlockSchema,
   understandingBlockSchema,
 } from './blocks-live.ts';
+import { hotspotAreaSchema } from './blocks-hotspot.ts';
+
+export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
+export type { HotspotShape } from './blocks-hotspot.ts';
 
 export {
   slideBlockSchema,
@@ -184,19 +188,9 @@ export const orderBlockSchema = z.object({
   ...gradedBlockExtensions,
 });
 
-// Bild-Hotspots: sichtbare Kreis-Zonen auf einem Bild, manche sind richtig.
-// Schüler:in tippt die richtigen an. Koordinaten relativ (0–1) → bildgrößen-
-// unabhängig + responsive. Antwort = string[] der angetippten areaIds.
-// Teilpunkte (richtig − falsch) / Anzahl-richtige. `r` = Radius relativ zur
-// Bildbreite.
-const hotspotAreaSchema = z.object({
-  id: z.string().min(1),
-  label: z.string().optional(),
-  x: z.number().min(0).max(1),
-  y: z.number().min(0).max(1),
-  r: z.number().min(0.02).max(0.5),
-  isCorrect: z.boolean(),
-});
+// Bild-Hotspots: sichtbare Zonen auf einem Bild, manche sind richtig. Schüler:in
+// tippt die richtigen an. Teilpunkte (richtig − falsch) / Anzahl-richtige.
+// Zonen-Schema (Kreis/Rechteck, Rotation) lebt in blocks-hotspot.ts.
 export const hotspotBlockSchema = z.object({
   id: blockId,
   type: z.literal('hotspot'),

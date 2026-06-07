@@ -63,13 +63,57 @@ function ImageSourceBar({ onPicked }: { onPicked: (url: string) => void }) {
   );
 }
 
+// Umschalter über dem Bild: bestimmt, ob die NÄCHSTE per Klick gesetzte Zone
+// richtig (grün) oder ein Ablenker (grau) wird.
+function NewZoneToggle({
+  isCorrect,
+  onChange,
+}: {
+  isCorrect: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-muted-foreground">Neue Zone ist:</span>
+      <div className="inline-flex overflow-hidden rounded-md border">
+        <button
+          type="button"
+          onClick={() => onChange(true)}
+          aria-pressed={isCorrect}
+          className={
+            isCorrect ? 'bg-green-600 px-3 py-1 font-medium text-white' : 'hover:bg-muted px-3 py-1'
+          }
+        >
+          ✓ richtig
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(false)}
+          aria-pressed={!isCorrect}
+          className={
+            !isCorrect ? 'bg-gray-500 px-3 py-1 font-medium text-white' : 'hover:bg-muted px-3 py-1'
+          }
+        >
+          Ablenker
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function HotspotForm({ value, onChange }: Props) {
+  // Bestimmt, ob die NÄCHSTE per Klick gesetzte Zone richtig (grün) oder ein
+  // Ablenker (grau) ist. Default „richtig", weil jede Hotspot-Aufgabe mindestens
+  // eine Lösung braucht (alter Bug: neue Zonen waren immer grau → wirkte, als
+  // sei die erste Zone fix die einzige Lösung).
+  const [newIsCorrect, setNewIsCorrect] = useState(true);
+
   function addArea(x: number, y: number) {
     onChange({
       ...value,
       areas: [
         ...value.areas,
-        { id: makeOptionId(value.areas, 'a'), x, y, r: DEFAULT_R, isCorrect: false },
+        { id: makeOptionId(value.areas, 'a'), x, y, r: DEFAULT_R, isCorrect: newIsCorrect },
       ],
     });
   }
@@ -100,8 +144,11 @@ export function HotspotForm({ value, onChange }: Props) {
 
       {value.imageUrl ? (
         <>
+          <NewZoneToggle isCorrect={newIsCorrect} onChange={setNewIsCorrect} />
           <p className="text-muted-foreground text-xs">
-            Klick ins Bild, um eine Zone zu setzen. Grün = richtig, grau = Ablenker.
+            Stelle oben „richtig“ oder „Ablenker“ ein, dann klick ins Bild, um eine Zone zu setzen.
+            Du kannst mehrere richtige Zonen setzen (z.B. „tippe alle Eingabegeräte an“). Bei jeder
+            Zone unten lässt sich „richtig“ nachträglich umschalten.
           </p>
           <HotspotImageEditor imageUrl={value.imageUrl} areas={value.areas} onAddArea={addArea} />
           <div>

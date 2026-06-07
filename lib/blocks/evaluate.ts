@@ -129,20 +129,41 @@ function evalOrder(block: OrderBlock, answer: OrderAnswer): number {
   return correctPairs / (n - 1);
 }
 
-// Bild-Hotspots: Anteil korrekt angetippter Zonen minus Falschklicks.
-// Score = (richtig angetippt − falsch angetippt) / Anzahl-richtige, geclampt
-// auf [0,1] (durch gradeBlock). „Alle Zonen antippen" lohnt nicht.
-function evalHotspot(block: HotspotBlock, answer: HotspotAnswer): number {
-  const correctIds = new Set(block.areas.filter((a) => a.isCorrect).map((a) => a.id));
+// Score für eine Zonen-Teilmenge: (richtig angetippt − falsch angetippt) /
+// Anzahl-richtige. Nur Zonen aus `areas` zählen; alles andere in `picked` wird
+// ignoriert. „Alle Zonen antippen" lohnt nicht (jeder Falschklick zieht ab).
+function scoreAreaSet(areas: HotspotBlock['areas'], picked: Set<string>): number {
+  const correctIds = new Set(areas.filter((a) => a.isCorrect).map((a) => a.id));
   if (correctIds.size === 0) return 0;
-  const picked = new Set(answer);
   let hits = 0;
   let misses = 0;
-  for (const id of picked) {
-    if (correctIds.has(id)) hits += 1;
+  for (const a of areas) {
+    if (!picked.has(a.id)) continue;
+    if (correctIds.has(a.id)) hits += 1;
     else misses += 1;
   }
   return (hits - misses) / correctIds.size;
+}
+
+// Bild-Hotspots: Anteil korrekt angetippter Zonen minus Falschklicks. Geclampt
+// auf [0,1] (durch gradeBlock).
+//
+// Einfach-Modus (keine groups): über alle Zonen.
+// Gruppen-Modus: pro Gruppe (eigene Zonen + gruppenlose Distraktoren) scoren,
+// dann ungewichteter Durchschnitt. Gruppenzugehörigkeit steckt in area.groupId
+// — die Antwort bleibt ein flaches string[] der angetippten areaIds.
+function evalHotspot(block: HotspotBlock, answer: HotspotAnswer): number {
+  const picked = new Set(answer);
+  const groups = block.groups ?? [];
+  if (groups.length === 0) return scoreAreaSet(block.areas, picked);
+
+  const distractors = block.areas.filter((a) => a.groupId === undefined && !a.isCorrect);
+  const perGroup = groups.map((g) => {
+    const inGroup = block.areas.filter((a) => a.groupId === g.id);
+    return Math.max(0, scoreAreaSet([...inGroup, ...distractors], picked));
+  });
+  if (perGroup.length === 0) return 0;
+  return perGroup.reduce((sum, v) => sum + v, 0) / perGroup.length;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

@@ -9,6 +9,13 @@ import { z } from 'zod';
 export const HOTSPOT_SHAPES = ['circle', 'rect'] as const;
 export type HotspotShape = (typeof HOTSPOT_SHAPES)[number];
 
+// Optionale Gruppen: ohne `groups` ist der Block im Einfach-Modus (eine Frage).
+// Mit Gruppen löst die Schüler:in nacheinander pro Gruppe („Tippe alle X an").
+export const hotspotGroupSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+});
+
 export const hotspotAreaSchema = z
   .object({
     id: z.string().min(1),
@@ -21,6 +28,7 @@ export const hotspotAreaSchema = z
     height: z.number().min(0.04).max(1).optional(),
     rotation: z.number().min(0).max(359).default(0), // Bestand → 0
     isCorrect: z.boolean(),
+    groupId: z.string().min(1).optional(), // nur Gruppen-Modus; sonst weglassen
   })
   .superRefine((a, ctx) => {
     if (a.shape === 'circle' && a.r === undefined) {

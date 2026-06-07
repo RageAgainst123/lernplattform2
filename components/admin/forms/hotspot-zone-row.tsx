@@ -43,14 +43,46 @@ function Slider({
   );
 }
 
+type Group = { id: string; label: string };
+
+function GroupSelect({
+  groups,
+  value,
+  index,
+  onChange,
+}: {
+  groups: Group[];
+  value: string | undefined;
+  index: number;
+  onChange: (groupId: string | undefined) => void;
+}) {
+  return (
+    <select
+      value={value ?? ''}
+      onChange={(e) => onChange(e.target.value || undefined)}
+      aria-label={`Gruppe Zone ${index + 1}`}
+      className="border-input bg-background h-7 rounded-md border px-1 text-xs"
+    >
+      <option value="">– ohne –</option>
+      {groups.map((g) => (
+        <option key={g.id} value={g.id}>
+          {g.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 export function ZoneRow({
   area,
   index,
+  groups,
   onUpdate,
   onRemove,
 }: {
   area: Area;
   index: number;
+  groups?: Group[];
   onUpdate: (patch: Partial<Area>) => void;
   onRemove: () => void;
 }) {
@@ -113,6 +145,14 @@ export function ZoneRow({
         />
         richtig
       </label>
+      {groups && groups.length > 0 && (
+        <GroupSelect
+          groups={groups}
+          value={area.groupId}
+          index={index}
+          onChange={(groupId) => onUpdate({ groupId })}
+        />
+      )}
       <ItemAction onClick={onRemove} label="✕" tone="destructive" />
     </li>
   );

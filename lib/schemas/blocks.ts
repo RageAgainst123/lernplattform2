@@ -7,7 +7,7 @@ import {
   scaleBlockSchema,
   understandingBlockSchema,
 } from './blocks-live.ts';
-import { hotspotAreaSchema } from './blocks-hotspot.ts';
+import { hotspotAreaSchema, hotspotGroupSchema } from './blocks-hotspot.ts';
 
 export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
 export type { HotspotShape } from './blocks-hotspot.ts';
@@ -197,6 +197,8 @@ export const hotspotBlockSchema = z.object({
   instruction: z.string(),
   imageUrl: z.string().url(),
   imageAlt: z.string().optional(),
+  // Optional: Gruppen-Modus. Ohne groups = eine Frage (Einfach-Modus).
+  groups: z.array(hotspotGroupSchema).max(6).optional(),
   areas: z.array(hotspotAreaSchema).min(1).max(20),
   ...gradedBlockExtensions,
 });

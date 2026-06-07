@@ -3,13 +3,15 @@
 import { useMemo } from 'react';
 import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
 import { HotspotZone } from '@/components/blocks/hotspot-overlay';
+import { HotspotGroupRunner } from '@/components/blocks/hotspot-groups';
 
-// Bild-Hotspots: ein Bild mit sichtbaren Kreis-Zonen. Schüler:in tippt die
-// richtigen Zonen an. Zonen sind absolut positionierte Buttons ÜBER dem
-// (plain) <img> — kein button-in-button, da das Bild kein Button ist.
+// Bild-Hotspots: ein Bild mit sichtbaren Zonen. Schüler:in tippt die richtigen
+// Zonen an. Zonen sind absolut positionierte Buttons ÜBER dem (plain) <img> —
+// kein button-in-button, da das Bild kein Button ist.
 //
 // answer: string[] der angetippten areaIds. checked = grün/rot/gelb-Bewertung,
-// readOnly = gesperrt.
+// readOnly = gesperrt. Mit block.groups → mehrschrittiger Gruppen-Modus
+// (HotspotGroupRunner), sonst die Einfach-Ansicht unten.
 
 type Props = {
   block: HotspotBlockType;
@@ -19,7 +21,14 @@ type Props = {
   onSelect: (next: string[]) => void;
 };
 
-export function HotspotBlock({ block, answer, checked, readOnly = false, onSelect }: Props) {
+export function HotspotBlock(props: Props) {
+  if (props.block.groups && props.block.groups.length > 0) {
+    return <HotspotGroupRunner {...props} />;
+  }
+  return <HotspotSimple {...props} />;
+}
+
+function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: Props) {
   const locked = checked || readOnly;
   const picked = useMemo(() => new Set(answer), [answer]);
 

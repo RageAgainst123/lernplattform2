@@ -8,6 +8,38 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase A3+ — Hotspot-Ausbau: Formen, Rotation, Gruppen, testbare Vorschau
+
+**2026-06-07** · Tags `phase-a3-1/a3-2/a3-3-savepoint`
+
+Nach Geos Admin-Test des Basis-Hotspots in drei rückwärtskompatiblen Schritten
+ausgebaut (keine DB-Migration; Antwortformat bleibt `string[]`):
+
+### A3.1 — Bug-Fix + testbare Vorschau
+
+- Editor: Umschalter „neue Zone richtig/Ablenker“ (Default richtig) — mehrere
+  grüne Zonen sind jetzt offensichtlich möglich. Klarerer Hilfetext.
+- **LivePreview „Prüfen“-Knopf** mit Bewertungsanzeige (grün/gelb/rot +
+  Teilpunkte) + Zurücksetzen + optionale HintBox — **generisch für ALLE
+  bewertbaren Block-Typen**. Autor:in testet im Editor, ohne Test-Login.
+
+### A3.2 — Rechteck-Zonen + Rotation
+
+- Zonen können Kreise oder **Rechtecke** sein und beliebig **gedreht** werden.
+- Schema additiv (`shape`/`width`/`height`/`rotation` mit Zod-Defaults) → alte
+  Zonen (nur x/y/r/isCorrect) bleiben gültig. Pure `hotspot-geometry.ts` von
+  Renderer + Editor geteilt. Editor: Rechteck per Aufziehen, Slider-Feintuning.
+
+### A3.3 — Gruppen-Modus
+
+- Ein Bild, mehrere Frage-Schritte: „Tippe alle Eingabegeräte an“ → prüfen →
+  „Tippe alle Ausgabegeräte an“. Bewertung pro Gruppe, Gesamt = Durchschnitt.
+  `block.groups` + `area.groupId` (optional → Einfach-Modus unverändert).
+- Lehrer:innen-Korrektur (`checked readOnly`) zeigt alle Gruppen aufgedeckt +
+  gesperrt. Showcase-Seed `0012` mit Gruppen-Hotspot.
+
+---
+
 ## Phase A — Reiche Aufgabentypen mit Teilpunkten (A1–A3)
 
 **2026-06-07** · Tags `phase-a1-savepoint` … `phase-a3-savepoint`

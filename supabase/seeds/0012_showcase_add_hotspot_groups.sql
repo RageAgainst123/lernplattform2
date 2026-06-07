@@ -1,4 +1,16 @@
-{
+-- Seed-Update 0012: Showcase-Lernmodul um hotspot-Gruppen-Block erweitern (A3.3)
+--
+-- Fuegt einen zweiten Hotspot-Block im GRUPPEN-Modus hinzu ("hotspot_gruppen"):
+-- ein Bild, mehrere Frage-Schritte ("Tippe alle Eingabegeraete an" -> pruefen ->
+-- "Tippe alle Ausgabegeraete an"). Bewertung pro Gruppe, Gesamt = Durchschnitt.
+--
+-- UPDATE statt INSERT (Modul-UUID …c5e1ea7 existiert). Idempotent.
+-- VORAUSSETZUNG: Migration 0024 (numeric scores) eingespielt.
+--
+-- STOP-PUNKT fuer Geo: Dieses Update im Supabase-Dashboard ausfuehren.
+
+update public.modules
+set content = $${
   "blocks": [
     {
       "id": "intro",
@@ -191,33 +203,9 @@
         { "id": "g-aus", "label": "Ausgabegeräte" }
       ],
       "areas": [
-        {
-          "id": "g-tastatur",
-          "label": "Tastatur",
-          "x": 0.5,
-          "y": 0.78,
-          "r": 0.18,
-          "isCorrect": true,
-          "groupId": "g-ein"
-        },
-        {
-          "id": "g-maus",
-          "label": "Maus",
-          "x": 0.85,
-          "y": 0.7,
-          "r": 0.1,
-          "isCorrect": true,
-          "groupId": "g-ein"
-        },
-        {
-          "id": "g-bildschirm",
-          "label": "Bildschirm",
-          "x": 0.5,
-          "y": 0.32,
-          "r": 0.16,
-          "isCorrect": true,
-          "groupId": "g-aus"
-        }
+        { "id": "g-tastatur", "label": "Tastatur", "x": 0.5, "y": 0.78, "r": 0.18, "isCorrect": true, "groupId": "g-ein" },
+        { "id": "g-maus", "label": "Maus", "x": 0.85, "y": 0.7, "r": 0.1, "isCorrect": true, "groupId": "g-ein" },
+        { "id": "g-bildschirm", "label": "Bildschirm", "x": 0.5, "y": 0.32, "r": 0.16, "isCorrect": true, "groupId": "g-aus" }
       ],
       "hint": "Erst alle Eingabegeräte, dann alle Ausgabegeräte antippen.",
       "maxAttempts": 2,
@@ -239,3 +227,5 @@
     }
   ]
 }
+$$::jsonb
+where id = '00000000-0000-4000-8000-00000c5e1ea7';

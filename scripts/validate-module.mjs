@@ -194,6 +194,20 @@ for (const b of blocks) {
         errors.push(`${b.id} (hotspot): area "${a.id}" rotation außerhalb [0,359].`);
       }
     }
+    if (Array.isArray(b.groups) && b.groups.length > 0) {
+      const groupIds = new Set(b.groups.map((g) => g.id));
+      for (const a of b.areas) {
+        if (a.groupId !== undefined && !groupIds.has(a.groupId)) {
+          errors.push(`${b.id} (hotspot): area "${a.id}" verweist auf unbekannte Gruppe.`);
+        }
+      }
+      for (const g of b.groups) {
+        const inGroup = b.areas.filter((a) => a.groupId === g.id);
+        if (!inGroup.some((a) => a.isCorrect)) {
+          errors.push(`${b.id} (hotspot): Gruppe "${g.label}" hat keine richtige Zone.`);
+        }
+      }
+    }
   }
 }
 

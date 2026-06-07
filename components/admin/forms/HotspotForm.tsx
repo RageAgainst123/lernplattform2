@@ -10,6 +10,7 @@ import { DEFAULT_R, HotspotImageEditor } from './hotspot-editor';
 import { ZoneRow } from './hotspot-zone-row';
 import { HotspotPexelsPicker } from './hotspot-image-picker';
 import { NewZoneToggle, ShapeToggle, type HotspotShape } from './hotspot-toolbar';
+import { HotspotGroupsEditor } from './hotspot-groups-editor';
 
 // Admin-Editor für hotspot. Bildquelle (Upload + Pexels) → Klick-Editor →
 // Zonen-Liste. Relative Koordinaten 0–1, identisch zum Renderer.
@@ -72,42 +73,34 @@ export function HotspotForm({ value, onChange }: Props) {
   // sei die erste Zone fix die einzige Lösung).
   const [newIsCorrect, setNewIsCorrect] = useState(true);
   const [drawShape, setDrawShape] = useState<HotspotShape>('circle');
+  // Im Gruppen-Modus: in welche Gruppe landen neue Zonen? (Default erste Gruppe)
+  const [currentGroupId, setCurrentGroupId] = useState<string | undefined>(value.groups?.[0]?.id);
 
-  function addCircle(x: number, y: number) {
+  // groupId für neue Zonen: im Gruppen-Modus die aktive Gruppe, sonst keine.
+  const newGroupId = value.groups && value.groups.length > 0 ? currentGroupId : undefined;
+
+  function addArea(extra: Partial<HotspotBlock['areas'][number]>) {
     onChange({
       ...value,
       areas: [
         ...value.areas,
         {
           id: makeOptionId(value.areas, 'a'),
-          x,
-          y,
-          shape: 'circle',
-          r: DEFAULT_R,
           rotation: 0,
           isCorrect: newIsCorrect,
-        },
+          groupId: newGroupId,
+          ...extra,
+        } as HotspotBlock['areas'][number],
       ],
     });
   }
 
+  function addCircle(x: number, y: number) {
+    addArea({ x, y, shape: 'circle', r: DEFAULT_R });
+  }
+
   function addRect(x: number, y: number, width: number, height: number) {
-    onChange({
-      ...value,
-      areas: [
-        ...value.areas,
-        {
-          id: makeOptionId(value.areas, 'a'),
-          x,
-          y,
-          shape: 'rect',
-          width,
-          height,
-          rotation: 0,
-          isCorrect: newIsCorrect,
-        },
-      ],
-    });
+    addArea({ x, y, shape: 'rect', width, height });
   }
   function updateArea(i: number, patch: Partial<HotspotBlock['areas'][number]>) {
     onChange({
@@ -153,6 +146,12 @@ export function HotspotForm({ value, onChange }: Props) {
             onAddCircle={addCircle}
             onAddRect={addRect}
           />
+          <HotspotGroupsEditor
+            value={value}
+            currentGroupId={currentGroupId}
+            onCurrentGroupChange={setCurrentGroupId}
+            onChange={onChange}
+          />
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium">Zonen</span>
@@ -163,6 +162,7 @@ export function HotspotForm({ value, onChange }: Props) {
                   key={area.id}
                   area={area}
                   index={i}
+                  groups={value.groups}
                   onUpdate={(patch) => updateArea(i, patch)}
                   onRemove={() => removeArea(i)}
                 />

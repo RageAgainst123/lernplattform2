@@ -398,3 +398,69 @@ describe('hotspot — Teilpunkte (PARTIAL_GRADERS)', () => {
     expect(blockResult(hotspot, ['z3', 'z4'])).toBe('wrong');
   });
 });
+
+// A3.3: hotspot Gruppen-Modus. Gruppe A (a1,a2 richtig), Gruppe B (b1 richtig),
+// dazu ein gruppenloser Distraktor d1 (zählt in JEDER Gruppe als falsch).
+// Score = Durchschnitt der Pro-Gruppe-Scores.
+const hotspotGroups: Block = {
+  id: 'hsg',
+  type: 'hotspot',
+  instruction: 'Tippe pro Schritt an.',
+  imageUrl: 'https://example.com/bild.jpg',
+  groups: [
+    { id: 'gA', label: 'Eingabe' },
+    { id: 'gB', label: 'Ausgabe' },
+  ],
+  areas: [
+    {
+      id: 'a1',
+      x: 0.1,
+      y: 0.1,
+      shape: 'circle',
+      r: 0.1,
+      rotation: 0,
+      isCorrect: true,
+      groupId: 'gA',
+    },
+    {
+      id: 'a2',
+      x: 0.2,
+      y: 0.1,
+      shape: 'circle',
+      r: 0.1,
+      rotation: 0,
+      isCorrect: true,
+      groupId: 'gA',
+    },
+    {
+      id: 'b1',
+      x: 0.3,
+      y: 0.1,
+      shape: 'circle',
+      r: 0.1,
+      rotation: 0,
+      isCorrect: true,
+      groupId: 'gB',
+    },
+    { id: 'd1', x: 0.9, y: 0.9, shape: 'circle', r: 0.1, rotation: 0, isCorrect: false },
+  ],
+};
+
+describe('hotspot — Gruppen-Modus', () => {
+  it('alle Gruppen voll → 1 (Durchschnitt 1 und 1)', () => {
+    expect(gradeBlock(hotspotGroups, ['a1', 'a2', 'b1'])).toBe(1);
+  });
+  it('nur Gruppe B voll → 0.5 (Durchschnitt 0 und 1)', () => {
+    expect(gradeBlock(hotspotGroups, ['b1'])).toBe(0.5);
+  });
+  it('Gruppe A halb (1 von 2), Gruppe B voll → Durchschnitt (0.5 + 1)/2 = 0.75', () => {
+    expect(gradeBlock(hotspotGroups, ['a1', 'b1'])).toBe(0.75);
+  });
+  it('gruppenloser Distraktor zieht in jeder Gruppe ab', () => {
+    // gA: (2−1)/2 = 0.5 ; gB: (1−1)/1 = 0 → Durchschnitt 0.25
+    expect(gradeBlock(hotspotGroups, ['a1', 'a2', 'b1', 'd1'])).toBe(0.25);
+  });
+  it('leere Antwort → 0', () => {
+    expect(gradeBlock(hotspotGroups, [])).toBe(0);
+  });
+});

@@ -15,7 +15,7 @@
 | A1    | `categorize` — Kategorien zuordnen (Chip-UI, Teilpunkte)                                                                                      | ✅ fertig + getestet              |
 | A4    | `mark_words` — Markieren im Text (geteilte `tokenize.ts`)                                                                                     | ✅ fertig + getestet              |
 | A2    | `order` — Reihenfolge sortieren (Teilpunkte via Anteil korrekter Nachbarpaare)                                                                | ✅ fertig + getestet              |
-| A3    | `hotspot` — Bild-Hotspots (Zonen-Overlay, Upload + Pexels, Teilpunkte)                                                                        | ✅ fertig + getestet              |
+| A3    | `hotspot` — Bild-Hotspots (Kreis/Rechteck + Rotation, Gruppen-Modus, Upload + Pexels, Teilpunkte) + testbare Editor-Vorschau                  | ✅ fertig + getestet              |
 | E1    | Score/Progress-Politur (Fortschrittsbalken im Worksheet, Teilpunkte-Aufschlüsselung)                                                          | 🔜 offen                          |
 | B0–B6 | **DGB-Vokabeltrainer** + Spaced Repetition (Herzstück): Lexikon, Modul-Verknüpfung, SM-2, `/s/vokabeln`, `lesetext`-Tooltips, Lehrer-Diagnose | 🔜 offen                          |
 | E2    | Mastery-Gamification (Begriffe-sicher-Anzeige)                                                                                                | 🔜 offen                          |

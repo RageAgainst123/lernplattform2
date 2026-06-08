@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { zoneBoxStyle, zoneShapeClass } from './hotspot-geometry';
+import {
+  HOTSPOT_GROUP_COUNT,
+  hotspotGroupColor,
+  zoneBoxStyle,
+  zoneShapeClass,
+} from './hotspot-geometry';
 import type { HotspotBlock } from '@/lib/schemas/blocks';
 
 type Area = HotspotBlock['areas'][number];
@@ -68,5 +73,18 @@ describe('zoneShapeClass', () => {
   });
   it('Bestands-Zone (kein shape) = Kreis', () => {
     expect(zoneShapeClass(legacy)).toContain('rounded-full');
+  });
+});
+
+describe('hotspotGroupColor', () => {
+  it('liefert pro Index eine border+bg-Klasse', () => {
+    expect(hotspotGroupColor(0)).toMatch(/border-/);
+    expect(hotspotGroupColor(0)).toMatch(/bg-/);
+  });
+  it('unterscheidet die ersten Gruppen farblich', () => {
+    expect(hotspotGroupColor(0)).not.toBe(hotspotGroupColor(1));
+  });
+  it('wrappt über die Palette (Index >= Palettengröße)', () => {
+    expect(hotspotGroupColor(HOTSPOT_GROUP_COUNT)).toBe(hotspotGroupColor(0));
   });
 });

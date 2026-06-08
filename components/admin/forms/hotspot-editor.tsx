@@ -38,15 +38,23 @@ export function HotspotImageEditor({
   imageUrl,
   areas,
   drawShape,
+  colorForArea,
   onAddCircle,
   onAddRect,
 }: {
   imageUrl: string;
   areas: Area[];
   drawShape: 'circle' | 'rect';
+  // Border+bg-Klassen pro Zone. Default: grün (richtig) / grau (Ablenker).
+  // Im Gruppen-Modus liefert HotspotForm hier die Gruppenfarbe.
+  colorForArea?: (area: Area) => string;
   onAddCircle: (x: number, y: number) => void;
   onAddRect: (x: number, y: number, width: number, height: number) => void;
 }) {
+  const zoneColor =
+    colorForArea ??
+    ((a: Area) =>
+      a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20');
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
 
@@ -84,7 +92,6 @@ export function HotspotImageEditor({
     }
   }
 
-  const preview = drag ? dragRect(drag) : null;
   return (
     <div
       ref={ref}
@@ -102,21 +109,19 @@ export function HotspotImageEditor({
         <span
           key={a.id}
           style={zoneBoxStyle(a)}
-          className={cn(
-            'pointer-events-none absolute border-2',
-            zoneShapeClass(a),
-            a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20'
-          )}
+          className={cn('pointer-events-none absolute border-2', zoneShapeClass(a), zoneColor(a))}
         />
       ))}
-      {preview && (
+      {drag && (
         <span
           style={{
-            left: `${preview.x * 100}%`,
-            top: `${preview.y * 100}%`,
-            width: `${preview.width * 100}%`,
-            aspectRatio: `${preview.width || 0.01} / ${preview.height || 0.01}`,
-            transform: 'translate(-50%, -50%)',
+            // Verankert an der oberen linken Ecke (min der beiden Drag-Punkte),
+            // damit das Rechteck beim Ziehen vom Klickpunkt aus aufgezogen wird
+            // — wie in Grafikprogrammen, kein Wachsen aus der Mitte.
+            left: `${Math.min(drag.x0, drag.x1) * 100}%`,
+            top: `${Math.min(drag.y0, drag.y1) * 100}%`,
+            width: `${Math.abs(drag.x1 - drag.x0) * 100}%`,
+            height: `${Math.abs(drag.y1 - drag.y0) * 100}%`,
           }}
           className="border-primary bg-primary/20 pointer-events-none absolute rounded-md border-2 border-dashed"
         />

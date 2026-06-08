@@ -11,6 +11,7 @@ import { ZoneRow } from './hotspot-zone-row';
 import { HotspotPexelsPicker } from './hotspot-image-picker';
 import { NewZoneToggle, ShapeToggle, type HotspotShape } from './hotspot-toolbar';
 import { HotspotGroupsEditor } from './hotspot-groups-editor';
+import { hotspotGroupColor } from '@/lib/blocks/hotspot-geometry';
 
 // Admin-Editor für hotspot. Bildquelle (Upload + Pexels) → Klick-Editor →
 // Zonen-Liste. Relative Koordinaten 0–1, identisch zum Renderer.
@@ -76,8 +77,22 @@ export function HotspotForm({ value, onChange }: Props) {
   // Im Gruppen-Modus: in welche Gruppe landen neue Zonen? (Default erste Gruppe)
   const [currentGroupId, setCurrentGroupId] = useState<string | undefined>(value.groups?.[0]?.id);
 
+  const groups = value.groups ?? [];
+  const grouped = groups.length > 0;
   // groupId für neue Zonen: im Gruppen-Modus die aktive Gruppe, sonst keine.
-  const newGroupId = value.groups && value.groups.length > 0 ? currentGroupId : undefined;
+  const newGroupId = grouped ? currentGroupId : undefined;
+
+  // Index jeder Gruppe (für die Farbpalette).
+  const groupIndex = new Map(groups.map((g, i) => [g.id, i]));
+
+  // Zonen-Farbe im Editor: im Gruppen-Modus nach Gruppe, sonst grün/grau.
+  function colorForArea(a: HotspotBlock['areas'][number]): string {
+    if (grouped && a.groupId !== undefined) {
+      return hotspotGroupColor(groupIndex.get(a.groupId) ?? 0);
+    }
+    if (grouped) return 'border-gray-300 bg-gray-300/20'; // gruppenlos
+    return a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20';
+  }
 
   function addArea(extra: Partial<HotspotBlock['areas'][number]>) {
     onChange({
@@ -132,6 +147,22 @@ export function HotspotForm({ value, onChange }: Props) {
           <div className="flex flex-wrap items-center gap-4">
             <NewZoneToggle isCorrect={newIsCorrect} onChange={setNewIsCorrect} />
             <ShapeToggle shape={drawShape} onChange={setDrawShape} />
+            {grouped && (
+              <label className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Neue Zone in Gruppe:</span>
+                <select
+                  value={currentGroupId ?? ''}
+                  onChange={(e) => setCurrentGroupId(e.target.value || undefined)}
+                  className="border-input bg-background h-8 rounded-md border px-2 text-sm font-medium"
+                >
+                  {groups.map((g, i) => (
+                    <option key={g.id} value={g.id}>
+                      {i + 1}. {g.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
           <p className="text-muted-foreground text-xs">
             Stelle oben Form und „richtig/Ablenker“ ein. <strong>Kreis:</strong> ins Bild klicken.{' '}
@@ -143,6 +174,7 @@ export function HotspotForm({ value, onChange }: Props) {
             imageUrl={value.imageUrl}
             areas={value.areas}
             drawShape={drawShape}
+            colorForArea={colorForArea}
             onAddCircle={addCircle}
             onAddRect={addRect}
           />

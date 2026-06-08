@@ -37,3 +37,24 @@ export function zoneShapeClass(area: Area): string {
   const shape = area.shape ?? 'circle';
   return shape === 'rect' ? 'rounded-md' : 'aspect-square rounded-full';
 }
+
+// Feste Farbpalette pro Gruppen-Index (border + bg). Macht im Editor und in der
+// Lehrer:innen-Review-Ansicht sofort sichtbar, welche Zone zu welcher Gruppe
+// gehört. Statisch (Tailwind muss die Klassen zur Build-Zeit sehen).
+const GROUP_PALETTE = [
+  'border-sky-500 bg-sky-400/25',
+  'border-violet-500 bg-violet-400/25',
+  'border-orange-500 bg-orange-400/25',
+  'border-pink-500 bg-pink-400/25',
+  'border-teal-500 bg-teal-400/25',
+  'border-yellow-500 bg-yellow-400/25',
+] as const;
+
+export const HOTSPOT_GROUP_COUNT = GROUP_PALETTE.length;
+
+// Border+bg-Klassen für eine Gruppe nach Index (mod Palette-Länge).
+export function hotspotGroupColor(index: number): string {
+  return GROUP_PALETTE[
+    ((index % GROUP_PALETTE.length) + GROUP_PALETTE.length) % GROUP_PALETTE.length
+  ];
+}

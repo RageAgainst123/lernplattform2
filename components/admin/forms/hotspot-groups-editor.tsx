@@ -1,6 +1,8 @@
 'use client';
 
 import type { HotspotBlock } from '@/lib/schemas/blocks';
+import { cn } from '@/lib/utils';
+import { hotspotGroupColor } from '@/lib/blocks/hotspot-geometry';
 import { Button } from '@/components/ui/button';
 import { AddButton, ItemAction, TextInput, makeOptionId } from './form-helpers';
 
@@ -81,18 +83,19 @@ export function HotspotGroupsEditor({
         </Button>
       </div>
       <ul className="space-y-2">
-        {groups.map((g) => (
-          <li key={g.id} className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1 text-xs">
-              <input
-                type="radio"
-                name={`${value.id}-current-group`}
-                checked={currentGroupId === g.id}
-                onChange={() => onCurrentGroupChange(g.id)}
-                aria-label={`Aktuelle Gruppe: ${g.label}`}
-              />
-              aktiv
-            </label>
+        {groups.map((g, i) => (
+          <li
+            key={g.id}
+            className={cn(
+              'flex flex-wrap items-center gap-2 rounded-md p-1',
+              currentGroupId === g.id && 'bg-muted'
+            )}
+          >
+            <span
+              className={cn('size-4 shrink-0 rounded-full border-2', hotspotGroupColor(i))}
+              aria-hidden
+            />
+            <span className="text-muted-foreground w-5 text-xs tabular-nums">{i + 1}.</span>
             <TextInput
               id={`group-${g.id}`}
               value={g.label}
@@ -105,8 +108,9 @@ export function HotspotGroupsEditor({
       </ul>
       {groups.length < 6 && <AddButton onClick={addGroup}>Gruppe hinzufügen</AddButton>}
       <p className="text-muted-foreground text-xs">
-        Neue Zonen landen in der mit „aktiv“ markierten Gruppe. Jede Gruppe wird als eigener Schritt
-        gefragt („Tippe alle … an“).
+        Wähle oben über dem Bild, in welche Gruppe neue Zonen kommen. Die Farben hier zeigen, welche
+        Zone zu welcher Gruppe gehört. Jede Gruppe wird als eigener Schritt gefragt („Tippe alle …
+        an“).
       </p>
     </div>
   );

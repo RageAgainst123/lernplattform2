@@ -200,6 +200,11 @@ export const hotspotBlockSchema = z.object({
   // Optional: Gruppen-Modus. Ohne groups = eine Frage (Einfach-Modus).
   groups: z.array(hotspotGroupSchema).max(6).optional(),
   areas: z.array(hotspotAreaSchema).min(1).max(20),
+  // true (Default, Bestandsverhalten) = Zonen-Rahmen sind für Schüler:innen
+  // sichtbar und anklickbar. false = Rahmen versteckt → Schüler:in klickt frei
+  // aufs Bild („Finde das Objekt"); Treffer = Klick liegt in einer Zone. Nach
+  // dem Prüfen werden die Zonen in beiden Modi aufgedeckt.
+  revealZones: z.boolean().default(true),
   ...gradedBlockExtensions,
 });
 

@@ -364,6 +364,7 @@ const hotspot: Block = {
   type: 'hotspot',
   instruction: 'Tippe alle Eingabegeräte an.',
   imageUrl: 'https://example.com/bild.jpg',
+  revealZones: true,
   areas: [
     { id: 'z1', x: 0.2, y: 0.2, shape: 'circle', r: 0.1, rotation: 0, isCorrect: true },
     { id: 'z2', x: 0.5, y: 0.5, shape: 'circle', r: 0.1, rotation: 0, isCorrect: true },
@@ -407,6 +408,7 @@ const hotspotGroups: Block = {
   type: 'hotspot',
   instruction: 'Tippe pro Schritt an.',
   imageUrl: 'https://example.com/bild.jpg',
+  revealZones: true,
   groups: [
     { id: 'gA', label: 'Eingabe' },
     { id: 'gB', label: 'Ausgabe' },

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
 import { HotspotZone } from '@/components/blocks/hotspot-overlay';
 import { HotspotGroupRunner } from '@/components/blocks/hotspot-groups';
+import { HotspotHiddenSurface } from '@/components/blocks/hotspot-hidden';
 
 // Bild-Hotspots: ein Bild mit sichtbaren Zonen. Schüler:in tippt die richtigen
 // Zonen an. Zonen sind absolut positionierte Buttons ÜBER dem (plain) <img> —
@@ -38,6 +39,24 @@ function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: P
     if (next.has(id)) next.delete(id);
     else next.add(id);
     onSelect([...next]);
+  }
+
+  // Versteckte Zonen + noch nicht geprüft → Frei-Klick-Fläche (keine Rahmen).
+  // Nach dem Prüfen werden die Zonen aufgedeckt (regulärer Pfad unten).
+  if (block.revealZones === false && !locked) {
+    return (
+      <div className="space-y-3">
+        <p className="text-lg font-medium">{block.instruction}</p>
+        <HotspotHiddenSurface
+          imageUrl={block.imageUrl}
+          imageAlt={block.imageAlt}
+          zones={block.areas}
+          picked={picked}
+          locked={locked}
+          onToggle={toggle}
+        />
+      </div>
+    );
   }
 
   return (

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
 import { Button } from '@/components/ui/button';
 import { HotspotZone } from '@/components/blocks/hotspot-overlay';
+import { HotspotHiddenSurface } from '@/components/blocks/hotspot-hidden';
 
 // Gruppen-Modus des Hotspot-Blocks: ein Bild, mehrere Frage-Schritte
 // („Tippe alle Eingabegeräte an" → prüfen → „Tippe alle Ausgabegeräte an").
@@ -39,6 +40,21 @@ function GroupImage({
   onToggle: (id: string) => void;
 }) {
   const zones = block.areas.filter((a) => a.groupId === group.id || a.groupId === undefined);
+  // Versteckte Zonen + noch nicht aufgedeckt → Frei-Klick-Fläche für genau die
+  // Zonen dieses Schritts. Beim Aufdecken (reveal) zeigt der reguläre Pfad die
+  // Rahmen grün/rot/gelb.
+  if (block.revealZones === false && !reveal) {
+    return (
+      <HotspotHiddenSurface
+        imageUrl={block.imageUrl}
+        imageAlt={block.imageAlt}
+        zones={zones}
+        picked={picked}
+        locked={locked}
+        onToggle={onToggle}
+      />
+    );
+  }
   return (
     <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-md border">
       {/* eslint-disable-next-line @next/next/no-img-element -- Modul-Bilder aus Storage/Pexels */}

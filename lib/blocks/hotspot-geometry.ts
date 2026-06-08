@@ -61,3 +61,44 @@ export function hotspotGroupColor(index: number): string {
     ((index % GROUP_PALETTE.length) + GROUP_PALETTE.length) % GROUP_PALETTE.length
   ];
 }
+
+// ── Frei-Klick (versteckte Zonen) ────────────────────────────────────────────
+// Treffer-Test für „revealZones=false": die Schüler:in klickt frei aufs Bild,
+// ein Treffer zählt, wenn der Klick INNERHALB einer Zone liegt. Pure Funktion,
+// damit sie testbar ist und Renderer + Tests dieselbe Logik teilen.
+//
+// px/py = Klickposition relativ (0–1), wie zoneBoxStyle: x rel. zur Breite,
+// y rel. zur HÖHE. `aspect` = Bildhöhe/Bildbreite (clientHeight/clientWidth) —
+// nötig, weil r/width rel. zur Breite, height rel. zur Höhe definiert sind und
+// Rotation einen einheitlichen Maßstab braucht. Bei rotation=0 (Normalfall) ist
+// der Test exakt, aspect spielt nur für den Kreis (runde Distanz) eine Rolle.
+
+// Punkt um −deg um den Ursprung drehen (im Pixel-/aspect-Raum).
+function rotateBack(dx: number, dy: number, deg: number): { x: number; y: number } {
+  if (deg === 0) return { x: dx, y: dy };
+  const rad = (-deg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return { x: dx * cos - dy * sin, y: dx * sin + dy * cos };
+}
+
+export function pointInArea(area: Area, px: number, py: number, aspect = 1): boolean {
+  const shape = area.shape ?? 'circle';
+  // In Breiten-Einheiten rechnen: y mit aspect skalieren (py rel. Höhe → Breite).
+  const dx = px - area.x;
+  const dy = (py - area.y) * aspect;
+  if (shape === 'rect') {
+    const w = area.width ?? 0.2;
+    const h = (area.height ?? 0.12) * aspect; // halbe Höhe ebenfalls in Breiten-Einheiten
+    const rot = rotateBack(dx, dy, area.rotation ?? 0);
+    return Math.abs(rot.x) <= w / 2 && Math.abs(rot.y) <= h / 2;
+  }
+  const r = area.r ?? 0.08;
+  return dx * dx + dy * dy <= r * r;
+}
+
+// Alle Zonen, die den Punkt enthalten (überlappende Zonen möglich). Der Renderer
+// nimmt i.d.R. die erste. `aspect` = Bildhöhe/Bildbreite.
+export function hitAreaIds(areas: Area[], px: number, py: number, aspect = 1): string[] {
+  return areas.filter((a) => pointInArea(a, px, py, aspect)).map((a) => a.id);
+}

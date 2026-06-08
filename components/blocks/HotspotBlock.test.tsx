@@ -9,6 +9,7 @@ const BLOCK: HotspotBlockType = {
   instruction: 'Tippe alle Eingabegeräte an.',
   imageUrl: 'https://example.com/bild.jpg',
   imageAlt: 'Ein Schreibtisch',
+  revealZones: true,
   areas: [
     {
       id: 'z1',
@@ -101,11 +102,68 @@ describe('HotspotBlock', () => {
   });
 });
 
+describe('HotspotBlock — versteckte Zonen (Frei-Klick)', () => {
+  const HIDDEN: HotspotBlockType = { ...BLOCK, revealZones: false };
+  // jsdom liefert sonst eine 0×0-Box → Klickkoordinaten unbrauchbar. Wir tun so,
+  // als wäre das Bild 100×100px am Ursprung.
+  function mockBox() {
+    Element.prototype.getBoundingClientRect = vi.fn(
+      () =>
+        ({
+          left: 0,
+          top: 0,
+          width: 100,
+          height: 100,
+          right: 100,
+          bottom: 100,
+          x: 0,
+          y: 0,
+        }) as DOMRect
+    );
+  }
+
+  it('zeigt vor dem Prüfen KEINE Zonen-Rahmen, nur eine Such-Fläche', () => {
+    render(<HotspotBlock block={HIDDEN} answer={[]} checked={false} onSelect={vi.fn()} />);
+    // Keine Zonen-Buttons (Tastatur/Maus/Monitor) — nur die Frei-Klick-Fläche.
+    expect(screen.queryByRole('button', { name: 'Tastatur' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Klicke die gesuchten Stellen im Bild an' })
+    ).toBeInTheDocument();
+  });
+
+  it('zählt einen Klick in einer richtigen Zone als Treffer (areaId in Antwort)', () => {
+    mockBox();
+    const onSelect = vi.fn();
+    // z1 (Tastatur) liegt bei x=0.2,y=0.5 (BLOCK). Klick auf den Mittelpunkt
+    // (20px, 50px) in der 100×100-Box → Treffer auf z1.
+    render(<HotspotBlock block={HIDDEN} answer={[]} checked={false} onSelect={onSelect} />);
+    const surface = screen.getByRole('button', { name: 'Klicke die gesuchten Stellen im Bild an' });
+    fireEvent.pointerDown(surface, { clientX: 20, clientY: 50 });
+    expect(onSelect).toHaveBeenCalledWith(['z1']);
+  });
+
+  it('ein Klick ins Leere zählt NICHT als Treffer', () => {
+    mockBox();
+    const onSelect = vi.fn();
+    render(<HotspotBlock block={HIDDEN} answer={[]} checked={false} onSelect={onSelect} />);
+    const surface = screen.getByRole('button', { name: 'Klicke die gesuchten Stellen im Bild an' });
+    fireEvent.pointerDown(surface, { clientX: 2, clientY: 2 });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('deckt nach dem Prüfen die Zonen auf (Rahmen sichtbar)', () => {
+    render(<HotspotBlock block={HIDDEN} answer={['z1']} checked onSelect={vi.fn()} />);
+    // Im checked-Modus wird der reguläre Zonen-Pfad gerendert.
+    expect(screen.getByRole('button', { name: 'Tastatur' })).toBeInTheDocument();
+  });
+});
+
 const GROUP_BLOCK: HotspotBlockType = {
   id: 'hsg1',
   type: 'hotspot',
   instruction: 'Schritt für Schritt.',
   imageUrl: 'https://example.com/bild.jpg',
+  revealZones: true,
   groups: [
     { id: 'gA', label: 'Eingabegeräte' },
     { id: 'gB', label: 'Ausgabegeräte' },

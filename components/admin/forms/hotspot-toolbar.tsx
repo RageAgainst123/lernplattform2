@@ -72,6 +72,41 @@ export function NewZoneToggle({
   );
 }
 
+// Schalter, ob die Zonen für Schüler:innen sichtbar sind. „verstecken" =
+// Frei-Klick-Modus (Schüler:in sucht & klickt frei aufs Bild). Im Editor bleiben
+// die Zonen immer sichtbar — der Schalter betrifft nur die Schüler-Sicht.
+export function RevealToggle({
+  reveal,
+  onChange,
+}: {
+  reveal: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-muted-foreground">Zonen für Schüler:innen:</span>
+      <div className="inline-flex overflow-hidden rounded-md border">
+        <button
+          type="button"
+          onClick={() => onChange(true)}
+          aria-pressed={reveal}
+          className={reveal ? 'bg-primary px-3 py-1 text-white' : 'hover:bg-muted px-3 py-1'}
+        >
+          👁 anzeigen
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(false)}
+          aria-pressed={!reveal}
+          className={!reveal ? 'bg-primary px-3 py-1 text-white' : 'hover:bg-muted px-3 py-1'}
+        >
+          🙈 verstecken
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ShapeToggle({
   shape,
   onChange,

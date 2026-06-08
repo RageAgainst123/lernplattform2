@@ -1,7 +1,7 @@
 'use client';
 
 import type { HotspotBlock } from '@/lib/schemas/blocks';
-import { ItemAction, TextInput } from './form-helpers';
+import { AddButton, ItemAction, TextInput } from './form-helpers';
 
 // Eine Zeile in der Zonen-Liste des Hotspot-Editors. Form-abhängig: Kreis zeigt
 // einen Radius-Slider, Rechteck Breite + Höhe. Beide Formen haben einen
@@ -155,5 +155,40 @@ export function ZoneRow({
       )}
       <ItemAction onClick={onRemove} label="✕" tone="destructive" />
     </li>
+  );
+}
+
+// Komplette Zonen-Liste + Leer-Aktion. Ausgelagert, damit HotspotForm unter der
+// Zeilen-Grenze bleibt.
+export function ZoneList({
+  areas,
+  groups,
+  onUpdate,
+  onRemove,
+  onAddDefault,
+}: {
+  areas: Area[];
+  groups?: { id: string; label: string }[];
+  onUpdate: (index: number, patch: Partial<Area>) => void;
+  onRemove: (index: number) => void;
+  onAddDefault: () => void;
+}) {
+  return (
+    <div>
+      <div className="mb-2 text-xs font-medium">Zonen</div>
+      <ul className="space-y-2">
+        {areas.map((area, i) => (
+          <ZoneRow
+            key={area.id}
+            area={area}
+            index={i}
+            groups={groups}
+            onUpdate={(patch) => onUpdate(i, patch)}
+            onRemove={() => onRemove(i)}
+          />
+        ))}
+      </ul>
+      {areas.length === 0 && <AddButton onClick={onAddDefault}>Zone in der Mitte</AddButton>}
+    </div>
   );
 }

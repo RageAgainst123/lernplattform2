@@ -5,11 +5,16 @@ import type { HotspotBlock } from '@/lib/schemas/blocks';
 import { uploadHotspotImage } from '@/lib/db/hotspot-image-actions';
 import { Button } from '@/components/ui/button';
 import { GradedExtensionsFields } from './GradedExtensionsFields';
-import { AddButton, FieldLabel, TextInput, makeOptionId } from './form-helpers';
+import { FieldLabel, TextInput, makeOptionId } from './form-helpers';
 import { DEFAULT_R, HotspotImageEditor } from './hotspot-editor';
-import { ZoneRow } from './hotspot-zone-row';
+import { ZoneList } from './hotspot-zone-row';
 import { HotspotPexelsPicker } from './hotspot-image-picker';
-import { NewZoneToggle, ShapeToggle, type HotspotShape } from './hotspot-toolbar';
+import {
+  ActiveGroupSelect,
+  NewZoneToggle,
+  ShapeToggle,
+  type HotspotShape,
+} from './hotspot-toolbar';
 import { HotspotGroupsEditor } from './hotspot-groups-editor';
 import { hotspotGroupColor } from '@/lib/blocks/hotspot-geometry';
 
@@ -67,6 +72,21 @@ function ImageSourceBar({ onPicked }: { onPicked: (url: string) => void }) {
   );
 }
 
+// Border+bg-Klassen einer Zone im Editor: im Gruppen-Modus nach Gruppe
+// (Farbpalette), sonst grün (richtig) / grau (Ablenker). Pure Helper, damit
+// HotspotForm unter dem Komplexitäts-Limit bleibt.
+function zoneEditorColor(
+  a: HotspotBlock['areas'][number],
+  groups: NonNullable<HotspotBlock['groups']>
+): string {
+  if (groups.length > 0) {
+    if (a.groupId === undefined) return 'border-gray-300 bg-gray-300/20';
+    const idx = groups.findIndex((g) => g.id === a.groupId);
+    return hotspotGroupColor(idx < 0 ? 0 : idx);
+  }
+  return a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20';
+}
+
 export function HotspotForm({ value, onChange }: Props) {
   // Bestimmt, ob die NÄCHSTE per Klick gesetzte Zone richtig (grün) oder ein
   // Ablenker (grau) ist. Default „richtig", weil jede Hotspot-Aufgabe mindestens
@@ -76,31 +96,23 @@ export function HotspotForm({ value, onChange }: Props) {
   const [drawShape, setDrawShape] = useState<HotspotShape>('circle');
   // Im Gruppen-Modus: in welche Gruppe landen neue Zonen? (Default erste Gruppe)
   const [currentGroupId, setCurrentGroupId] = useState<string | undefined>(value.groups?.[0]?.id);
+  // id der gerade gesetzten Zone → öffnet das Label-Popup direkt an der Zone.
+  const [labelingId, setLabelingId] = useState<string | null>(null);
 
   const groups = value.groups ?? [];
   const grouped = groups.length > 0;
   // groupId für neue Zonen: im Gruppen-Modus die aktive Gruppe, sonst keine.
   const newGroupId = grouped ? currentGroupId : undefined;
-
-  // Index jeder Gruppe (für die Farbpalette).
-  const groupIndex = new Map(groups.map((g, i) => [g.id, i]));
-
-  // Zonen-Farbe im Editor: im Gruppen-Modus nach Gruppe, sonst grün/grau.
-  function colorForArea(a: HotspotBlock['areas'][number]): string {
-    if (grouped && a.groupId !== undefined) {
-      return hotspotGroupColor(groupIndex.get(a.groupId) ?? 0);
-    }
-    if (grouped) return 'border-gray-300 bg-gray-300/20'; // gruppenlos
-    return a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20';
-  }
+  const colorForArea = (a: HotspotBlock['areas'][number]) => zoneEditorColor(a, groups);
 
   function addArea(extra: Partial<HotspotBlock['areas'][number]>) {
+    const id = makeOptionId(value.areas, 'a');
     onChange({
       ...value,
       areas: [
         ...value.areas,
         {
-          id: makeOptionId(value.areas, 'a'),
+          id,
           rotation: 0,
           isCorrect: newIsCorrect,
           groupId: newGroupId,
@@ -108,6 +120,8 @@ export function HotspotForm({ value, onChange }: Props) {
         } as HotspotBlock['areas'][number],
       ],
     });
+    // Direkt nach dem Setzen das Label-Popup an der neuen Zone öffnen.
+    setLabelingId(id);
   }
 
   function addCircle(x: number, y: number) {
@@ -126,6 +140,20 @@ export function HotspotForm({ value, onChange }: Props) {
   function removeArea(i: number) {
     if (value.areas.length <= 1) return;
     onChange({ ...value, areas: value.areas.filter((_, idx) => idx !== i) });
+  }
+
+  // Zone, für die das Label-Popup gerade offen ist (oder null).
+  const labelArea = labelingId ? (value.areas.find((a) => a.id === labelingId) ?? null) : null;
+
+  function saveLabel(label: string) {
+    if (!labelingId) return;
+    onChange({
+      ...value,
+      areas: value.areas.map((a) =>
+        a.id === labelingId ? { ...a, label: label || undefined } : a
+      ),
+    });
+    setLabelingId(null);
   }
 
   return (
@@ -147,34 +175,25 @@ export function HotspotForm({ value, onChange }: Props) {
           <div className="flex flex-wrap items-center gap-4">
             <NewZoneToggle isCorrect={newIsCorrect} onChange={setNewIsCorrect} />
             <ShapeToggle shape={drawShape} onChange={setDrawShape} />
-            {grouped && (
-              <label className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Neue Zone in Gruppe:</span>
-                <select
-                  value={currentGroupId ?? ''}
-                  onChange={(e) => setCurrentGroupId(e.target.value || undefined)}
-                  className="border-input bg-background h-8 rounded-md border px-2 text-sm font-medium"
-                >
-                  {groups.map((g, i) => (
-                    <option key={g.id} value={g.id}>
-                      {i + 1}. {g.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
+            <ActiveGroupSelect
+              groups={groups}
+              value={currentGroupId}
+              onChange={setCurrentGroupId}
+            />
           </div>
           <p className="text-muted-foreground text-xs">
-            Stelle oben Form und „richtig/Ablenker“ ein. <strong>Kreis:</strong> ins Bild klicken.{' '}
-            <strong>Rechteck:</strong> mit gedrückter Maustaste aufziehen. Du kannst mehrere
-            richtige Zonen setzen (z.B. „tippe alle Eingabegeräte an“). Größe, Drehung und „richtig“
-            lassen sich bei jeder Zone unten nachjustieren.
+            <strong>Kreis:</strong> ins Bild klicken. <strong>Rechteck:</strong> aufziehen. Danach
+            poppt ein Feld auf, um die Zone zu beschriften. Größe/Drehung/„richtig“ bei jeder Zone
+            unten.
           </p>
           <HotspotImageEditor
             imageUrl={value.imageUrl}
             areas={value.areas}
             drawShape={drawShape}
             colorForArea={colorForArea}
+            labelArea={labelArea}
+            onLabelSave={saveLabel}
+            onLabelClose={() => setLabelingId(null)}
             onAddCircle={addCircle}
             onAddRect={addRect}
           />
@@ -184,26 +203,13 @@ export function HotspotForm({ value, onChange }: Props) {
             onCurrentGroupChange={setCurrentGroupId}
             onChange={onChange}
           />
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium">Zonen</span>
-            </div>
-            <ul className="space-y-2">
-              {value.areas.map((area, i) => (
-                <ZoneRow
-                  key={area.id}
-                  area={area}
-                  index={i}
-                  groups={value.groups}
-                  onUpdate={(patch) => updateArea(i, patch)}
-                  onRemove={() => removeArea(i)}
-                />
-              ))}
-            </ul>
-            {value.areas.length === 0 && (
-              <AddButton onClick={() => addCircle(0.5, 0.5)}>Zone in der Mitte</AddButton>
-            )}
-          </div>
+          <ZoneList
+            areas={value.areas}
+            groups={value.groups}
+            onUpdate={updateArea}
+            onRemove={removeArea}
+            onAddDefault={() => addCircle(0.5, 0.5)}
+          />
         </>
       ) : (
         <p className="text-muted-foreground text-sm">

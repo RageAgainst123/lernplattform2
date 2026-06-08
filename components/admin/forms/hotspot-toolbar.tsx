@@ -6,6 +6,36 @@
 
 export type HotspotShape = 'circle' | 'rect';
 
+// Auswahl, in welche Gruppe neue Zonen kommen (nur im Gruppen-Modus über dem
+// Bild sichtbar). Rendert nichts, wenn keine Gruppen existieren.
+export function ActiveGroupSelect({
+  groups,
+  value,
+  onChange,
+}: {
+  groups: { id: string; label: string }[];
+  value: string | undefined;
+  onChange: (id: string | undefined) => void;
+}) {
+  if (groups.length === 0) return null;
+  return (
+    <label className="flex items-center gap-2 text-xs">
+      <span className="text-muted-foreground">Neue Zone in Gruppe:</span>
+      <select
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="border-input bg-background h-8 rounded-md border px-2 text-sm font-medium"
+      >
+        {groups.map((g, i) => (
+          <option key={g.id} value={g.id}>
+            {i + 1}. {g.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function NewZoneToggle({
   isCorrect,
   onChange,

@@ -53,6 +53,7 @@ function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: P
           zones={block.areas}
           picked={picked}
           locked={locked}
+          maxClicks={block.maxClicks}
           onToggle={toggle}
         />
       </div>

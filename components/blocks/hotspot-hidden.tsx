@@ -5,13 +5,19 @@ import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
 import { hitAreaIds } from '@/lib/blocks/hotspot-geometry';
 
 // Frei-Klick-Fläche für versteckte Zonen (revealZones=false): die Schüler:in
-// sieht KEINE Rahmen, sondern klickt frei aufs Bild. Ein Treffer zählt, wenn der
-// Klick in einer Zone liegt (pointInArea via hitAreaIds). Gefundene Treffer
-// erscheinen als kleine Häkchen-Punkte; ein Klick daneben als flüchtiger
-// „Daneben“-Punkt (kein Antwort-Eintrag). Geteilt von Einfach- und Gruppen-Modus
-// (zones = die für den aktuellen Schritt relevanten Zonen).
+// sieht KEINE Rahmen, sondern klickt frei aufs Bild („Finde das Objekt").
+//
+// Anti-Raten-Design: jeder Klick setzt einen NEUTRALEN nummerierten Marker an
+// die Klickposition — egal ob Treffer oder nicht. KEIN Live-Feedback (kein
+// grün/rot), damit niemand herumklickt, bis es grün wird. Erst beim „Prüfen"
+// (außerhalb dieser Komponente) werden die richtigen Zonen aufgedeckt. Optional
+// begrenzt `maxClicks` die Anzahl der Klicks (z.B. = Anzahl richtiger Zonen).
+//
+// Die Klick-Positionen sind lokaler UI-State (für die neutrale Anzeige). Die
+// ANTWORT bleibt das string[] der getroffenen areaIds.
 
 type Area = HotspotBlockType['areas'][number];
+type Pick = { x: number; y: number; areaId: string | null };
 
 // Relative Klickposition (0–1) + Aspekt (Höhe/Breite) des angeklickten Bildes.
 function relClick(e: React.PointerEvent<HTMLElement>, el: HTMLElement) {
@@ -22,94 +28,87 @@ function relClick(e: React.PointerEvent<HTMLElement>, el: HTMLElement) {
   return { px, py, aspect };
 }
 
-type Miss = { x: number; y: number; key: number };
-
-// Treffer-Häkchen an den Mittelpunkten der bereits gefundenen Zonen + flüchtiger
-// „Daneben"-Punkt. Verrät keine Zonen-Grenzen (nur Punkt-Marker).
-function HiddenMarkers({
-  zones,
-  picked,
-  miss,
-}: {
-  zones: Area[];
-  picked: Set<string>;
-  miss: Miss | null;
-}) {
+function Markers({ picks }: { picks: Pick[] }) {
   return (
     <>
-      {zones
-        .filter((z) => picked.has(z.id))
-        .map((z) => (
-          <span
-            key={z.id}
-            style={{ left: `${z.x * 100}%`, top: `${z.y * 100}%` }}
-            className="absolute flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-green-600 bg-green-500/80 text-xs text-white"
-            aria-hidden
-          >
-            ✓
-          </span>
-        ))}
-      {miss && (
+      {picks.map((p, i) => (
         <span
-          key={miss.key}
-          style={{ left: `${miss.x * 100}%`, top: `${miss.y * 100}%` }}
-          className="absolute size-3 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-red-500/70"
+          key={i}
+          style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }}
+          className="border-primary bg-primary/80 absolute flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-xs font-bold text-white"
           aria-hidden
-        />
-      )}
+        >
+          {i + 1}
+        </span>
+      ))}
     </>
   );
 }
 
-// Klickbare Bild-Fläche mit verstecktem Treffer-Test. `picked` = bereits
-// gefundene areaIds; `onToggle` togglet eine getroffene Zone in die Antwort.
+// Klick-Zähler unter dem Bild (nur bei gesetztem Limit).
+function ClickCounter({ used, max }: { used: number; max: number }) {
+  return (
+    <p className="text-muted-foreground text-center text-sm">
+      {used} / {max} Klicks gesetzt
+      {used >= max && ' — Limit erreicht'}
+    </p>
+  );
+}
+
+type HiddenProps = {
+  imageUrl: string;
+  imageAlt?: string;
+  zones: Area[];
+  picked: Set<string>;
+  locked: boolean;
+  maxClicks?: number;
+  onToggle: (id: string) => void;
+};
+
+// Klickbare Bild-Fläche mit neutralen Markern (keine Treffer-Anzeige).
 export function HotspotHiddenSurface({
   imageUrl,
   imageAlt,
   zones,
   picked,
   locked,
+  maxClicks,
   onToggle,
-}: {
-  imageUrl: string;
-  imageAlt?: string;
-  zones: Area[];
-  picked: Set<string>;
-  locked: boolean;
-  onToggle: (id: string) => void;
-}) {
+}: HiddenProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [miss, setMiss] = useState<Miss | null>(null);
-  const missKey = useRef(0);
+  // Lokale Klick-Positionen (neutrale Marker). Initial aus der Antwort: Zonen-
+  // Mittelpunkte der bereits getroffenen Zonen (z.B. nach Reload).
+  const [picks, setPicks] = useState<Pick[]>(() =>
+    zones.filter((z) => picked.has(z.id)).map((z) => ({ x: z.x, y: z.y, areaId: z.id }))
+  );
+  const limitReached = maxClicks !== undefined && picks.length >= maxClicks;
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (locked || !ref.current) return;
+    if (locked || limitReached || !ref.current) return;
     const { px, py, aspect } = relClick(e, ref.current);
-    const hits = hitAreaIds(zones, px, py, aspect);
-    if (hits.length > 0) {
-      onToggle(hits[0]);
-      setMiss(null);
-    } else {
-      missKey.current += 1;
-      setMiss({ x: px, y: py, key: missKey.current });
-    }
+    const hit = hitAreaIds(zones, px, py, aspect)[0] ?? null;
+    setPicks((prev) => [...prev, { x: px, y: py, areaId: hit }]);
+    if (hit && !picked.has(hit)) onToggle(hit); // areaId in die Antwort aufnehmen
   }
   return (
-    <div
-      ref={ref}
-      onPointerDown={onPointerDown}
-      role="button"
-      tabIndex={0}
-      aria-label="Klicke die gesuchten Stellen im Bild an"
-      className="relative mx-auto w-full max-w-2xl cursor-crosshair touch-none overflow-hidden rounded-md border"
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element -- Modul-Bilder aus Storage/Pexels */}
-      <img
-        src={imageUrl}
-        alt={imageAlt ?? ''}
-        className="block w-full select-none"
-        draggable={false}
-      />
-      <HiddenMarkers zones={zones} picked={picked} miss={miss} />
+    <div className="space-y-2">
+      <div
+        ref={ref}
+        onPointerDown={onPointerDown}
+        role="button"
+        tabIndex={0}
+        aria-label="Klicke die gesuchten Stellen im Bild an"
+        className="relative mx-auto w-full max-w-2xl cursor-crosshair touch-none overflow-hidden rounded-md border"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- Modul-Bilder aus Storage/Pexels */}
+        <img
+          src={imageUrl}
+          alt={imageAlt ?? ''}
+          className="block w-full select-none"
+          draggable={false}
+        />
+        <Markers picks={picks} />
+      </div>
+      {maxClicks !== undefined && <ClickCounter used={picks.length} max={maxClicks} />}
     </div>
   );
 }

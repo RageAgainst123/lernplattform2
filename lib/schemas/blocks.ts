@@ -199,12 +199,19 @@ export const hotspotBlockSchema = z.object({
   imageAlt: z.string().optional(),
   // Optional: Gruppen-Modus. Ohne groups = eine Frage (Einfach-Modus).
   groups: z.array(hotspotGroupSchema).max(6).optional(),
-  areas: z.array(hotspotAreaSchema).min(1).max(20),
+  // Darf beim frisch erstellten Block leer sein (der/die Admin zeichnet die
+  // Zonen selbst). Dass ein FERTIGER Block mindestens eine richtige Zone hat,
+  // prüft scripts/validate-module.mjs — nicht das Struktur-Schema.
+  areas: z.array(hotspotAreaSchema).max(20),
   // true (Default, Bestandsverhalten) = Zonen-Rahmen sind für Schüler:innen
   // sichtbar und anklickbar. false = Rahmen versteckt → Schüler:in klickt frei
-  // aufs Bild („Finde das Objekt"); Treffer = Klick liegt in einer Zone. Nach
-  // dem Prüfen werden die Zonen in beiden Modi aufgedeckt.
+  // aufs Bild („Finde das Objekt"). Im versteckten Modus gibt es KEIN Live-
+  // Feedback pro Klick (neutrale Marker), erst beim Prüfen wird aufgelöst — so
+  // wird Herumraten verhindert.
   revealZones: z.boolean().default(true),
+  // Optional (nur versteckter Modus): begrenzt die Anzahl Klicks. undefined =
+  // unbegrenzt. Sinnvoll = Anzahl der richtigen Zonen, dann ist Raten teuer.
+  maxClicks: z.number().int().min(1).max(20).optional(),
   ...gradedBlockExtensions,
 });
 

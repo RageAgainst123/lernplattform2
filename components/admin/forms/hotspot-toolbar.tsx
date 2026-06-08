@@ -107,6 +107,34 @@ export function RevealToggle({
   );
 }
 
+// Optionales Klick-Limit für den versteckten Modus. Nur sichtbar, wenn die
+// Zonen versteckt sind. correctCount = Vorschlagswert (= Anzahl richtiger Zonen).
+export function MaxClicksField({
+  value,
+  correctCount,
+  onChange,
+}: {
+  value: number | undefined;
+  correctCount: number;
+  onChange: (n: number | undefined) => void;
+}) {
+  return (
+    <label className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="text-muted-foreground">Max. Klicks (versteckt, optional):</span>
+      <input
+        type="number"
+        min={1}
+        max={20}
+        value={value ?? ''}
+        placeholder="unbegrenzt"
+        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
+        className="border-input bg-background h-8 w-28 rounded-md border px-2"
+      />
+      <span className="text-muted-foreground">Tipp: = Anzahl richtiger Zonen ({correctCount})</span>
+    </label>
+  );
+}
+
 export function ShapeToggle({
   shape,
   onChange,

@@ -1,14 +1,12 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useState } from 'react';
 import type { HotspotBlock } from '@/lib/schemas/blocks';
-import { uploadHotspotImage } from '@/lib/db/hotspot-image-actions';
-import { Button } from '@/components/ui/button';
 import { GradedExtensionsFields } from './GradedExtensionsFields';
 import { FieldLabel, TextInput } from './form-helpers';
 import { DEFAULT_R, HotspotImageEditor } from './hotspot-editor';
 import { ZoneList } from './hotspot-zone-row';
-import { HotspotPexelsPicker } from './hotspot-image-picker';
+import { ImageSourceBar } from './hotspot-image-source-bar';
 import {
   addArea,
   createGroupForArea,
@@ -19,6 +17,7 @@ import {
 } from './hotspot-form-ops';
 import {
   ActiveGroupSelect,
+  MaxClicksField,
   NewZoneToggle,
   RevealToggle,
   ShapeToggle,
@@ -35,55 +34,8 @@ type Props = {
   onChange: (next: HotspotBlock) => void;
 };
 
-// Bildquelle-Leiste: Upload-Button + Pexels-Button. Kapselt den Upload-Transition.
-function ImageSourceBar({ onPicked }: { onPicked: (url: string) => void }) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [pexelsOpen, setPexelsOpen] = useState(false);
-
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError(null);
-    start(async () => {
-      try {
-        const { url } = await uploadHotspotImage(file);
-        onPicked(url);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Upload fehlgeschlagen.');
-      }
-    });
-    e.target.value = '';
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-          {pending ? 'Lädt hoch…' : '⬆ Bild hochladen'}
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => setPexelsOpen(true)}>
-          🔍 Pexels durchsuchen
-        </Button>
-        <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" />
-      </div>
-      {error && <p className="text-destructive text-sm">{error}</p>}
-      <HotspotPexelsPicker
-        open={pexelsOpen}
-        onClose={() => setPexelsOpen(false)}
-        onPick={(url) => {
-          onPicked(url);
-          setPexelsOpen(false);
-        }}
-      />
-    </div>
-  );
-}
-
-// Border+bg-Klassen einer Zone im Editor: im Gruppen-Modus nach Gruppe
-// (Farbpalette), sonst grün (richtig) / grau (Ablenker). Pure Helper, damit
-// HotspotForm unter dem Komplexitäts-Limit bleibt.
+// Border+bg-Klassen einer Zone im Editor: Gruppen-Modus = Gruppenfarbe, sonst
+// grün (richtig) / grau (Ablenker). Pure Helper (Komplexitäts-Limit).
 function zoneEditorColor(
   a: HotspotBlock['areas'][number],
   groups: NonNullable<HotspotBlock['groups']>
@@ -179,8 +131,16 @@ export function HotspotForm({ value, onChange }: Props) {
           <p className="text-muted-foreground text-xs">
             <strong>Kreis:</strong> ins Bild klicken. <strong>Rechteck:</strong> aufziehen. Danach
             poppt ein Feld auf, um die Zone zu beschriften (dort auch Gruppe wählen). „Verstecken“ =
-            Schüler:in sucht & klickt frei aufs Bild. Größe/Drehung/„richtig“ bei jeder Zone unten.
+            Schüler:in sucht & klickt frei aufs Bild (neutrale Marker, Auflösung erst beim Prüfen).
+            Größe/Drehung/„richtig“ bei jeder Zone unten.
           </p>
+          {value.revealZones === false && (
+            <MaxClicksField
+              value={value.maxClicks}
+              correctCount={value.areas.filter((a) => a.isCorrect).length}
+              onChange={(maxClicks) => onChange({ ...value, maxClicks })}
+            />
+          )}
           <HotspotImageEditor
             imageUrl={value.imageUrl}
             areas={value.areas}

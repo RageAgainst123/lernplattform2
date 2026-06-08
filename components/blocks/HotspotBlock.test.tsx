@@ -156,6 +156,31 @@ describe('HotspotBlock — versteckte Zonen (Frei-Klick)', () => {
     // Im checked-Modus wird der reguläre Zonen-Pfad gerendert.
     expect(screen.getByRole('button', { name: 'Tastatur' })).toBeInTheDocument();
   });
+
+  it('setzt einen neutralen Marker auch bei einem Treffer (kein Live-grün)', () => {
+    mockBox();
+    const { container } = render(
+      <HotspotBlock block={HIDDEN} answer={[]} checked={false} onSelect={vi.fn()} />
+    );
+    const surface = screen.getByRole('button', { name: 'Klicke die gesuchten Stellen im Bild an' });
+    fireEvent.pointerDown(surface, { clientX: 20, clientY: 50 }); // Treffer z1
+    // Marker ist neutral (primary), KEIN grünes Treffer-Häkchen mehr.
+    expect(container.querySelector('.bg-green-500\\/90')).toBeNull();
+    expect(container.querySelector('.bg-primary\\/80')).not.toBeNull();
+  });
+
+  it('begrenzt die Klicks per maxClicks + zeigt den Zähler', () => {
+    mockBox();
+    const onSelect = vi.fn();
+    const limited: HotspotBlockType = { ...HIDDEN, maxClicks: 1 };
+    render(<HotspotBlock block={limited} answer={[]} checked={false} onSelect={onSelect} />);
+    const surface = screen.getByRole('button', { name: 'Klicke die gesuchten Stellen im Bild an' });
+    fireEvent.pointerDown(surface, { clientX: 20, clientY: 50 }); // 1. Klick (Treffer z1)
+    expect(screen.getByText(/1 \/ 1 Klicks/)).toBeInTheDocument();
+    onSelect.mockClear();
+    fireEvent.pointerDown(surface, { clientX: 50, clientY: 50 }); // 2. Klick → Limit
+    expect(onSelect).not.toHaveBeenCalled();
+  });
 });
 
 const GROUP_BLOCK: HotspotBlockType = {

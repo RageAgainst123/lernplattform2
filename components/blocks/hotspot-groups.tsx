@@ -51,6 +51,7 @@ function GroupImage({
         zones={zones}
         picked={picked}
         locked={locked}
+        maxClicks={block.maxClicks}
         onToggle={onToggle}
       />
     );
@@ -120,6 +121,19 @@ function StepControls({
   );
 }
 
+// Prominenter Aufgaben-Banner pro Schritt — zeigt klar, was JETZT zu tun ist
+// (war vorher kleine graue Zeile oben rechts, leicht übersehen).
+function StepBanner({ step, total, label }: { step: number; total: number; label: string }) {
+  return (
+    <div className="border-primary/30 bg-primary/10 flex items-center gap-3 rounded-lg border p-3">
+      <span className="bg-primary shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold text-white">
+        Schritt {step + 1} / {total}
+      </span>
+      <span className="text-primary text-lg font-bold">👉 Tippe alle {label} an</span>
+    </div>
+  );
+}
+
 export function HotspotGroupRunner({ block, answer, checked, readOnly = false, onSelect }: Props) {
   const groups = block.groups ?? [];
   const picked = useMemo(() => new Set(answer), [answer]);
@@ -143,13 +157,8 @@ export function HotspotGroupRunner({ block, answer, checked, readOnly = false, o
 
   return (
     <div className="space-y-3">
-      <p className="text-lg font-medium">{block.instruction}</p>
-      <div className="text-muted-foreground flex items-center justify-between text-sm">
-        <span>
-          Schritt {step + 1} / {groups.length}
-        </span>
-        <span className="font-medium">Tippe alle {group.label} an</span>
-      </div>
+      <p className="text-muted-foreground text-sm">{block.instruction}</p>
+      <StepBanner step={step} total={groups.length} label={group.label} />
       <GroupImage
         block={block}
         group={group}

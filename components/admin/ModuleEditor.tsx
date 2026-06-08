@@ -91,7 +91,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
           {error}
         </div>
       )}
-      <div className="grid gap-6 lg:grid-cols-[minmax(280px,_1fr)_minmax(0,_1.8fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(260px,_340px)_minmax(0,_1fr)]">
         <MetadataPanel meta={meta} setMeta={setMeta} />
         <ContentPanel
           tab={tab}

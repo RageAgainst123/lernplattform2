@@ -44,10 +44,11 @@ describe('zoneBoxStyle', () => {
     expect(s.aspectRatio).toBeUndefined();
   });
 
-  it('Rechteck: Breite = width, aspectRatio = width/height', () => {
+  it('Rechteck: Breite = width% (rel. Breite), Höhe = height% (rel. Höhe), keine aspectRatio', () => {
     const s = zoneBoxStyle(rect);
     expect(s.width).toBe('20%');
-    expect(s.aspectRatio).toBe('0.2 / 0.1');
+    expect(s.height).toBe('10%');
+    expect(s.aspectRatio).toBeUndefined();
   });
 
   it('übernimmt die Rotation in den transform', () => {

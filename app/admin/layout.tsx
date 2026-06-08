@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/admin-auth';
-import { BRAND } from '@/lib/brand';
 import { ACTIVITY_INFO, MATERIAL_AS_ACTIVITY } from '@/lib/activities';
-import { AdminNav } from '@/components/admin/AdminNav';
+import { AdminShell } from '@/components/admin/AdminShell';
 
 export const metadata: Metadata = {
   title: 'Admin',
@@ -48,24 +46,11 @@ const NAV = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin();
+  // Layout-Hülle (Breite + Sidebar an/aus je nach Route) lebt im Client-Wrapper
+  // AdminShell — requireAdmin + NAV-Daten bleiben hier Server-seitig.
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:flex md:gap-8">
-      <aside className="md:w-56 md:shrink-0">
-        <div className="mb-4">
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">Admin</p>
-          <p className="text-sm font-medium">{user.email}</p>
-        </div>
-        <AdminNav items={NAV} />
-        <div className="text-muted-foreground mt-6 hidden text-xs md:block">
-          <p>Du bist als Admin von {BRAND.name} angemeldet.</p>
-          <p className="mt-2">
-            <Link href="/lehrer" className="hover:underline">
-              ← Zurück zum Lehrer:innen-Bereich
-            </Link>
-          </p>
-        </div>
-      </aside>
-      <div className="mt-6 flex-1 md:mt-0">{children}</div>
-    </div>
+    <AdminShell nav={NAV} email={user.email ?? ''}>
+      {children}
+    </AdminShell>
   );
 }

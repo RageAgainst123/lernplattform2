@@ -11,9 +11,12 @@ type Area = HotspotBlock['areas'][number];
 
 // Liefert die absolute Positionierung + Form einer Zone als Inline-Style,
 // relativ zum Bild-Container (x,y = Mittelpunkt in %, translate zentriert).
-// Kreis: Breite = 2·r (Höhe via aspect-square in der Klasse). Rechteck: Breite =
-// width, Höhe via aspectRatio width/height (container-höhen-unabhängig, wie der
-// Kreis). Rotation als zusätzlicher transform-Anteil.
+// Kreis: Breite = 2·r (Höhe via aspect-square in der Klasse), r relativ zur
+// Bildbreite. Rechteck: Breite = width (relativ zur Bildbreite), Höhe = height
+// (relativ zur Bild-HÖHE) — beide Achsen getrennt, damit Editor-Aufziehen,
+// gespeicherte Zone und Schüler-Renderer pixelgenau übereinstimmen (alle zeigen
+// dasselbe Bild im selben w-full-Container, also identische Höhe). Rotation als
+// zusätzlicher transform-Anteil.
 export function zoneBoxStyle(area: Area): CSSProperties {
   const shape = area.shape ?? 'circle';
   const rotation = area.rotation ?? 0;
@@ -25,7 +28,7 @@ export function zoneBoxStyle(area: Area): CSSProperties {
   if (shape === 'rect') {
     const w = area.width ?? 0.2;
     const h = area.height ?? 0.12;
-    return { ...base, width: `${w * 100}%`, aspectRatio: `${w} / ${h}` };
+    return { ...base, width: `${w * 100}%`, height: `${h * 100}%` };
   }
   const r = area.r ?? 0.08;
   return { ...base, width: `${r * 2 * 100}%` };

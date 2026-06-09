@@ -13,13 +13,20 @@ type Zone = LabelImageBlockType['zones'][number];
 
 function markerColor(assigned: string | undefined, zone: Zone, checked: boolean, active: boolean) {
   if (checked) {
+    // Bewertungs-Pille klar lesbar (kräftiger Hintergrund), aber als kompakter
+    // Marker — die Pille verdeckt das Bild nicht (Audit-Befund Overlay-Deckkraft).
     return assigned === zone.label
-      ? 'border-green-600 bg-green-500/30 text-green-900'
-      : 'border-red-600 bg-red-500/30 text-red-900';
+      ? 'border-green-600 bg-green-100 text-green-900'
+      : 'border-red-600 bg-red-100 text-red-900';
   }
   if (active) return 'border-primary bg-primary/30 text-primary';
   if (assigned) return 'border-primary bg-primary/15 text-primary';
-  return cn('border-white/80 bg-black/30 text-white', 'hover:bg-primary/40');
+  // Unbeschrifteter Marker: dunkler Außen-Ring (drop-shadow) → auch auf hellem
+  // Bildhintergrund (z.B. Holztisch) sichtbar (Audit-Befund Kontrast).
+  return cn(
+    'border-white bg-black/45 text-white [filter:drop-shadow(0_0_1.5px_rgb(0_0_0/0.9))]',
+    'hover:bg-primary/50'
+  );
 }
 
 // „×" zum Zurücklegen, als verschachtelter Klick (role=button statt <button>,

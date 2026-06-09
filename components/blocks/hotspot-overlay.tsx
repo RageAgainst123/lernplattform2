@@ -10,6 +10,11 @@ import { zoneBoxStyle, zoneShapeClass } from '@/lib/blocks/hotspot-geometry';
 type Area = HotspotBlockType['areas'][number];
 
 // Farbgebung einer Zone je nach Markier-/Bewertungs-Status.
+// Bewertungs-Overlays bewusst transparent (/12–/15) + dickerer Rand, damit das
+// Objekt UNTER der Zone erkennbar bleibt (sonst lernt man „grüne Fläche" statt
+// „dieses Objekt"). Ungetippte/markierte Zonen haben zusätzlich einen dunklen
+// Außen-Ring (drop-shadow), damit der helle Rahmen auch auf hellem Bild­hinter­
+// grund (z.B. Holztisch) sichtbar bleibt — siehe Audit-Befund Kontrast.
 function zoneClass(opts: {
   picked: boolean;
   checked: boolean;
@@ -18,14 +23,18 @@ function zoneClass(opts: {
 }): string {
   const { picked, checked, isCorrect, locked } = opts;
   if (checked) {
-    if (picked && isCorrect) return 'border-green-600 bg-green-500/30';
-    if (picked && !isCorrect) return 'border-red-600 bg-red-500/30';
+    if (picked && isCorrect) return 'border-4 border-green-500 bg-green-500/12';
+    if (picked && !isCorrect) return 'border-4 border-red-500 bg-red-500/12';
     // richtig, aber nicht angetippt → gelb gestrichelt (verpasst)
-    if (!picked && isCorrect) return 'border-amber-500 border-dashed bg-amber-400/20';
+    if (!picked && isCorrect) return 'border-4 border-dashed border-amber-500 bg-amber-400/12';
     return 'border-transparent';
   }
-  if (picked) return 'border-primary bg-primary/30';
-  return cn('border-white/70 bg-black/10', !locked && 'hover:bg-primary/20');
+  if (picked)
+    return 'border-primary border-[3px] bg-primary/20 [filter:drop-shadow(0_0_1px_rgb(0_0_0/0.9))]';
+  return cn(
+    'border-white border-[3px] bg-black/5 [filter:drop-shadow(0_0_1.5px_rgb(0_0_0/0.85))]',
+    !locked && 'hover:bg-primary/20'
+  );
 }
 
 // Eine Zone = absolut positionierter, kreisrunder Button. Position/Größe in %

@@ -224,6 +224,47 @@
       "category": "uebung"
     },
     {
+      "id": "label_image_einfach",
+      "type": "label_image",
+      "instruction": "Bild-Beschriften: Tippe eine Stelle an und wähle den passenden Begriff. (Teilpunkte pro richtig beschrifteter Stelle!)",
+      "imageUrl": "https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg",
+      "imageAlt": "Ein Arbeitsplatz mit Laptop, Tastatur und Maus",
+      "zones": [
+        {
+          "id": "li-tastatur",
+          "label": "Tastatur",
+          "x": 0.5,
+          "y": 0.78,
+          "shape": "circle",
+          "r": 0.18,
+          "rotation": 0
+        },
+        {
+          "id": "li-maus",
+          "label": "Maus",
+          "x": 0.85,
+          "y": 0.7,
+          "shape": "circle",
+          "r": 0.1,
+          "rotation": 0
+        },
+        {
+          "id": "li-bildschirm",
+          "label": "Bildschirm",
+          "x": 0.5,
+          "y": 0.32,
+          "shape": "circle",
+          "r": 0.16,
+          "rotation": 0
+        }
+      ],
+      "revealZones": true,
+      "zoomable": false,
+      "hint": "Tastatur = zum Tippen, Maus = zum Klicken, Bildschirm = zum Anschauen.",
+      "maxAttempts": 2,
+      "category": "uebung"
+    },
+    {
       "id": "reflection",
       "type": "reflection",
       "prompt": "Schreibe in eigenen Worten: Welches Gerät benutzt du am häufigsten — und gehört es zur Eingabe, Verarbeitung oder Ausgabe? Erkläre kurz.",

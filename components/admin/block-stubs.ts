@@ -30,6 +30,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   mark_words: 'mw',
   order: 'ord',
   hotspot: 'hs',
+  label_image: 'li',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -110,6 +111,19 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
     zoomable: false,
     // Bewusst KEINE Vorgabe-Zone: der/die Admin zeichnet die erste Zone selbst.
     areas: [],
+  }),
+  // Bild-Beschriften: 2 Beispiel-Zonen (min 2 erforderlich), Begriffe ersetzbar.
+  label_image: (id) => ({
+    id,
+    type: 'label_image',
+    instruction: 'Beschrifte die markierten Stellen im Bild.',
+    imageUrl: 'https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg',
+    revealZones: true,
+    zoomable: false,
+    zones: [
+      { id: 'z1', label: 'Begriff A', x: 0.35, y: 0.4, shape: 'circle', r: 0.08, rotation: 0 },
+      { id: 'z2', label: 'Begriff B', x: 0.65, y: 0.4, shape: 'circle', r: 0.08, rotation: 0 },
+    ],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),
   live_poll: (id) => ({

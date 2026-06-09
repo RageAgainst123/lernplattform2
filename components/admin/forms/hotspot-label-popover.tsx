@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import type { HotspotBlock } from '@/lib/schemas/blocks';
 import { Button } from '@/components/ui/button';
 
 // Label-Popup des Hotspot-Editors. Ausgelagert aus hotspot-editor.tsx wegen der
 // Datei-Zeilen-Grenze. Erscheint direkt nach dem Setzen einer Zone, beschriftet
 // sie und (optional) ordnet sie einer Gruppe zu / legt eine neue Gruppe an.
+// Strukturelle Zonen-Form → von Hotspot UND label_image nutzbar.
 
-type Area = HotspotBlock['areas'][number];
+type Area = { x: number; y: number; label?: string; groupId?: string };
 type Group = { id: string; label: string };
 
 // Gruppen-Zeile: Auswahl der Gruppe (falls vorhanden) + „＋ Neue Gruppe".

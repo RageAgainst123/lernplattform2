@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import type { HotspotBlock } from '@/lib/schemas/blocks';
 import { cn } from '@/lib/utils';
 import { zoneBoxStyle, zoneShapeClass } from '@/lib/blocks/hotspot-geometry';
 import { ZoomImageFrame } from '@/components/blocks/hotspot-zoom';
@@ -19,21 +18,36 @@ import {
 // (mousedown → ziehen → loslassen). Relative Koordinaten 0–1 via
 // getBoundingClientRect — identisch zum Renderer (gemeinsamer zoneBoxStyle).
 
-type Area = HotspotBlock['areas'][number];
+// Strukturelle Zonen-Form: nur, was der Editor zum Positionieren/Beschriften
+// braucht. Hotspot-Areas (mit isCorrect/groupId) UND label_image-Zonen (mit
+// Pflicht-label) erfüllen sie beide → der Editor ist block-typ-agnostisch.
+type Area = {
+  id: string;
+  x: number;
+  y: number;
+  shape: 'circle' | 'rect';
+  r?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+  label?: string;
+  isCorrect?: boolean;
+  groupId?: string;
+};
 
 type Group = { id: string; label: string };
 
 // Vorschau aller gesetzten Zonen + (während des Aufziehens) das gestrichelte
 // Drag-Rechteck. Ausgelagert, damit HotspotImageEditor unter der Datei-Grenze
 // bleibt. `colorForArea` liefert border+bg pro Zone.
-function ZonePreviews({
+function ZonePreviews<A extends Area>({
   areas,
   drag,
   colorForArea,
 }: {
-  areas: Area[];
+  areas: A[];
   drag: DragState | null;
-  colorForArea: (a: Area) => string;
+  colorForArea: (a: A) => string;
 }) {
   return (
     <>
@@ -66,8 +80,11 @@ function ZonePreviews({
   );
 }
 
-// Klickbare/aufziehbare Bild-Fläche mit Vorschau aller gesetzten Zonen.
-export function HotspotImageEditor({
+// Klickbare/aufziehbare Bild-Fläche mit Vorschau aller gesetzten Zonen. Generisch
+// über den Zonen-Typ A (muss strukturell `Area` erfüllen), damit sowohl Hotspot-
+// Areas (mit isCorrect/groupId) als auch label_image-Zonen (mit Pflicht-label)
+// ihren eigenen, präzisen `colorForArea`/`labelArea`-Typ behalten.
+export function HotspotImageEditor<A extends Area>({
   imageUrl,
   areas,
   drawShape,
@@ -84,14 +101,14 @@ export function HotspotImageEditor({
   zoomable = false,
 }: {
   imageUrl: string;
-  areas: Area[];
+  areas: A[];
   drawShape: 'circle' | 'rect';
   zoomable?: boolean;
   // Border+bg-Klassen pro Zone. Default: grün (richtig) / grau (Ablenker).
   // Im Gruppen-Modus liefert HotspotForm hier die Gruppenfarbe.
-  colorForArea?: (area: Area) => string;
+  colorForArea?: (area: A) => string;
   // Zone, für die gerade das Label-Popup offen ist (direkt nach dem Setzen).
-  labelArea?: Area | null;
+  labelArea?: A | null;
   // Gruppen + Callbacks fürs Popup (Gruppe wählen / neue Gruppe anlegen).
   groups?: Group[];
   canAddGroup?: boolean;
@@ -102,10 +119,9 @@ export function HotspotImageEditor({
   onAddCircle: (x: number, y: number) => void;
   onAddRect: (x: number, y: number, width: number, height: number) => void;
 }) {
-  const zoneColor =
+  const zoneColor: (a: A) => string =
     colorForArea ??
-    ((a: Area) =>
-      a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20');
+    ((a) => (a.isCorrect ? 'border-green-500 bg-green-400/25' : 'border-gray-400 bg-gray-400/20'));
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
 

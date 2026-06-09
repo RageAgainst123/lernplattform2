@@ -1,11 +1,10 @@
 'use client';
 
-import type { HotspotBlock } from '@/lib/schemas/blocks';
-
 // Steuerelemente einer Zonen-Zeile (Slider, Gruppen-Select, Form-abhängige
 // Größen-Slider). Ausgelagert aus hotspot-zone-row.tsx wegen der Zeilen-Grenze.
+// Strukturelle Geometrie-Form → von Hotspot UND label_image nutzbar.
 
-type Area = HotspotBlock['areas'][number];
+type Area = { shape?: 'circle' | 'rect'; r?: number; width?: number; height?: number };
 type Group = { id: string; label: string };
 
 export function Slider({

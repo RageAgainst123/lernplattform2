@@ -1,13 +1,22 @@
 import type { CSSProperties } from 'react';
-import type { HotspotBlock } from '@/lib/schemas/blocks';
 
-// Pure Geometrie-Helfer für Hotspot-Zonen — von Renderer (HotspotZone) UND
-// Editor-Vorschau (HotspotImageEditor) genutzt, damit beide pixelgenau gleich
-// positionieren (kein Drift). Defensiv: liest shape/rotation mit Fallback, weil
-// der Admin-Editor `modules.content` NICHT durch Zod parst (Defaults greifen
-// dort nicht).
-
-type Area = HotspotBlock['areas'][number];
+// Pure Geometrie-Helfer für Bild-Zonen — von Hotspot UND Bild-Beschriften
+// (label_image) genutzt, damit Renderer + Editor pixelgenau gleich positionieren
+// (kein Drift). Defensiv: liest shape/rotation mit Fallback, weil der Admin-
+// Editor `modules.content` NICHT durch Zod parst (Defaults greifen dort nicht).
+//
+// Strukturelle Geometrie-Form: jede Zone mit diesen Feldern passt (Hotspot-Area
+// hat zusätzlich isCorrect/groupId, label_image-Zone ein Pflicht-label — beide
+// hier irrelevant).
+type Area = {
+  x: number;
+  y: number;
+  shape?: 'circle' | 'rect';
+  r?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+};
 
 // Liefert die absolute Positionierung + Form einer Zone als Inline-Style,
 // relativ zum Bild-Container (x,y = Mittelpunkt in %, translate zentriert).
@@ -99,6 +108,11 @@ export function pointInArea(area: Area, px: number, py: number, aspect = 1): boo
 
 // Alle Zonen, die den Punkt enthalten (überlappende Zonen möglich). Der Renderer
 // nimmt i.d.R. die erste. `aspect` = Bildhöhe/Bildbreite.
-export function hitAreaIds(areas: Area[], px: number, py: number, aspect = 1): string[] {
+export function hitAreaIds<T extends Area & { id: string }>(
+  areas: T[],
+  px: number,
+  py: number,
+  aspect = 1
+): string[] {
   return areas.filter((a) => pointInArea(a, px, py, aspect)).map((a) => a.id);
 }

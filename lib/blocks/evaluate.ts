@@ -3,6 +3,7 @@ import type {
   CategorizeBlock,
   FillBlankBlock,
   HotspotBlock,
+  LabelImageBlock,
   MarkWordsBlock,
   MatchBlock,
   MultipleChoiceBlock,
@@ -21,6 +22,7 @@ export type CategorizeAnswer = Record<string, string>; // itemId → gewählter 
 export type MarkWordsAnswer = number[]; // markierte wordIndex
 export type OrderAnswer = string[]; // itemIds in gewählter Reihenfolge
 export type HotspotAnswer = string[]; // angetippte areaIds
+export type LabelImageAnswer = Record<string, string>; // zoneId → gewählter Begriff
 export type BlockAnswer =
   | MultipleChoiceAnswer
   | TrueFalseAnswer
@@ -30,6 +32,7 @@ export type BlockAnswer =
   | MarkWordsAnswer
   | OrderAnswer
   | HotspotAnswer
+  | LabelImageAnswer
   | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
@@ -166,6 +169,14 @@ function evalHotspot(block: HotspotBlock, answer: HotspotAnswer): number {
   return perGroup.reduce((sum, v) => sum + v, 0) / perGroup.length;
 }
 
+// Bild-Beschriften: Schüler:in ordnet jeder Zone einen Begriff zu (answer =
+// zoneId → gewählter Begriff). Teilpunkte = korrekt zugeordnete / Anzahl Zonen.
+function evalLabelImage(block: LabelImageBlock, answer: LabelImageAnswer): number {
+  if (block.zones.length === 0) return 0;
+  const correct = block.zones.filter((z) => answer[z.id] === z.label).length;
+  return correct / block.zones.length;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Erweiterbarkeit — einen NEUEN Block-Typ ins Scoring aufnehmen:
 //   1. lib/schemas/blocks.ts  → Block-Typ + Antwort-Format (Zod) definieren
@@ -200,6 +211,7 @@ const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undef
   mark_words: (b, a) => evalMarkWords(b as MarkWordsBlock, (a as MarkWordsAnswer) ?? []),
   order: (b, a) => evalOrder(b as OrderBlock, (a as OrderAnswer) ?? []),
   hotspot: (b, a) => evalHotspot(b as HotspotBlock, (a as HotspotAnswer) ?? []),
+  label_image: (b, a) => evalLabelImage(b as LabelImageBlock, (a as LabelImageAnswer) ?? {}),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

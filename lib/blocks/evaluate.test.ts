@@ -468,3 +468,37 @@ describe('hotspot — Gruppen-Modus', () => {
     expect(gradeBlock(hotspotGroups, [])).toBe(0);
   });
 });
+
+// A3.8: label_image — Schüler:in ordnet Zonen Begriffe zu. Teilpunkte =
+// korrekt zugeordnet / Anzahl Zonen.
+const labelImage: Block = {
+  id: 'li',
+  type: 'label_image',
+  instruction: 'Beschrifte die Teile.',
+  imageUrl: 'https://example.com/bild.jpg',
+  revealZones: true,
+  zoomable: false,
+  zones: [
+    { id: 'z1', label: 'Maus', x: 0.2, y: 0.2, shape: 'circle', r: 0.1, rotation: 0 },
+    { id: 'z2', label: 'Tastatur', x: 0.5, y: 0.5, shape: 'circle', r: 0.1, rotation: 0 },
+    { id: 'z3', label: 'Bildschirm', x: 0.8, y: 0.2, shape: 'circle', r: 0.1, rotation: 0 },
+  ],
+};
+
+describe('gradeBlock — label_image', () => {
+  it('alle korrekt → 1', () => {
+    expect(gradeBlock(labelImage, { z1: 'Maus', z2: 'Tastatur', z3: 'Bildschirm' })).toBe(1);
+  });
+  it('2 von 3 korrekt → 0.667', () => {
+    expect(gradeBlock(labelImage, { z1: 'Maus', z2: 'Tastatur', z3: 'Maus' })).toBeCloseTo(2 / 3);
+  });
+  it('falsch zugeordnet zählt nicht', () => {
+    expect(gradeBlock(labelImage, { z1: 'Tastatur', z2: 'Maus' })).toBe(0);
+  });
+  it('leere Antwort → 0', () => {
+    expect(gradeBlock(labelImage, {})).toBe(0);
+  });
+  it('undefined-Antwort → 0', () => {
+    expect(gradeBlock(labelImage, undefined)).toBe(0);
+  });
+});

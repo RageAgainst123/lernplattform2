@@ -24,6 +24,7 @@ const GRADED = new Set([
   'mark_words',
   'order',
   'hotspot',
+  'label_image',
 ]);
 
 function readInput() {
@@ -206,6 +207,47 @@ for (const b of blocks) {
         if (!inGroup.some((a) => a.isCorrect)) {
           errors.push(`${b.id} (hotspot): Gruppe "${g.label}" hat keine richtige Zone.`);
         }
+      }
+    }
+  }
+
+  if (b.type === 'label_image') {
+    // ≥2 Zonen erzwingt schon das Schema (zones.min(2)) — hier die fachlichen
+    // Regeln: eindeutige Zonen-ids, jede Zone hat einen nicht-leeren Begriff,
+    // Begriffe eindeutig (sonst ist die Zuordnung für die Schüler:in mehrdeutig),
+    // Koordinaten + Form wie bei hotspot.
+    const zoneIds = b.zones.map((z) => z.id);
+    if (new Set(zoneIds).size !== zoneIds.length) {
+      errors.push(`${b.id} (label_image): doppelte zone-id.`);
+    }
+    const labels = b.zones.map((z) => (z.label ?? '').trim());
+    if (labels.some((l) => l === '')) {
+      errors.push(`${b.id} (label_image): jede Zone braucht einen nicht-leeren Begriff (label).`);
+    }
+    const nonEmpty = labels.filter((l) => l !== '');
+    if (new Set(nonEmpty).size !== nonEmpty.length) {
+      errors.push(
+        `${b.id} (label_image): doppelter Begriff — Begriffe müssen eindeutig sein (sonst mehrdeutig).`
+      );
+    }
+    for (const z of b.zones) {
+      if (z.x < 0 || z.x > 1 || z.y < 0 || z.y > 1) {
+        errors.push(`${b.id} (label_image): Zone "${z.id}" Koordinate außerhalb [0,1].`);
+      }
+      const shape = z.shape ?? 'circle';
+      if (shape === 'rect') {
+        if (typeof z.width !== 'number' || typeof z.height !== 'number') {
+          errors.push(`${b.id} (label_image): Rechteck-Zone "${z.id}" braucht width + height.`);
+        } else if (z.width <= 0 || z.width > 1 || z.height <= 0 || z.height > 1) {
+          errors.push(
+            `${b.id} (label_image): Rechteck-Zone "${z.id}" width/height außerhalb (0,1].`
+          );
+        }
+      } else if (typeof z.r !== 'number') {
+        errors.push(`${b.id} (label_image): Kreis-Zone "${z.id}" braucht r.`);
+      }
+      if (z.rotation !== undefined && (z.rotation < 0 || z.rotation > 359)) {
+        errors.push(`${b.id} (label_image): Zone "${z.id}" rotation außerhalb [0,359].`);
       }
     }
   }

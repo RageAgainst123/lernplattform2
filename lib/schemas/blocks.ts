@@ -8,8 +8,19 @@ import {
   understandingBlockSchema,
 } from './blocks-live.ts';
 import { hotspotAreaSchema, hotspotGroupSchema } from './blocks-hotspot.ts';
+import { labelImageBlockSchema } from './blocks-label-image.ts';
+import {
+  blockId,
+  gradedBlockExtensions,
+  taxonomyExtension,
+  BLOCK_CATEGORIES,
+} from './blocks-shared.ts';
+import type { BlockCategory } from './blocks-shared.ts';
 
 export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
+export { labelImageBlockSchema };
+export { BLOCK_CATEGORIES };
+export type { BlockCategory };
 export type { HotspotShape } from './blocks-hotspot.ts';
 
 export {
@@ -32,31 +43,9 @@ export type {
 // Block-Schemas für die Modul-Engine (PLATTFORM_MANIFEST §4, Phase 1).
 // Zod ist die Single Source of Truth; die TS-Typen werden abgeleitet.
 // Geteilt zwischen Frontend (BlockRenderer) und Backend (Modul-Validierung).
-
-const blockId = z.string().min(1);
-
-// Phase W (2026-06): Didaktische Kategorisierung für die BlockList-
-// Gruppierung im Editor. Optional, damit Bestands-Blöcke gültig bleiben.
-// 'theorie' = vermittelt, 'uebung' = trainiert, 'reflexion' = lässt
-// nachdenken. Default-Anzeige in der UI: keine Sektion = „Sonstiges".
-export const BLOCK_CATEGORIES = ['theorie', 'uebung', 'reflexion'] as const;
-export type BlockCategory = (typeof BLOCK_CATEGORIES)[number];
-const blockCategorySchema = z.enum(BLOCK_CATEGORIES);
-
-// Phase W: Felder für bewertbare Blöcke (MC, T/F, Lückentext, Match).
-// `hint` erscheint nach dem 1. Fehlversuch in einer HintBox unter dem
-// Block. `maxAttempts` legt fest, wie oft Schüler:in es probieren darf;
-// undefined = altes Verhalten (1 Versuch). Pro Versuch -25 % Punkte.
-const gradedBlockExtensions = {
-  hint: z.string().optional(),
-  maxAttempts: z.number().int().min(1).max(5).optional(),
-  category: blockCategorySchema.optional(),
-};
-
-// Für Theorie-/Live-Blöcke nur die category-Erweiterung.
-const taxonomyExtension = {
-  category: blockCategorySchema.optional(),
-};
+// Geteilte Bausteine (blockId, BLOCK_CATEGORIES, gradedBlockExtensions,
+// taxonomyExtension) leben in blocks-shared.ts (kein Zirkel-Import mit
+// typ-spezifischen Dateien wie blocks-label-image.ts).
 
 export const textBlockSchema = z.object({
   id: blockId,
@@ -218,6 +207,10 @@ export const hotspotBlockSchema = z.object({
   ...gradedBlockExtensions,
 });
 
+// Bild-Beschriften: Stellen im Bild den richtigen Begriffen zuordnen. Schema +
+// Doku in blocks-label-image.ts (eigene Datei, vermeidet Zirkel-Import).
+// Importiert + re-exportiert oben.
+
 export const reflectionBlockSchema = z.object({
   id: blockId,
   type: z.literal('reflection'),
@@ -237,6 +230,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   markWordsBlockSchema,
   orderBlockSchema,
   hotspotBlockSchema,
+  labelImageBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -262,5 +256,6 @@ export type CategorizeBlock = z.infer<typeof categorizeBlockSchema>;
 export type MarkWordsBlock = z.infer<typeof markWordsBlockSchema>;
 export type OrderBlock = z.infer<typeof orderBlockSchema>;
 export type HotspotBlock = z.infer<typeof hotspotBlockSchema>;
+export type LabelImageBlock = z.infer<typeof labelImageBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;

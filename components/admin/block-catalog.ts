@@ -1,6 +1,6 @@
 import type { BlockType } from '@/lib/schemas/blocks';
 
-// Kuratierter Katalog aller 15 Block-Typen mit lehrer:innen-verständlicher
+// Kuratierter Katalog aller 16 Block-Typen mit lehrer:innen-verständlicher
 // Kurzbeschreibung — damit Geo im „Block hinzufügen"-Dialog nicht raten muss
 // was ein Typ tut. Quelle der Beschreibungen: docs/MODUL-SPEZIFIKATION.md §3.
 // Reihenfolge innerhalb jeder Gruppe = empfohlene Verwendungs-Häufigkeit.
@@ -75,6 +75,12 @@ export const BLOCK_CATALOG = {
       label: 'Bild-Hotspots (hotspot)',
       description:
         'Auf richtige Stellen im Bild tippen. Du legst Kreis-Zonen aufs Bild (Upload oder Pexels) und markierst die richtigen. Teilpunkte, Falschklicks ziehen ab.',
+    },
+    {
+      type: 'label_image',
+      label: '🏷️ Bild-Beschriften (label_image)',
+      description:
+        'Stellen im Bild mit Begriffen beschriften — Zone antippen, passenden Begriff wählen (z.B. „Beschrifte den Computer"). Teilpunkte pro richtig zugeordneter Zone.',
     },
     {
       type: 'reflection',

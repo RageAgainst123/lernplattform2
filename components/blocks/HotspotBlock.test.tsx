@@ -10,6 +10,7 @@ const BLOCK: HotspotBlockType = {
   imageUrl: 'https://example.com/bild.jpg',
   imageAlt: 'Ein Schreibtisch',
   revealZones: true,
+  zoomable: false,
   areas: [
     {
       id: 'z1',
@@ -99,6 +100,23 @@ describe('HotspotBlock', () => {
     };
     render(<HotspotBlock block={block} answer={[]} checked={false} onSelect={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Bereich 1' })).toBeInTheDocument();
+  });
+
+  it('zeigt Zoom-Steuerung nur bei zoomable=true', () => {
+    const { rerender } = render(
+      <HotspotBlock block={BLOCK} answer={[]} checked={false} onSelect={vi.fn()} />
+    );
+    expect(screen.queryByRole('button', { name: 'Vergrößern' })).not.toBeInTheDocument();
+    rerender(
+      <HotspotBlock
+        block={{ ...BLOCK, zoomable: true }}
+        answer={[]}
+        checked={false}
+        onSelect={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Vergrößern' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Verkleinern' })).toBeInTheDocument();
   });
 
   it('zeigt Zonen-Feedback erst NACH dem Prüfen', () => {
@@ -204,6 +222,7 @@ const GROUP_BLOCK: HotspotBlockType = {
   instruction: 'Schritt für Schritt.',
   imageUrl: 'https://example.com/bild.jpg',
   revealZones: true,
+  zoomable: false,
   groups: [
     { id: 'gA', label: 'Eingabegeräte' },
     { id: 'gB', label: 'Ausgabegeräte' },

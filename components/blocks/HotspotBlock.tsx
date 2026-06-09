@@ -6,6 +6,7 @@ import { HotspotZone } from '@/components/blocks/hotspot-overlay';
 import { HotspotGroupRunner } from '@/components/blocks/hotspot-groups';
 import { HotspotHiddenSurface } from '@/components/blocks/hotspot-hidden';
 import { HotspotFeedbackList } from '@/components/blocks/hotspot-feedback';
+import { HotspotImageStage } from '@/components/blocks/hotspot-zoom';
 
 // Bild-Hotspots: ein Bild mit sichtbaren Zonen. Schüler:in tippt die richtigen
 // Zonen an. Zonen sind absolut positionierte Buttons ÜBER dem (plain) <img> —
@@ -30,6 +31,33 @@ export function HotspotBlock(props: Props) {
   return <HotspotSimple {...props} />;
 }
 
+// Versteckte Zonen + noch nicht geprüft → Frei-Klick-Fläche (keine Rahmen).
+function HotspotSimpleHidden({
+  block,
+  picked,
+  toggle,
+}: {
+  block: HotspotBlockType;
+  picked: Set<string>;
+  toggle: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-lg font-medium">{block.instruction}</p>
+      <HotspotHiddenSurface
+        imageUrl={block.imageUrl}
+        imageAlt={block.imageAlt}
+        zones={block.areas}
+        picked={picked}
+        locked={false}
+        maxClicks={block.maxClicks}
+        zoomable={block.zoomable === true}
+        onToggle={toggle}
+      />
+    </div>
+  );
+}
+
 function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: Props) {
   const locked = checked || readOnly;
   const picked = useMemo(() => new Set(answer), [answer]);
@@ -40,32 +68,18 @@ function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: P
     else next.add(id);
     onSelect([...next]);
   }
-
-  // Versteckte Zonen + noch nicht geprüft → Frei-Klick-Fläche (keine Rahmen).
-  // Nach dem Prüfen werden die Zonen aufgedeckt (regulärer Pfad unten).
+  // Versteckt + ungeprüft → Frei-Klick; nach dem Prüfen regulärer Pfad (Reveal).
   if (block.revealZones === false && !locked) {
-    return (
-      <div className="space-y-3">
-        <p className="text-lg font-medium">{block.instruction}</p>
-        <HotspotHiddenSurface
-          imageUrl={block.imageUrl}
-          imageAlt={block.imageAlt}
-          zones={block.areas}
-          picked={picked}
-          locked={locked}
-          maxClicks={block.maxClicks}
-          onToggle={toggle}
-        />
-      </div>
-    );
+    return <HotspotSimpleHidden block={block} picked={picked} toggle={toggle} />;
   }
-
   return (
     <div className="space-y-3">
       <p className="text-lg font-medium">{block.instruction}</p>
-      <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-md border">
-        {/* eslint-disable-next-line @next/next/no-img-element -- Modul-Bilder aus Storage/Pexels, kein next/image nötig */}
-        <img src={block.imageUrl} alt={block.imageAlt ?? ''} className="block w-full" />
+      <HotspotImageStage
+        imageUrl={block.imageUrl}
+        imageAlt={block.imageAlt}
+        zoomable={block.zoomable === true}
+      >
         {block.areas.map((area, i) => (
           <HotspotZone
             key={area.id}
@@ -77,7 +91,7 @@ function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: P
             onToggle={toggle}
           />
         ))}
-      </div>
+      </HotspotImageStage>
       {locked && <HotspotFeedbackList areas={block.areas} />}
     </div>
   );

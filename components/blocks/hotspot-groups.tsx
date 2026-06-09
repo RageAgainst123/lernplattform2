@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { HotspotZone } from '@/components/blocks/hotspot-overlay';
 import { HotspotHiddenSurface } from '@/components/blocks/hotspot-hidden';
 import { HotspotFeedbackList } from '@/components/blocks/hotspot-feedback';
+import { HotspotImageStage } from '@/components/blocks/hotspot-zoom';
 
 // Gruppen-Modus des Hotspot-Blocks: ein Bild, mehrere Frage-Schritte
 // („Tippe alle Eingabegeräte an" → prüfen → „Tippe alle Ausgabegeräte an").
@@ -53,14 +54,17 @@ function GroupImage({
         picked={picked}
         locked={locked}
         maxClicks={block.maxClicks}
+        zoomable={block.zoomable === true}
         onToggle={onToggle}
       />
     );
   }
   return (
-    <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-md border">
-      {/* eslint-disable-next-line @next/next/no-img-element -- Modul-Bilder aus Storage/Pexels */}
-      <img src={block.imageUrl} alt={block.imageAlt ?? ''} className="block w-full" />
+    <HotspotImageStage
+      imageUrl={block.imageUrl}
+      imageAlt={block.imageAlt}
+      zoomable={block.zoomable === true}
+    >
       {zones.map((area, i) => (
         <HotspotZone
           key={area.id}
@@ -72,7 +76,7 @@ function GroupImage({
           onToggle={onToggle}
         />
       ))}
-    </div>
+    </HotspotImageStage>
   );
 }
 

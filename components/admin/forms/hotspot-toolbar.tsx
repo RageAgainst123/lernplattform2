@@ -135,6 +135,23 @@ export function MaxClicksField({
   );
 }
 
+// Schalter, ob das Bild gezoomt/verschoben werden kann (für detailreiche
+// Bilder). Default aus. Gilt für Schüler-Sicht UND Editor-Vorschau.
+export function ZoomToggle({
+  zoomable,
+  onChange,
+}: {
+  zoomable: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-xs">
+      <input type="checkbox" checked={zoomable} onChange={(e) => onChange(e.target.checked)} />
+      <span className="text-muted-foreground">🔍 Bild zoom-/verschiebbar (große Bilder)</span>
+    </label>
+  );
+}
+
 export function ShapeToggle({
   shape,
   onChange,

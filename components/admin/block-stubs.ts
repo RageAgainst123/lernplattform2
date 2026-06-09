@@ -107,6 +107,7 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
     instruction: 'Tippe die richtige Stelle im Bild an.',
     imageUrl: 'https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg',
     revealZones: true,
+    zoomable: false,
     // Bewusst KEINE Vorgabe-Zone: der/die Admin zeichnet die erste Zone selbst.
     areas: [],
   }),

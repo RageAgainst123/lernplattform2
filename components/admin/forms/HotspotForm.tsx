@@ -21,6 +21,7 @@ import {
   NewZoneToggle,
   RevealToggle,
   ShapeToggle,
+  ZoomToggle,
   type HotspotShape,
 } from './hotspot-toolbar';
 import { HotspotGroupsEditor } from './hotspot-groups-editor';
@@ -141,6 +142,10 @@ export function HotspotForm({ value, onChange }: Props) {
               onChange={(maxClicks) => onChange({ ...value, maxClicks })}
             />
           )}
+          <ZoomToggle
+            zoomable={value.zoomable === true}
+            onChange={(zoomable) => onChange({ ...value, zoomable })}
+          />
           <HotspotImageEditor
             imageUrl={value.imageUrl}
             areas={value.areas}
@@ -149,6 +154,7 @@ export function HotspotForm({ value, onChange }: Props) {
             labelArea={labelArea}
             groups={groups}
             canAddGroup={groups.length < HOTSPOT_GROUP_COUNT}
+            zoomable={value.zoomable === true}
             onLabelSave={saveLabel}
             onLabelAssignGroup={assignLabelGroup}
             onLabelCreateGroup={createGroupForLabel}

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import type { HotspotBlock } from '@/lib/schemas/blocks';
 import { cn } from '@/lib/utils';
 import { zoneBoxStyle, zoneShapeClass } from '@/lib/blocks/hotspot-geometry';
+import { ZoomImageFrame } from '@/components/blocks/hotspot-zoom';
 import { LabelPopover } from './hotspot-label-popover';
 import {
   DEFAULT_R,
@@ -80,10 +81,12 @@ export function HotspotImageEditor({
   onLabelClose,
   onAddCircle,
   onAddRect,
+  zoomable = false,
 }: {
   imageUrl: string;
   areas: Area[];
   drawShape: 'circle' | 'rect';
+  zoomable?: boolean;
   // Border+bg-Klassen pro Zone. Default: grün (richtig) / grau (Ablenker).
   // Im Gruppen-Modus liefert HotspotForm hier die Gruppenfarbe.
   colorForArea?: (area: Area) => string;
@@ -141,15 +144,15 @@ export function HotspotImageEditor({
   }
 
   return (
-    <div
-      ref={ref}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      className={cn(
-        'relative w-full touch-none overflow-hidden rounded-md border',
+    <ZoomImageFrame
+      enabled={zoomable}
+      innerRef={ref}
+      innerClassName={cn(
+        'relative w-full overflow-hidden rounded-md border',
+        !zoomable && 'touch-none', // bei Zoom: Touch-Scroll fürs Pan zulassen
         drawShape === 'circle' ? 'cursor-crosshair' : 'cursor-cell'
       )}
+      innerProps={{ onPointerDown, onPointerMove, onPointerUp }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- Editor-Vorschau */}
       <img src={imageUrl} alt="" className="block w-full select-none" draggable={false} />
@@ -165,7 +168,7 @@ export function HotspotImageEditor({
           onClose={onLabelClose}
         />
       )}
-    </div>
+    </ZoomImageFrame>
   );
 }
 

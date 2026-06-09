@@ -15,6 +15,7 @@ const base: HotspotBlock = {
   instruction: 'Test',
   imageUrl: 'https://example.com/b.jpg',
   revealZones: true,
+  zoomable: false,
   areas: [{ id: 'a1', x: 0.5, y: 0.5, shape: 'circle', r: 0.1, rotation: 0, isCorrect: true }],
 };
 

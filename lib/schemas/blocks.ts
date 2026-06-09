@@ -212,6 +212,9 @@ export const hotspotBlockSchema = z.object({
   // Optional (nur versteckter Modus): begrenzt die Anzahl Klicks. undefined =
   // unbegrenzt. Sinnvoll = Anzahl der richtigen Zonen, dann ist Raten teuer.
   maxClicks: z.number().int().min(1).max(20).optional(),
+  // true = Bild kann gezoomt/verschoben werden (Buttons +/−, Pan via Scrollen).
+  // Für detailreiche Bilder. Default false = Bestandsverhalten.
+  zoomable: z.boolean().default(false),
   ...gradedBlockExtensions,
 });
 

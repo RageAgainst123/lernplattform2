@@ -2,7 +2,9 @@
 
 import { useRef, useState } from 'react';
 import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
+import { cn } from '@/lib/utils';
 import { hitAreaIds } from '@/lib/blocks/hotspot-geometry';
+import { ZoomImageFrame } from '@/components/blocks/hotspot-zoom';
 
 // Frei-Klick-Fläche für versteckte Zonen (revealZones=false): die Schüler:in
 // sieht KEINE Rahmen, sondern klickt frei aufs Bild („Finde das Objekt").
@@ -62,6 +64,7 @@ type HiddenProps = {
   picked: Set<string>;
   locked: boolean;
   maxClicks?: number;
+  zoomable?: boolean;
   onToggle: (id: string) => void;
 };
 
@@ -73,6 +76,7 @@ export function HotspotHiddenSurface({
   picked,
   locked,
   maxClicks,
+  zoomable = false,
   onToggle,
 }: HiddenProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -89,16 +93,20 @@ export function HotspotHiddenSurface({
     setPicks((prev) => [...prev, { x: px, y: py, areaId: hit }]);
     if (hit && !picked.has(hit)) onToggle(hit); // areaId in die Antwort aufnehmen
   }
+  // bei Zoom muss Touch-Scroll fürs Pan funktionieren → kein touch-none.
+  const cls = cn(
+    'relative cursor-crosshair overflow-hidden rounded-md border',
+    !zoomable && 'touch-none'
+  );
+  const props = {
+    onPointerDown,
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': 'Klicke die gesuchten Stellen im Bild an',
+  };
   return (
-    <div className="space-y-2">
-      <div
-        ref={ref}
-        onPointerDown={onPointerDown}
-        role="button"
-        tabIndex={0}
-        aria-label="Klicke die gesuchten Stellen im Bild an"
-        className="relative mx-auto w-full max-w-2xl cursor-crosshair touch-none overflow-hidden rounded-md border"
-      >
+    <div className="mx-auto w-full max-w-2xl space-y-2">
+      <ZoomImageFrame enabled={zoomable} innerRef={ref} innerClassName={cls} innerProps={props}>
         {/* eslint-disable-next-line @next/next/no-img-element -- Modul-Bilder aus Storage/Pexels */}
         <img
           src={imageUrl}
@@ -107,7 +115,7 @@ export function HotspotHiddenSurface({
           draggable={false}
         />
         <Markers picks={picks} />
-      </div>
+      </ZoomImageFrame>
       {maxClicks !== undefined && <ClickCounter used={picks.length} max={maxClicks} />}
     </div>
   );

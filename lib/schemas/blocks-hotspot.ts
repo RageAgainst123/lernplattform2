@@ -21,6 +21,9 @@ export const hotspotAreaSchema = z
   .object({
     id: z.string().min(1),
     label: z.string().optional(),
+    // Optionaler Erklärtext, der NACH dem Prüfen unter dem Bild erscheint
+    // („Maus = Eingabegerät ✓"). Für richtige Zonen wie für Ablenker.
+    feedback: z.string().optional(),
     x: z.number().min(0).max(1), // Mittelpunkt, beide Formen
     y: z.number().min(0).max(1),
     shape: z.enum(HOTSPOT_SHAPES).default('circle'), // Bestand → 'circle'

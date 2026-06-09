@@ -5,6 +5,7 @@ import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
 import { Button } from '@/components/ui/button';
 import { HotspotZone } from '@/components/blocks/hotspot-overlay';
 import { HotspotHiddenSurface } from '@/components/blocks/hotspot-hidden';
+import { HotspotFeedbackList } from '@/components/blocks/hotspot-feedback';
 
 // Gruppen-Modus des Hotspot-Blocks: ein Bild, mehrere Frage-Schritte
 // („Tippe alle Eingabegeräte an" → prüfen → „Tippe alle Ausgabegeräte an").
@@ -86,6 +87,9 @@ function ReviewAll({ block, picked }: { block: HotspotBlockType; picked: Set<str
         <div key={g.id} className="space-y-2">
           <p className="font-medium">Tippe alle {g.label} an</p>
           <GroupImage block={block} group={g} picked={picked} reveal locked onToggle={() => {}} />
+          <HotspotFeedbackList
+            areas={block.areas.filter((a) => a.groupId === g.id || a.groupId === undefined)}
+          />
         </div>
       ))}
     </div>

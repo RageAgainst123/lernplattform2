@@ -100,6 +100,21 @@ describe('HotspotBlock', () => {
     render(<HotspotBlock block={block} answer={[]} checked={false} onSelect={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Bereich 1' })).toBeInTheDocument();
   });
+
+  it('zeigt Zonen-Feedback erst NACH dem Prüfen', () => {
+    const block: HotspotBlockType = {
+      ...BLOCK,
+      areas: BLOCK.areas.map((a) =>
+        a.id === 'z1' ? { ...a, feedback: 'Tastatur = Eingabegerät' } : a
+      ),
+    };
+    const { rerender } = render(
+      <HotspotBlock block={block} answer={['z1']} checked={false} onSelect={vi.fn()} />
+    );
+    expect(screen.queryByText(/Tastatur = Eingabegerät/)).not.toBeInTheDocument();
+    rerender(<HotspotBlock block={block} answer={['z1']} checked onSelect={vi.fn()} />);
+    expect(screen.getByText(/Tastatur = Eingabegerät/)).toBeInTheDocument();
+  });
 });
 
 describe('HotspotBlock — versteckte Zonen (Frei-Klick)', () => {

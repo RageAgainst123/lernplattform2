@@ -5,6 +5,7 @@ import type { HotspotBlock as HotspotBlockType } from '@/lib/schemas/blocks';
 import { HotspotZone } from '@/components/blocks/hotspot-overlay';
 import { HotspotGroupRunner } from '@/components/blocks/hotspot-groups';
 import { HotspotHiddenSurface } from '@/components/blocks/hotspot-hidden';
+import { HotspotFeedbackList } from '@/components/blocks/hotspot-feedback';
 
 // Bild-Hotspots: ein Bild mit sichtbaren Zonen. Schüler:in tippt die richtigen
 // Zonen an. Zonen sind absolut positionierte Buttons ÜBER dem (plain) <img> —
@@ -32,7 +33,6 @@ export function HotspotBlock(props: Props) {
 function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: Props) {
   const locked = checked || readOnly;
   const picked = useMemo(() => new Set(answer), [answer]);
-
   function toggle(id: string) {
     if (locked) return;
     const next = new Set(picked);
@@ -78,6 +78,7 @@ function HotspotSimple({ block, answer, checked, readOnly = false, onSelect }: P
           />
         ))}
       </div>
+      {locked && <HotspotFeedbackList areas={block.areas} />}
     </div>
   );
 }

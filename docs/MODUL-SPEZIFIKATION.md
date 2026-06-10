@@ -621,6 +621,7 @@ Danach: **diese Datei** (§2/§3/§4/§5) und das Prompt-Template in
 
 ## 7. Querverweise
 
+- [`docs/QUICKSTART-MODUL.md`](QUICKSTART-MODUL.md) — durchgehender Ablauf: KI generiert → validieren → testen → freigeben
 - [`lib/schemas/blocks.ts`](../lib/schemas/blocks.ts) — Zod-Schema (Struktur-Wahrheit), Sub-Schemas in `blocks-hotspot.ts` / `blocks-label-image.ts` / `blocks-live.ts` / `blocks-shared.ts`
 - [`lib/blocks/evaluate.ts`](../lib/blocks/evaluate.ts) — Bewertung (Bewertungs-Wahrheit), `PARTIAL_GRADERS` für Teilpunkte
 - [`components/admin/block-catalog.ts`](../components/admin/block-catalog.ts) — kuratierte Block-Liste mit Lehrer:innen-Beschreibungen (im „Block hinzufügen"-Dialog)

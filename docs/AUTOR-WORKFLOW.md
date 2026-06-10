@@ -446,6 +446,7 @@ ersten Module dafür entstehen.
 
 ## 9. Querverweise
 
+- [`docs/QUICKSTART-MODUL.md`](QUICKSTART-MODUL.md) — der kompakte „KI generiert → testen → freigeben"-Ablauf (Einstieg, falls dieser Workflow zu detailliert ist)
 - [`docs/THEMA-WORKFLOW.md`](THEMA-WORKFLOW.md) — didaktisches Standard-Stundenbild
   eines Themas (die Ebene ÜBER diesem technischen Workflow)
 - [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 18 Block-Typen

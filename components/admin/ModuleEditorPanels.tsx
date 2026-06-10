@@ -1,19 +1,20 @@
 'use client';
 
 import type { Block } from '@/lib/schemas/blocks';
-import type { ActivityKind } from '@/lib/schemas/entities';
+import type { ActivityKind, DisplayMode } from '@/lib/schemas/entities';
 import { Button } from '@/components/ui/button';
 import { AddBlockDialog } from '@/components/admin/AddBlockDialog';
 import { ImportJsonDialog } from '@/components/admin/ImportJsonDialog';
 import { BlockList } from '@/components/admin/BlockList';
 import { LivePreview } from '@/components/admin/LivePreview';
+import { StudentTestPanel } from '@/components/admin/StudentTestPanel';
 import { ModuleMetadataForm, type ModuleMetadata } from '@/components/admin/ModuleMetadataForm';
 
 // Sub-Bausteine vom ModuleEditor (Phase F): Header, Metadaten-Panel, Tabs.
 // Ausgelagert damit der Editor selbst unter dem 200-Zeilen-Limit bleibt und
 // die Stage-Logik vom Layout sauber getrennt ist.
 
-export type EditorTab = 'blocks' | 'preview';
+export type EditorTab = 'blocks' | 'preview' | 'test';
 
 export function EditorHeader({
   label,
@@ -87,19 +88,43 @@ function TabButton({
   );
 }
 
+// Inhalts-Bereich je Tab (ausgelagert, hält ContentPanel unter dem Limit).
+function ContentByTab({
+  tab,
+  blocks,
+  setBlocks,
+  displayMode,
+}: {
+  tab: EditorTab;
+  blocks: Block[];
+  setBlocks: (next: Block[] | ((prev: Block[]) => Block[])) => void;
+  displayMode: DisplayMode;
+}) {
+  if (tab === 'blocks') return <BlockList blocks={blocks} onChange={setBlocks} />;
+  if (tab === 'preview') return <LivePreview blocks={blocks} />;
+  // Test-Tab: Präsentationen werden am Beamer getestet, nicht hier → quiz/worksheet.
+  return (
+    <StudentTestPanel blocks={blocks} displayMode={displayMode === 'quiz' ? 'quiz' : 'worksheet'} />
+  );
+}
+
 export function ContentPanel({
   tab,
   setTab,
   blocks,
   setBlocks,
   activityKind,
+  displayMode,
 }: {
   tab: EditorTab;
   setTab: (t: EditorTab) => void;
   blocks: Block[];
   setBlocks: (next: Block[] | ((prev: Block[]) => Block[])) => void;
   activityKind: ActivityKind;
+  displayMode: DisplayMode;
 }) {
+  // Test-Tab nur für Lernmodule (Präsentationen testet man am Beamer).
+  const showTestTab = activityKind === 'lernmodul';
   return (
     <section aria-labelledby="content-h" className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3 border-b">
@@ -110,6 +135,11 @@ export function ContentPanel({
           <TabButton active={tab === 'preview'} onClick={() => setTab('preview')}>
             Vorschau
           </TabButton>
+          {showTestTab && (
+            <TabButton active={tab === 'test'} onClick={() => setTab('test')}>
+              🎒 Als Schüler:in testen
+            </TabButton>
+          )}
         </div>
         {tab === 'blocks' && (
           <div className="mb-1.5 flex items-center gap-2">
@@ -127,11 +157,7 @@ export function ContentPanel({
         )}
       </div>
       <div className="pt-2">
-        {tab === 'blocks' ? (
-          <BlockList blocks={blocks} onChange={setBlocks} />
-        ) : (
-          <LivePreview blocks={blocks} />
-        )}
+        <ContentByTab tab={tab} blocks={blocks} setBlocks={setBlocks} displayMode={displayMode} />
       </div>
     </section>
   );

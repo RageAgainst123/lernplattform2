@@ -99,6 +99,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
           blocks={blocks}
           setBlocks={setBlocks}
           activityKind={meta.activityKind}
+          displayMode={meta.displayMode}
         />
       </div>
     </div>

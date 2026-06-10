@@ -15,14 +15,14 @@
 > pnpm validate:module pfad/zu/modul.json
 > ```
 >
-> Stand: 2026-05-30.
+> Stand: 2026-06-10.
 
 ## 1. Das große Ganze in drei Sätzen
 
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
-(diskriminierte Union). 17 Block-Typen total — verteilt auf **drei Gruppen**:
-Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (8 davon auto-bewertbar),
+(diskriminierte Union). 18 Block-Typen total — verteilt auf **drei Gruppen**:
+Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (10 davon auto-bewertbar),
 und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
 nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
 
@@ -67,6 +67,7 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 | `mark_words`      | Wörter im Text markieren          | ✅ ja (Teilpunkte) | `correctIndices[]` (wordIndex)               |
 | `order`           | Items in Reihenfolge bringen      | ✅ ja (Teilpunkte) | `items[]` in korrekter Reihenfolge           |
 | `hotspot`         | Richtige Stellen im Bild antippen | ✅ ja (Teilpunkte) | `areas[].isCorrect`                          |
+| `label_image`     | Stellen im Bild beschriften       | ✅ ja (Teilpunkte) | `zones[].label` (Soll-Begriff pro Zone)      |
 | `reflection`      | Freie offene Antwort              | ❌ nein            | — (manuell von Lehrer:in beurteilt)          |
 
 **Gruppe C — Live-Interaktionen** (nur `display_mode='presentation'`, Stimmen in `live_votes`, **nicht bewertet** — zählen nicht zu `max_score`):
@@ -87,7 +88,17 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 ## 3. Felder pro Block-Typ
 
 Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
-Modul) und `type` (einer der 17 Werte aus der Tabelle in §2).
+Modul) und `type` (einer der 18 Werte aus der Tabelle in §2).
+
+> **Didaktik-Felder auf jedem bewertbaren Block (optional).** Alle
+> auto-bewertbaren Worksheet-Typen (`multiple_choice` … `label_image`) tragen
+> zusätzlich drei optionale Felder (Phase W):
+>
+> | Feld          | Typ                                    | Wirkung                                                                                  |
+> | ------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
+> | `hint`        | string                                 | Erscheint nach dem 1. Fehlversuch in einer HintBox unter dem Block.                      |
+> | `maxAttempts` | int 1–5                                | Erlaubte Versuche. `undefined` = 1 Versuch. Jeder weitere Versuch zieht −25 % Punkte ab. |
+> | `category`    | `'theorie' \| 'uebung' \| 'reflexion'` | Didaktische Gruppierung in der Editor-Block-Liste. Rein organisatorisch.                 |
 
 ### 3.1 `text` — Erklärtext (nicht bewertet)
 
@@ -217,7 +228,126 @@ Modul) und `type` (einer der 17 Werte aus der Tabelle in §2).
 }
 ```
 
-### 3.7 `reflection` — Freie Antwort (nicht auto-bewertet)
+### 3.7 `hotspot` — Bild-Hotspots (bewertet, Teilpunkte)
+
+Ein Bild mit anklickbaren **Zonen** (Kreise oder Rechtecke). Die Schüler:in
+tippt die **richtigen** Stellen an. Teilpunkte: `(richtig getippt − falsch
+getippt) / Anzahl richtiger Zonen`, geclamped auf 0–1. Zonen-Geometrie in
+`lib/schemas/blocks-hotspot.ts`.
+
+**Block-Felder:**
+
+| Feld          | Typ      | Pflicht  | Hinweis                                                                                                         |
+| ------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| `instruction` | string   | ✅       | Aufgabenstellung („Tippe alle Eingabegeräte an.").                                                              |
+| `imageUrl`    | string   | ✅       | Gültige Bild-URL (Upload-Bucket oder Pexels).                                                                   |
+| `imageAlt`    | string   | optional | Alt-Text fürs Bild.                                                                                             |
+| `areas`       | Area[]   | ✅       | Die Zonen. Darf im Editor leer angelegt werden; ein FERTIGER Block braucht ≥ 1 richtige Zone (Validate-Script). |
+| `groups`      | Group[]  | optional | **Gruppen-Modus** (max 6). Ohne `groups` = Einfach-Modus (eine Frage).                                          |
+| `revealZones` | boolean  | optional | Default `true`. `false` = Zonen-Rahmen versteckt → Schüler:in klickt **frei** aufs Bild („Finde das Objekt").   |
+| `maxClicks`   | int 1–20 | optional | Nur versteckter Modus: begrenzt die Klicks (sinnvoll = Anzahl richtiger Zonen). `undefined` = unbegrenzt.       |
+| `zoomable`    | boolean  | optional | Default `false`. `true` = Bild zoom-/verschiebbar (für detailreiche Bilder).                                    |
+
+**Area (Zone):** `id` (eindeutig), `x`,`y` (Mittelpunkt 0–1), `shape`
+(`'circle'` Default | `'rect'`), `r` (Kreis-Radius 0.02–0.5, rel. zur Breite),
+`width`+`height` (Rechteck 0.04–1, rel. zur Breite bzw. Höhe), `rotation`
+(0–359, Default 0), **`isCorrect`** (boolean, die Lösung), `groupId`
+(nur Gruppen-Modus), `label`+`feedback` (optional; `feedback` erscheint nach dem
+Prüfen unter dem Bild).
+
+- **Versteckter Modus (`revealZones:false`):** kein Live-Feedback pro Klick —
+  jeder Klick setzt einen **neutralen** Marker, erst beim „Prüfen" wird grün/rot/
+  gelb aufgelöst (Anti-Raten-Design).
+- **Gruppen-Modus:** die Schüler:in löst nacheinander pro Gruppe; jede Gruppe
+  braucht ≥ 1 richtige Zone.
+
+```json
+{
+  "id": "hs1",
+  "type": "hotspot",
+  "instruction": "Tippe die beiden Eingabegeräte im Bild an.",
+  "imageUrl": "https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg",
+  "imageAlt": "Ein Arbeitsplatz",
+  "revealZones": true,
+  "zoomable": false,
+  "areas": [
+    { "id": "a1", "label": "Tastatur", "x": 0.5, "y": 0.78, "r": 0.18, "isCorrect": true },
+    { "id": "a2", "label": "Maus", "x": 0.85, "y": 0.7, "r": 0.1, "isCorrect": true },
+    { "id": "a3", "label": "Bildschirm", "x": 0.5, "y": 0.32, "r": 0.16, "isCorrect": false }
+  ]
+}
+```
+
+### 3.8 `label_image` — Bild-Beschriften (bewertet, Teilpunkte)
+
+Ein Bild mit **Zonen**, denen die Schüler:in den **richtigen Begriff** zuordnet
+(„Beschrifte das Diagramm"). Interaktion: Zone antippen → passenden Begriff-Chip
+wählen → er landet auf der Zone (kein Drag&Drop — robust auf Touch + Desktop).
+Teilpunkte: `Anzahl korrekt beschrifteter Zonen / Anzahl Zonen`. Zonen-Schema in
+`lib/schemas/blocks-label-image.ts`.
+
+**Block-Felder:**
+
+| Feld          | Typ     | Pflicht  | Hinweis                                                                         |
+| ------------- | ------- | -------- | ------------------------------------------------------------------------------- |
+| `instruction` | string  | ✅       | Aufgabenstellung („Beschrifte die Teile des Computers.").                       |
+| `imageUrl`    | string  | ✅       | Gültige Bild-URL.                                                               |
+| `imageAlt`    | string  | optional | Alt-Text.                                                                       |
+| `zones`       | Zone[]  | ✅       | **2–20 Zonen**. Jede trägt einen **Pflicht-`label`** (= Soll-Begriff).          |
+| `revealZones` | boolean | optional | Default `true`. `false` = keine Marker → Schüler:in sucht die Stelle erst frei. |
+| `zoomable`    | boolean | optional | Default `false`. Bild zoom-/verschiebbar.                                       |
+
+**Zone:** `id` (eindeutig), **`label`** (Pflicht, der richtige Begriff für diese
+Zone), `x`,`y` (Mittelpunkt 0–1), `shape` (`'circle'` Default | `'rect'`), `r`
+bzw. `width`+`height`, `rotation` (0–359). Kein `isCorrect`/`groupId` — jede Zone
+hat genau einen richtigen Begriff.
+
+- **Begriffe müssen eindeutig sein** (Validate-Script erzwingt es): die Begriffe
+  liegen einmalig im Pool, doppelte Labels wären für die Schüler:in mehrdeutig.
+- **Bewertung pro Zone:** `answer[zoneId] === zone.label`.
+
+```json
+{
+  "id": "li1",
+  "type": "label_image",
+  "instruction": "Beschrifte die Teile des Computers.",
+  "imageUrl": "https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg",
+  "imageAlt": "Ein Arbeitsplatz",
+  "revealZones": true,
+  "zoomable": false,
+  "zones": [
+    {
+      "id": "z1",
+      "label": "Tastatur",
+      "x": 0.5,
+      "y": 0.78,
+      "shape": "circle",
+      "r": 0.18,
+      "rotation": 0
+    },
+    {
+      "id": "z2",
+      "label": "Maus",
+      "x": 0.85,
+      "y": 0.7,
+      "shape": "circle",
+      "r": 0.1,
+      "rotation": 0
+    },
+    {
+      "id": "z3",
+      "label": "Bildschirm",
+      "x": 0.5,
+      "y": 0.32,
+      "shape": "circle",
+      "r": 0.16,
+      "rotation": 0
+    }
+  ]
+}
+```
+
+### 3.9 `reflection` — Freie Antwort (nicht auto-bewertet)
 
 | Feld          | Typ    | Pflicht  | Hinweis                                 |
 | ------------- | ------ | -------- | --------------------------------------- |
@@ -238,7 +368,7 @@ Modul) und `type` (einer der 17 Werte aus der Tabelle in §2).
 }
 ```
 
-### 3.8 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
+### 3.10 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
 
 Großformatige Folie am Beamer. **Nur** in Modulen mit `display_mode='presentation'`
 sinnvoll — im Worksheet-Modus wirkt sie sperrig.
@@ -258,7 +388,7 @@ sinnvoll — im Worksheet-Modus wirkt sie sperrig.
 }
 ```
 
-### 3.9 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
+### 3.11 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
 
 Unbenoteter Meinungsbild-Block. Schüler:innen sehen Optionen auf ihrem Gerät,
 am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
@@ -285,7 +415,7 @@ am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
 }
 ```
 
-### 3.10 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
+### 3.12 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
 
 Wie `live_poll`, aber mit **richtiger Antwort**. Schüler:innen sehen die Antwort
 **nicht** vorab (das `correct`-Flag wird serverseitig entfernt, bevor es ans
@@ -316,7 +446,7 @@ Option(en) grün.
 }
 ```
 
-### 3.11 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
+### 3.13 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
 
 Schüler:innen tippen ein Wort oder einen kurzen Satz (max 40 Zeichen). Am Beamer
 erscheinen die Beiträge als Wortwolke — häufige Wörter werden größer
@@ -330,11 +460,11 @@ dargestellt (lowercase + getrimmter Vergleich für Duplikat-Zählung).
 {
   "id": "w1",
   "type": "word_cloud",
-  "question": "Was fällt dir zum Wort „Internet" ein?"
+  "question": "Was fällt dir zum Wort „Internet“ ein?"
 }
 ```
 
-### 3.12 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
+### 3.14 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
 
 Schüler:innen klicken einen Wert auf einer Skala (Default 1–5). Am Beamer werden
 Durchschnitt und Verteilung als Balkendiagramm angezeigt. Gut für
@@ -360,7 +490,7 @@ Selbsteinschätzung oder Stimmungsbilder mit Abstufung.
 }
 ```
 
-### 3.13 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
+### 3.15 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
 
 Schnelles Drei-Tasten-Signal: 🟢 verstanden / 🟡 unsicher / 🔴 noch nicht. Keine
 freien Optionen — die drei Werte sind im Code fest verdrahtet, der Beamer zeigt
@@ -393,15 +523,15 @@ Sie ist **typ-agnostisch**: jede Auswertung läuft über `gradeBlock()` +
 > Für eine bewertbare Quiz-Frage nimm `multiple_choice` oder `true_false` im
 > Worksheet-Modus.
 
-| Funktion                          | Was sie liefert                                                                                                                                |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                          |
-| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
-| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                           |
-| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                       |
-| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                            |
-| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                            |
-| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                  |
+| Funktion                          | Was sie liefert                                                                                                                                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                                        |
+| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot`/`label_image` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
+| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                                         |
+| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                                     |
+| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                                          |
+| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                                          |
+| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                                |
 
 **Bestehens-Schwelle** (`pass_threshold`) lebt **pro Klassen-Zuweisung**, nicht
 pro Modul (siehe ADR-0011). Ein Modul mit `max_score = 0` kann nie „bestanden"
@@ -422,6 +552,7 @@ als `Record<blockId, answer>` in `student_progress.answers`:
 | `mark_words`      | `number[]` (wordIndex)          | `[2, 5, 22]`                              |
 | `order`           | `string[]` (itemId-Reihenfolge) | `["oe1","oe2","oe3"]`                     |
 | `hotspot`         | `string[]` (areaId)             | `["hs-tastatur","hs-maus"]`               |
+| `label_image`     | `Record<zoneId,label>`          | `{ "z1":"Tastatur", "z2":"Maus" }`        |
 | `reflection`      | `string`                        | `"Ich nutze sie für …"`                   |
 
 ## 5. Pflicht-Checkliste vor dem Import
@@ -438,6 +569,11 @@ als `Record<blockId, answer>` in `student_progress.answers`:
 - [ ] Jeder `multiple_choice` hat **≥ 1** Option mit `correct: true`; Options-`id`s eindeutig.
 - [ ] Jeder `fill_blank`: **Anzahl `solutions` == höchster `{n}`-Index + 1**.
 - [ ] Jeder `match`: **≥ 2 unterschiedliche** `category`-Werte; `pair`-`id`s eindeutig.
+- [ ] Jeder `categorize`: `bucket`-/`item`-`id`s eindeutig; jedes `item.bucketId` zeigt auf einen existierenden Behälter.
+- [ ] Jeder `mark_words`: `correctIndices` liegen im Wortbereich, keine Duplikate.
+- [ ] Jeder `order`: `item`-`id`s eindeutig, kein leerer `item.text`.
+- [ ] Jeder `hotspot`: **≥ 1** Zone mit `isCorrect: true`; `area`-`id`s eindeutig; Koords ∈ [0,1]; Kreis → `r`, Rechteck → `width`+`height`; im Gruppen-Modus hat jede Gruppe ≥ 1 richtige Zone.
+- [ ] Jeder `label_image`: **≥ 2** Zonen; `zone`-`id`s eindeutig; jede Zone hat ein nicht-leeres `label`; **Labels eindeutig**; Koords ∈ [0,1]; Kreis → `r`, Rechteck → `width`+`height`.
 - [ ] Mindestens **ein** auto-bewertbarer Block, falls eine Prozent-Note erwünscht ist.
 - [ ] **Keine** Live-Blöcke (`live_poll`, `quiz_poll`, `word_cloud`, `scale`,
       `understanding`, `slide`) — die brauchen `display_mode='presentation'`.
@@ -458,27 +594,36 @@ als `Record<blockId, answer>` in `student_progress.answers`:
 
 ## 6. Einen NEUEN Block-Typ einführen (für Entwickler:innen)
 
-Der Pfad ist bewusst auf **genau drei Stellen** beschränkt — der Rest der
-Pipeline (Scoring, Prozent, Bestehen, Lehrer:innen-Matrix) läuft danach
-**ohne Änderung** weiter:
+Der **bewertungsrelevante** Kern läuft über `gradeBlock`/`isGraded` — Scoring,
+Prozent, Bestehen und Lehrer:innen-Matrix bleiben danach **ohne Änderung**. Für
+einen Block, der auch im Editor anlegbar ist und vom Validate-Script geprüft
+wird, sind diese Stellen zu berühren (zuletzt so umgesetzt für `categorize`,
+`hotspot`, `label_image`):
 
-1. **`lib/schemas/blocks.ts`** — neues Zod-Schema definieren und in die
-   `blockSchema`-Union aufnehmen (+ Antwort-Format dokumentieren).
-2. **`lib/blocks/evaluate.ts`** — falls auto-bewertbar: einen Eintrag in
-   `CHECKERS` ergänzen (Korrektheits-Prüfung). Für **Teilpunkte** den Eintrag
-   einen Bruchwert 0.0–1.0 zurückgeben lassen — `gradeBlock` reicht ihn durch,
-   alles Übrige bleibt unverändert.
-3. **`components/blocks/`** — Renderer (Anzeige + Eingabe) bauen und in
-   `BlockView.tsx` einhängen.
+1. **Schema** — `lib/schemas/blocks.ts` Zod-Schema + `blockSchema`-Union +
+   `export type`. Komplexe Block-Typen lagern ihr Sub-Schema in eine eigene
+   Datei aus (`blocks-hotspot.ts`, `blocks-label-image.ts`) und nutzen geteilte
+   Bausteine aus `blocks-shared.ts` (`blockId`, `gradedBlockExtensions`).
+2. **Grading** — `lib/blocks/evaluate.ts`: Answer-Typ + `BlockAnswer`-Union;
+   bei Auto-Bewertung einen Eintrag in **`PARTIAL_GRADERS`** (Rückgabe 0.0–1.0
+   für Teilpunkte) bzw. die binäre Checker-Map.
+3. **Schüler-Renderer** — `components/blocks/` (Anzeige + Eingabe) und
+   Dispatch in `block-assignment-renderers.tsx` + `BlockView.tsx`.
+4. **Admin-Editor** — `components/admin/forms/<Typ>Form.tsx` + Dispatch in
+   `BlockForm.tsx`; Default-Stub in `block-stubs.ts` (+ ID-Präfix); Katalog-
+   Eintrag in `block-catalog.ts`.
+5. **Validate-Script** — `scripts/validate-module.mjs`: `GRADED.add(...)` +
+   fachliche Checks (eindeutige IDs, Pflichtfelder, Wertebereiche).
 
-Danach: **diese Datei** (§2/§3/§4-Tabellen) und das Prompt-Template in
-`docs/AUTOR-WORKFLOW.md` §4 nachziehen, einen Test in `evaluate.test.ts`
-ergänzen, fertig.
+Danach: **diese Datei** (§2/§3/§4/§5) und das Prompt-Template in
+`docs/AUTOR-WORKFLOW.md` §4 nachziehen, Tests in `evaluate.test.ts` +
+`<Typ>Block.test.tsx` + `block-catalog.test.ts` ergänzen, fertig.
 
 ## 7. Querverweise
 
-- [`lib/schemas/blocks.ts`](../lib/schemas/blocks.ts) — Zod-Schema (Struktur-Wahrheit)
-- [`lib/blocks/evaluate.ts`](../lib/blocks/evaluate.ts) — Bewertung (Bewertungs-Wahrheit)
+- [`lib/schemas/blocks.ts`](../lib/schemas/blocks.ts) — Zod-Schema (Struktur-Wahrheit), Sub-Schemas in `blocks-hotspot.ts` / `blocks-label-image.ts` / `blocks-live.ts` / `blocks-shared.ts`
+- [`lib/blocks/evaluate.ts`](../lib/blocks/evaluate.ts) — Bewertung (Bewertungs-Wahrheit), `PARTIAL_GRADERS` für Teilpunkte
+- [`components/admin/block-catalog.ts`](../components/admin/block-catalog.ts) — kuratierte Block-Liste mit Lehrer:innen-Beschreibungen (im „Block hinzufügen"-Dialog)
 - [`scripts/validate-module.mjs`](../scripts/validate-module.mjs) — Validierung vor dem Import
 - [`docs/AUTOR-WORKFLOW.md`](AUTOR-WORKFLOW.md) — Schritt-für-Schritt-Modulerstellung mit KI
 - [`supabase/seeds/0002_modul_suchen.sql`](../supabase/seeds/0002_modul_suchen.sql) — vollständiges Referenz-Modul

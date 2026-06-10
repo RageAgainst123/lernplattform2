@@ -26,17 +26,28 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 
 ### Lerninhalte
 
-Module bestehen aus Blöcken (Block-Engine, 7 Typen):
+Module bestehen aus Blöcken (Block-Engine, **18 Typen**). Vollständige
+Spezifikation in [`docs/MODUL-SPEZIFIKATION.md`](docs/MODUL-SPEZIFIKATION.md).
 
-| Typ               | Verwendung                                        |
-| ----------------- | ------------------------------------------------- |
-| `text`            | Erklärtext, Theorie-Block                         |
-| `infobox`         | Hervorgehobener Tipp / Merksatz                   |
-| `multiple_choice` | Eine oder mehrere Antworten aus Auswahl           |
-| `true_false`      | Wahr/Falsch-Aussage                               |
-| `fill_blank`      | Lückentext mit Wort-Pool (Tippen statt Drag-Drop) |
-| `match`           | Begriff → Kategorie zuordnen                      |
-| `reflection`      | Freitext-Antwort der Schüler:in                   |
+**Theorie/Folie** (nicht bewertet): `text`, `infobox`, `slide`.
+
+**Worksheet-Aufgaben** (auto-bewertet außer reflection; ⊕ = Teilpunkte):
+
+| Typ               | Verwendung                                                 |
+| ----------------- | ---------------------------------------------------------- |
+| `multiple_choice` | Eine oder mehrere Antworten aus Auswahl                    |
+| `true_false`      | Wahr/Falsch-Aussage                                        |
+| `fill_blank`      | Lückentext mit Wort-Pool (Tippen statt Drag-Drop)          |
+| `match`           | Begriff → Kategorie zuordnen                               |
+| `categorize` ⊕    | Items in 2–4 benannte Behälter einsortieren                |
+| `mark_words` ⊕    | Wörter im Fließtext markieren                              |
+| `order` ⊕         | Items in die richtige Reihenfolge bringen                  |
+| `hotspot` ⊕       | Richtige Stellen im Bild antippen (Zonen, Gruppen, Zoom)   |
+| `label_image` ⊕   | Stellen im Bild beschriften (Zone tippen → Begriff wählen) |
+| `reflection`      | Freitext-Antwort der Schüler:in (manuell bewertet)         |
+
+**Live-Interaktionen** (nur Presentation-Modus): `live_poll`, `quiz_poll`,
+`word_cloud`, `scale`, `understanding`.
 
 Module haben zwei **Anzeige-Modi** (Spalte `modules.display_mode`):
 
@@ -46,14 +57,19 @@ Module haben zwei **Anzeige-Modi** (Spalte `modules.display_mode`):
 
 ### Weitere Features (Phasen E – Q)
 
+- **Reiche Aufgabentypen mit Teilpunkten** (Phasen P0/A/W): `categorize`,
+  `order`, `mark_words`, `hotspot` (Bild-Hotspots mit Zonen/Gruppen/Zoom/
+  Frei-Klick) und `label_image` (Bild beschriften). Numerische Scores
+  (Migration 0024, `PARTIAL_GRADERS`), plus optionale Didaktik-Felder pro
+  Block (`hint`, `maxAttempts`, `category`). Anlegbar direkt im Admin-Editor.
 - **Themen-Lernpfade** (Phase G): Themen als first-class Entity mit Modul-
   Sortierung, Abschlusstest-Voraussetzungs-Check. Migration 0013.
 - **Schulheft** für Code+PIN-Schüler:innen (Phase H+): Tiptap-Editor mit
   Word-ähnlichen Features (Tabellen, Schriften, Farben, Listen),
   Pexels-Bild-Picker, Bild-Resize. Migration 0014.
 - **Live-Präsentation** am Beamer (Phasen 17–22): live_sessions + live_votes,
-  4 Live-Block-Typen (poll, word_cloud, scale, understanding), Reveal/Lock-
-  Steuerung, Heartbeat-Tod. Migrationen 0008–0011.
+  5 Live-Block-Typen (live_poll, quiz_poll, word_cloud, scale, understanding),
+  Reveal/Lock-Steuerung, Heartbeat-Tod. Migrationen 0008–0011.
 - **O365-SSO** (Phase O): Multi-Tenant Azure-App, Schüler:innen + Lehrer:innen
   können mit ihrem Schul-Microsoft-Konto anmelden. Tinkercad-Pattern für
   Klassen-Beitritt (Code am Beamer zeigen → Schüler:in tippt nach SSO ein).

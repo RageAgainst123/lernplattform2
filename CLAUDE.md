@@ -145,9 +145,16 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   - `MobileMenu.tsx` — Client; Auth-Block + Logout-Form als Sub-Komp.
   - `SiteFooter.tsx`, `SiteShell.tsx`, `Logo.tsx`
 - **`components/blocks/`** — Block-Renderer + Modul-Runner
-  - 7 Block-Typen: `TextBlock`, `InfoboxBlock`, `MultipleChoiceBlock`,
-    `TrueFalseBlock`, `FillBlankBlock`, `MatchBlock`, `ReflectionBlock`
-  - `BlockView.tsx` — Switch-Dispatcher
+  - **18 Block-Typen** (Single Source: `lib/schemas/blocks.ts`). Gruppe A
+    Theorie: `text`, `infobox`, `slide`. Gruppe B Worksheet (auto-bewertbar
+    außer reflection): `multiple_choice`, `true_false`, `fill_blank`, `match`,
+    `categorize`, `mark_words`, `order`, `hotspot`, `label_image`, `reflection`.
+    Gruppe C Live (Presentation): `live_poll`, `quiz_poll`, `word_cloud`,
+    `scale`, `understanding`. Vollständige Spec: `docs/MODUL-SPEZIFIKATION.md`.
+  - `BlockView.tsx` — Switch-Dispatcher; Zuordnungs-/Bild-Aufgaben über
+    `block-assignment-renderers.tsx`. Bild-Block-Renderer: `HotspotBlock` +
+    `hotspot-overlay/-hidden/-groups/-zoom/-feedback`, `LabelImageBlock` +
+    `label-image-marker/-pool/-stages` + `use-label-image`.
   - `ModuleRunner.tsx` (Quiz-Modus, Block-für-Block) + `useModuleRunner.ts`
   - `WorksheetRunner.tsx` (Worksheet-Modus, alle Aufgaben auf einer Seite)
     - `useWorksheetState.ts` + `WorksheetStatusBanner.tsx` + `WorksheetTaskBlock.tsx`
@@ -313,7 +320,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - **Niemals** `package.json`-Hauptversionen ohne Auftrag anheben — der
   Stack ist bewusst stabil (Next 16 hat schon genug Breaking Changes).
 
-## Phasen-Status (Stand 2026-06-04)
+## Phasen-Status (Stand 2026-06-10)
 
 - ✅ **Phase 1:** Scaffold (Next 16, Tailwind v4, ESLint strict, Vitest)
 - ✅ **Phase 2:** shadcn/ui-Setup, Demo-Verifikation
@@ -429,6 +436,24 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   `commitAdvance` (WHERE-Klausel um `current_question_index` ergänzt),
   HIGH-4 Rate-Limits auf `/api/live/{end,results,wordcloud}`. Commit
   `9ec4626`.
+- ✅ **Phase V (Lernpfade-Source-of-Truth):** `class_topics` als kanonische
+  Zuweisungs-Quelle (Migration 0023), `getAssignedModulesForClass` vereinigt
+  `class_modules` + `class_topics`.
+- ✅ **Phase W (Didaktik-Felder):** Jeder bewertbare Block trägt optional
+  `hint` (HintBox nach 1. Fehlversuch), `maxAttempts` (1–5, je −25 %) und
+  `category` (Editor-Gruppierung). `lib/blocks/points.ts` mit Versuchs-Penalty.
+- ✅ **Phase P0 + A (Reiche Aufgabentypen mit Teilpunkten):** Migration 0024
+  (`score`/`max_score` → numeric), `PARTIAL_GRADERS`-Map in `evaluate.ts`.
+  Neue auto-bewertbare Block-Typen mit echten Teilpunkten: **`categorize`**
+  (A1), **`order`** (A2), **`mark_words`** (A4), **`hotspot`** (A3) und
+  **`label_image`** (A3.8). Hotspot-Ausbau A3.1–A3.7: Rechteck-Zonen +
+  Rotation, Gruppen-Modus, `revealZones` (versteckte Zonen + Frei-Klick,
+  Anti-Raten), `maxClicks`, `zoomable`, Pro-Zone-Feedback, testbare
+  LivePreview-„Prüfen". `label_image` = Bild beschriften (Zone tippen →
+  Begriff wählen). Showcase-Lernmodul (Seed 0007, 18 Blöcke). Marker-Kontrast
+  - transparentere Bewertungs-Overlays (Audit-Politur). Tags
+    `phase-a1-savepoint` … `phase-a3-12-savepoint`. Spec:
+    `docs/MODUL-SPEZIFIKATION.md` (18 Block-Typen).
 - 🔜 **Phase U2 (Pre-Launch HIGH/MED):** ProgressMatrixLive Polling-
   Fallback, Broadcast-Timeout senken, `isAssigned`-Check in
   submitWorksheet, `enabled`-Option im Hook, Suspense-Boundaries,

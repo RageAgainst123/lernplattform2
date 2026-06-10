@@ -206,6 +206,20 @@ GIB MIR NUR DAS JSON ZURÜCK, kein Drumherum. Bitte alle IDs eindeutig
 und numerisch fortlaufend pro Typ.
 ```
 
+> **Mehr Aufgaben-Typen.** Das Template oben deckt die 7 Basis-Blöcke ab. Für
+> abwechslungsreichere Module stehen im Worksheet-Modus zusätzlich zur Verfügung
+> (Felder + Beispiel-JSON in [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) §3):
+>
+> - **`categorize`** — Items in 2–4 Behälter einsortieren (Teilpunkte)
+> - **`mark_words`** — Wörter im Fließtext markieren (Teilpunkte)
+> - **`order`** — Items in die richtige Reihenfolge bringen (Teilpunkte)
+> - **`hotspot`** — richtige Stellen im Bild antippen (Zonen, optional Gruppen / versteckter Frei-Klick-Modus / Zoom)
+> - **`label_image`** — Stellen im Bild mit Begriffen beschriften (Zone tippen → Begriff wählen)
+>
+> Diese fünf bauen sich im Admin-Editor am einfachsten direkt zusammen (Bild
+> laden, Zonen aufziehen) statt per KI-JSON. Alle tragen optional `hint`,
+> `maxAttempts` und `category` (siehe §3-Kopf der Spezifikation).
+
 ## 5. Prompt-Vorlage „PDF" (copy-paste-fertig)
 
 ```text
@@ -376,8 +390,8 @@ OPTIONALE Block-Varianten (nutze NUR wenn passend, statt dem obigen Default):
 
 VERBOTEN in Live-Modulen:
 - multiple_choice, true_false, fill_blank, match, categorize, mark_words,
-  order, hotspot, reflection — diese Worksheet-Aufgaben haben keine
-  Beamer-Renderer.
+  order, hotspot, label_image, reflection — diese Worksheet-Aufgaben haben
+  keine Beamer-Renderer.
 
 GIB MIR NUR DAS JSON ZURÜCK, kein Drumherum. Alle IDs eindeutig.
 ```
@@ -434,7 +448,7 @@ ersten Module dafür entstehen.
 
 - [`docs/THEMA-WORKFLOW.md`](THEMA-WORKFLOW.md) — didaktisches Standard-Stundenbild
   eines Themas (die Ebene ÜBER diesem technischen Workflow)
-- [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 13 Block-Typen
+- [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 18 Block-Typen
   im Detail (Felder, Beispiel-JSON, Bewertung)
 - [`docs/INHALTSKONZEPT.md`](INHALTSKONZEPT.md) — Material vs. Modul,
   Display-Modes, Status-Logik

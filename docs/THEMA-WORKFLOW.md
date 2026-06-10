@@ -33,13 +33,17 @@ sind **didaktisch**, nicht technisch — im Modul-JSON bleiben sie ein **flaches
 `blocks[]`-Array** (siehe `docs/MODUL-SPEZIFIKATION.md`; KEIN Phasen-Umbau des
 Schemas).
 
-| #   | Phase                  | Zweck                                  | Block-Typen (aus den 7)                                | Umfang     |
-| --- | ---------------------- | -------------------------------------- | ------------------------------------------------------ | ---------- |
-| 1   | **Hook/Einstieg**      | Neugier wecken, an Vorwissen anknüpfen | `text` (kurz, Frage/Alltag) ggf. + Bild                | 1 Block    |
-| 2   | **Theorie**            | Kernidee klar + kindgerecht erklären   | `text` + `infobox` („Merke")                           | 2 Blöcke   |
-| 3   | **Übung**              | Aktiv anwenden, Misconceptions prüfen  | `multiple_choice`, `true_false`, `fill_blank`, `match` | 3–5 Blöcke |
-| 4   | **Reflexion/Transfer** | Auf eigenen Alltag übertragen          | `reflection`                                           | 1 Block    |
-| 5   | **Sicherung (analog)** | Festigen auf Papier                    | → verknüpftes **Arbeitsblatt-PDF**                     | 1 Material |
+| #   | Phase                  | Zweck                                  | Block-Typen (Auswahl)                                                                                                                          | Umfang     |
+| --- | ---------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1   | **Hook/Einstieg**      | Neugier wecken, an Vorwissen anknüpfen | `text` (kurz, Frage/Alltag) ggf. + Bild                                                                                                        | 1 Block    |
+| 2   | **Theorie**            | Kernidee klar + kindgerecht erklären   | `text` + `infobox` („Merke")                                                                                                                   | 2 Blöcke   |
+| 3   | **Übung**              | Aktiv anwenden, Misconceptions prüfen  | `multiple_choice`, `true_false`, `fill_blank`, `match` — bei Bedarf `categorize`, `mark_words`, `order`, `hotspot`, `label_image` (Teilpunkte) | 3–5 Blöcke |
+| 4   | **Reflexion/Transfer** | Auf eigenen Alltag übertragen          | `reflection`                                                                                                                                   | 1 Block    |
+| 5   | **Sicherung (analog)** | Festigen auf Papier                    | → verknüpftes **Arbeitsblatt-PDF**                                                                                                             | 1 Material |
+
+> Die volle Block-Typ-Liste (18 Typen, Felder + Beispiel-JSON) steht in
+> [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md). Die Bild-Aufgaben
+> (`hotspot`, `label_image`) baut man am einfachsten direkt im Admin-Editor.
 
 **Reihenfolge im `blocks[]`-Array:** genau diese (Hook → Theorie → Übung →
 Reflexion). Das EVA-Modul (`0001_modul_eva.sql`) ist die Referenz: b1 Hook/Theorie-

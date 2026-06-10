@@ -8,6 +8,41 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase A3.7/A3.8 — Versteckte Zonen, „Bild-Beschriften", Kontrast-Politur
+
+**2026-06-10** · Tags `phase-a3-7…a3-12-savepoint`
+
+### A3.7 — Hotspot: versteckte Zonen + Frei-Klick + Feedback
+
+- **`revealZones`** (Default `true`): `false` versteckt die Zonen-Rahmen →
+  Schüler:in klickt **frei** aufs Bild („Finde das Objekt"). Anti-Raten-Design:
+  neutrale Marker pro Klick, Auflösung erst beim Prüfen. Optionales **`maxClicks`**-
+  Limit. Pure Hit-Test-Helfer `pointInArea`/`hitAreaIds` (Renderer + Editor geteilt).
+- **`zoomable`** (Default `false`): Bild zoom-/verschiebbar für detailreiche Bilder.
+- Pro-Zone-**`feedback`** (Erklärtext nach dem Prüfen) + Label-Popup im Editor
+  (Begriff/Gruppe direkt an der Zone setzen).
+
+### A3.8 — Neuer Block-Typ `label_image` („Bild-Beschriften")
+
+- Schüler:in ordnet jeder Stelle im Bild den **richtigen Begriff** zu (Zone
+  tippen → Begriff-Chip wählen, kein Drag&Drop). Antwort `Record<zoneId,label>`,
+  **Teilpunkte** (richtig beschriftete Zonen / Anzahl Zonen). Sichtbarer Marker-
+  und versteckter Frei-Klick-Modus, `zoomable`.
+- End-to-end registriert: Schema (`blocks-label-image.ts` + neue
+  `blocks-shared.ts`), Grading (`PARTIAL_GRADERS`), Renderer + Dispatch,
+  Admin-Editor `LabelImageForm` (Hotspot-Editor-Bausteine generisch gemacht),
+  Stub/Katalog/Validate-Script. Validate erzwingt **eindeutige Begriffe**.
+- Showcase-Lernmodul um `label_image` erweitert (Seed `0007` aktualisiert).
+
+### Kontrast-Politur (Audit-Befunde)
+
+- **Zonen-Marker** mit dickerem Rand + dunklem Drop-Shadow → auch auf hellem
+  Bildhintergrund (z. B. Holztisch) sichtbar.
+- **Bewertungs-Overlays** transparenter (`/12`-Tint statt `/30`) + `border-4` →
+  das Objekt unter der Zone bleibt erkennbar, Bewertung trotzdem eindeutig.
+
+---
+
 ## Phase A3+ — Hotspot-Ausbau: Formen, Rotation, Gruppen, testbare Vorschau
 
 **2026-06-07** · Tags `phase-a3-1/a3-2/a3-3-savepoint`

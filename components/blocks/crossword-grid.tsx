@@ -6,8 +6,10 @@ import { cn } from '@/lib/utils';
 import type { ActiveCell } from '@/components/blocks/use-crossword';
 
 // Das Zellen-Gitter fürs Kreuzworträtsel (ausgelagert, hält CrosswordBlock
-// unter der Zeilen-Grenze). Füllbare Zellen sind <input maxLength=1>;
-// Zellen ohne Wort sind blockiert (dunkel). Nach „Prüfen" grün/rot/neutral.
+// unter der Zeilen-Grenze). Wie im gedruckten Rätsel: NUR die füllbaren
+// Zellen sind sichtbar (weiß mit Rahmen), Zellen ohne Wort bleiben leer/
+// transparent. Das aktive Wort ist blau hinterlegt, die aktive Zelle hat
+// einen Ring. Nach „Prüfen": grün/rot pro Zelle, leere Zellen bleiben weiß.
 
 type Props = {
   rows: number;
@@ -16,6 +18,7 @@ type Props = {
   startNumbers: Map<string, number>; // Startzellen-Nummern
   answer: Record<string, string>;
   active: ActiveCell;
+  wordKeys: Set<string>; // Zellen des aktiven Wortes (Highlight)
   checked: boolean;
   locked: boolean;
   onTap: (r: number, c: number) => void;
@@ -24,14 +27,22 @@ type Props = {
 };
 
 // Farbklasse je Zellen-Zustand (ausgelagert wegen Komplexitäts-Limit).
-function cellClass(checked: boolean, given: string, solution: string, isActive: boolean): string {
+function cellClass(
+  checked: boolean,
+  given: string,
+  solution: string,
+  isActive: boolean,
+  inWord: boolean
+): string {
   if (checked) {
-    if (given === '') return 'bg-background';
+    if (given === '') return 'border-foreground/25 bg-background';
     return given.toUpperCase() === solution
-      ? 'border-green-600 bg-green-50 text-green-800'
-      : 'border-red-600 bg-red-50 text-red-700';
+      ? 'border-green-600 bg-green-100 text-green-900'
+      : 'border-red-500 bg-red-100 text-red-800';
   }
-  return isActive ? 'border-primary bg-primary/10' : 'bg-background';
+  if (isActive) return 'border-primary bg-primary/15 ring-primary/50 z-10 ring-2';
+  if (inWord) return 'border-primary/60 bg-primary/5';
+  return 'border-foreground/25 bg-background';
 }
 
 type FilledCellProps = {
@@ -41,6 +52,7 @@ type FilledCellProps = {
   given: string;
   solution: string;
   isActive: boolean;
+  inWord: boolean;
   p: Props;
   registerInput: (key: string, el: HTMLInputElement | null) => void;
 };
@@ -53,6 +65,7 @@ function FilledCell({
   given,
   solution,
   isActive,
+  inWord,
   p,
   registerInput,
 }: FilledCellProps) {
@@ -60,7 +73,7 @@ function FilledCell({
   return (
     <div className="relative aspect-square">
       {number !== undefined && (
-        <span className="text-muted-foreground pointer-events-none absolute top-0 left-0.5 text-[0.55rem] leading-none">
+        <span className="text-muted-foreground pointer-events-none absolute top-px left-1 z-20 text-[0.6rem] leading-none font-medium">
           {number}
         </span>
       )}
@@ -87,8 +100,8 @@ function FilledCell({
           }
         }}
         className={cn(
-          'size-full border text-center text-base font-semibold uppercase focus:outline-none',
-          cellClass(p.checked, given, solution, isActive)
+          'size-full rounded-sm border-2 text-center text-lg font-bold uppercase caret-transparent shadow-sm transition-colors focus:outline-none disabled:opacity-100',
+          cellClass(p.checked, given, solution, isActive, inWord)
         )}
       />
     </div>
@@ -110,8 +123,8 @@ export function CrosswordGrid(p: Props) {
 
   return (
     <div
-      className="bg-border grid w-fit gap-px rounded border p-px"
-      style={{ gridTemplateColumns: `repeat(${p.cols}, 2.25rem)` }}
+      className="grid w-fit max-w-full gap-1 overflow-x-auto py-1"
+      style={{ gridTemplateColumns: `repeat(${p.cols}, 2.5rem)` }}
     >
       {Array.from({ length: p.rows * p.cols }, (_, i) => {
         const r = Math.floor(i / p.cols);
@@ -119,7 +132,8 @@ export function CrosswordGrid(p: Props) {
         const key = cellKey(r, c);
         const solution = p.cells.get(key);
         if (solution === undefined) {
-          return <div key={key} className="bg-muted/60 aspect-square" />;
+          // Keine Wort-Zelle → unsichtbar (wie das Papier rund ums Rätsel).
+          return <div key={key} aria-hidden className="aspect-square" />;
         }
         return (
           <FilledCell
@@ -130,6 +144,7 @@ export function CrosswordGrid(p: Props) {
             given={p.answer[key] ?? ''}
             solution={solution}
             isActive={p.active?.r === r && p.active?.c === c}
+            inWord={p.wordKeys.has(key)}
             p={p}
             registerInput={registerInput}
           />

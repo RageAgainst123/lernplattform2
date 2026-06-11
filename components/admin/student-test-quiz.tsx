@@ -14,16 +14,10 @@ import { TestResultCard } from '@/components/admin/student-test-result';
 // Prüfen/Nochmal/Weiter, Punkte). Beim „Fertig" zeigt es eine lokale
 // Ergebnis-Box statt zur /s/modul/.../done-Route zu navigieren.
 
+// Alle auto-bewertbaren Typen tragen das optionale hint-Feld
+// (gradedBlockExtensions) — generisch lesen statt Typ-Liste pflegen.
 function getHint(block: Block): string | undefined {
-  if (
-    block.type === 'multiple_choice' ||
-    block.type === 'true_false' ||
-    block.type === 'fill_blank' ||
-    block.type === 'match'
-  ) {
-    return block.hint;
-  }
-  return undefined;
+  return 'hint' in block ? block.hint : undefined;
 }
 
 type Runner = ReturnType<typeof useModuleRunner>;

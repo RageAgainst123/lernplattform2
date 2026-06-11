@@ -19,6 +19,12 @@ export type ActiveCell = { r: number; c: number } | null;
 type Word = CrosswordBlock['words'][number];
 type CellWords = Map<string, { across?: Word; down?: Word }>;
 
+// Alle Zellen-Keys des Wortes, das gerade aktiv ist (fürs Highlight im Gitter).
+function activeWordKeys(active: ActiveCell, dir: 'across' | 'down', cellWords: CellWords) {
+  const word = active ? cellWords.get(cellKey(active.r, active.c))?.[dir] : undefined;
+  return new Set(word ? wordCells(word).map(({ r, c }) => cellKey(r, c)) : []);
+}
+
 // Pro Zelle: welches across-/down-Wort sie abdeckt (Richtungs-Wahl + Advance).
 function buildCellWords(words: Word[]): CellWords {
   const m: CellWords = new Map();
@@ -84,5 +90,6 @@ export function useCrossword({ block, answer, onAnswer }: UseCrosswordArgs) {
     if (cellWords.get(cellKey(prev.r, prev.c))?.[dir]) setActive(prev);
   }
 
-  return { cells, startNumbers, wordNumbers, active, tap, input, backspace };
+  const wordKeys = activeWordKeys(active, dir, cellWords);
+  return { cells, startNumbers, wordNumbers, active, wordKeys, tap, input, backspace };
 }

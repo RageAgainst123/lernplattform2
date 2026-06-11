@@ -72,6 +72,7 @@ export function CrosswordBlock({ block, answer, checked, readOnly = false, onAns
         startNumbers={cw.startNumbers}
         answer={answer}
         active={cw.active}
+        wordKeys={cw.wordKeys}
         checked={checked}
         locked={locked}
         onTap={cw.tap}

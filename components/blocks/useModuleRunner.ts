@@ -23,19 +23,13 @@ type Args = {
   timeLimitSeconds?: number;
 };
 
-// Phase W (2026-06): Wie oft darf Schüler:in einen Block prüfen?
-// Nur graded Blöcke (MC, T/F, Lückentext, Match) haben das Feld; default 1.
+// Phase W (2026-06): Wie oft darf Schüler:in einen Block prüfen? ALLE
+// auto-bewertbaren Typen tragen das optionale Feld (gradedBlockExtensions) —
+// generisch lesen statt Typ-Liste pflegen (die Liste hatte crossword/memory/
+// label_image & Co. ausgesperrt). Default 1 Versuch.
 function getMaxAttempts(block: Block | undefined): number {
-  if (!block) return 1;
-  if (
-    block.type === 'multiple_choice' ||
-    block.type === 'true_false' ||
-    block.type === 'fill_blank' ||
-    block.type === 'match'
-  ) {
-    return block.maxAttempts ?? 1;
-  }
-  return 1;
+  if (!block || !isGraded(block)) return 1;
+  return 'maxAttempts' in block ? (block.maxAttempts ?? 1) : 1;
 }
 
 // Wann zählen wir Punkte/Streak? Beim 1. Versuch wenn richtig, oder beim

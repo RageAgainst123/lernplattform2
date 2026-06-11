@@ -12,18 +12,11 @@ import { ProgressBar } from '@/components/blocks/ProgressBar';
 import { useModuleRunner } from '@/components/blocks/useModuleRunner';
 import { stashSoloRunResult } from '@/lib/blocks/solo-run-result';
 
-// Phase W: Pure Helper — zieht den Hint-Text aus einem Block, falls dieser
-// einen Hint-Eintrag hat (nur graded Blöcke haben das Schema-Feld).
+// Phase W: Pure Helper — zieht den Hint-Text aus einem Block. ALLE
+// auto-bewertbaren Typen tragen das optionale Feld (gradedBlockExtensions) —
+// generisch lesen statt Typ-Liste pflegen.
 function getHint(block: Block): string | undefined {
-  if (
-    block.type === 'multiple_choice' ||
-    block.type === 'true_false' ||
-    block.type === 'fill_blank' ||
-    block.type === 'match'
-  ) {
-    return block.hint;
-  }
-  return undefined;
+  return 'hint' in block ? block.hint : undefined;
 }
 
 type SaveArgs = {

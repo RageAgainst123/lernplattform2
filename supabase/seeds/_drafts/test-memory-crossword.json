@@ -10,6 +10,7 @@
       "type": "memory",
       "instruction": "Finde die Paare: Welches Gerät gehört zu welcher Aufgabe?",
       "hint": "Denk daran, was du mit dem Gerät in der Hand machst.",
+      "maxAttempts": 3,
       "pairs": [
         { "id": "p1", "a": { "text": "Maus" }, "b": { "text": "Zeigen und Klicken" } },
         { "id": "p2", "a": { "text": "Monitor" }, "b": { "text": "Zeigt Bilder an" } },
@@ -32,6 +33,7 @@
       "type": "crossword",
       "instruction": "Fülle das Kreuzworträtsel aus. Tippe eine Zelle an und gib den Buchstaben ein.",
       "hint": "Alle Lösungen sind Computer-Geräte aus dieser Stunde.",
+      "maxAttempts": 3,
       "rows": 7,
       "cols": 8,
       "words": [

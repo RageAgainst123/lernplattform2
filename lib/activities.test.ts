@@ -48,6 +48,13 @@ describe('isBlockAllowedFor', () => {
       'true_false',
       'fill_blank',
       'match',
+      'categorize',
+      'mark_words',
+      'order',
+      'hotspot',
+      'label_image',
+      'memory',
+      'crossword',
       'reflection',
     ];
     for (const t of yes) expect(isBlockAllowedFor(t, 'lernmodul')).toBe(true);

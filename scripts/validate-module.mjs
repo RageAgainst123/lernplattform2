@@ -14,6 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { moduleContentSchema } from '../lib/schemas/blocks.ts';
 import { wordCount } from '../lib/blocks/tokenize.ts';
+import { buildCrosswordGrid } from '../lib/blocks/crossword-grid.ts';
 
 const GRADED = new Set([
   'multiple_choice',
@@ -26,6 +27,7 @@ const GRADED = new Set([
   'hotspot',
   'label_image',
   'memory',
+  'crossword',
 ]);
 
 function readInput() {
@@ -272,6 +274,25 @@ for (const b of blocks) {
             `${b.id} (memory): Paar "${p.id}" Karte ${side} braucht genau text ODER imageUrl.`
           );
         }
+      }
+    }
+  }
+
+  if (b.type === 'crossword') {
+    // 2–10 Wörter + Gitter-Grenzen erzwingt das Schema. Hier: eindeutige
+    // word-ids + Fit/Kreuzungs-Checks über die GETEILTE Gitter-Ableitung
+    // (lib/blocks/crossword-grid.ts) — identisch zu Grading + Editor-Vorschau.
+    const wordIds = b.words.map((w) => w.id);
+    if (new Set(wordIds).size !== wordIds.length) {
+      errors.push(`${b.id} (crossword): doppelte word-id.`);
+    }
+    for (const issue of buildCrosswordGrid(b.rows, b.cols, b.words).issues) {
+      if (issue.type === 'outOfGrid') {
+        errors.push(`${b.id} (crossword): Wort "${issue.wordId}" ragt aus dem Gitter.`);
+      } else {
+        errors.push(
+          `${b.id} (crossword): Kreuzungs-Konflikt bei (${issue.r},${issue.c}) — "${issue.existing}" ≠ "${issue.incoming}" (Wort "${issue.wordId}").`
+        );
       }
     }
   }

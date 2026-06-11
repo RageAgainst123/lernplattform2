@@ -32,6 +32,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   hotspot: 'hs',
   label_image: 'li',
   memory: 'mem',
+  crossword: 'cw',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -135,6 +136,26 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
       { id: 'p1', a: { text: 'Begriff A' }, b: { text: 'Erklärung A' } },
       { id: 'p2', a: { text: 'Begriff B' }, b: { text: 'Erklärung B' } },
       { id: 'p3', a: { text: 'Begriff C' }, b: { text: 'Erklärung C' } },
+    ],
+  }),
+  // Kreuzworträtsel: kleines valides Kreuz — MAUS (waagrecht) + MONITOR
+  // (senkrecht) teilen das M bei (0,0); MONITOR (7 Buchstaben) braucht rows 7.
+  crossword: (id) => ({
+    id,
+    type: 'crossword',
+    instruction: 'Fülle das Kreuzworträtsel aus.',
+    rows: 7,
+    cols: 5,
+    words: [
+      {
+        id: 'w1',
+        answer: 'MAUS',
+        clue: 'Eingabegerät zum Klicken',
+        direction: 'across',
+        row: 0,
+        col: 0,
+      },
+      { id: 'w2', answer: 'MONITOR', clue: 'Zeigt das Bild an', direction: 'down', row: 0, col: 0 },
     ],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),

@@ -10,6 +10,7 @@ import {
 import { hotspotAreaSchema, hotspotGroupSchema } from './blocks-hotspot.ts';
 import { labelImageBlockSchema } from './blocks-label-image.ts';
 import { memoryBlockSchema } from './blocks-memory.ts';
+import { crosswordBlockSchema } from './blocks-crossword.ts';
 import {
   blockId,
   gradedBlockExtensions,
@@ -21,6 +22,7 @@ import type { BlockCategory } from './blocks-shared.ts';
 export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
 export { labelImageBlockSchema };
 export { memoryBlockSchema };
+export { crosswordBlockSchema };
 export { BLOCK_CATEGORIES };
 export type { BlockCategory };
 export type { HotspotShape } from './blocks-hotspot.ts';
@@ -234,6 +236,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   hotspotBlockSchema,
   labelImageBlockSchema,
   memoryBlockSchema,
+  crosswordBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -261,5 +264,6 @@ export type OrderBlock = z.infer<typeof orderBlockSchema>;
 export type HotspotBlock = z.infer<typeof hotspotBlockSchema>;
 export type LabelImageBlock = z.infer<typeof labelImageBlockSchema>;
 export type MemoryBlock = z.infer<typeof memoryBlockSchema>;
+export type CrosswordBlock = z.infer<typeof crosswordBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;

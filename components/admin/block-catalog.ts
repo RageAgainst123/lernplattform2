@@ -89,6 +89,12 @@ export const BLOCK_CATALOG = {
         'Memory-Spiel: Karte antippen, zweite Karte antippen — passt das Paar, bleibt es offen. Begriff–Begriff, Begriff–Definition oder Begriff–Bild. Teilpunkte pro gefundenem Paar.',
     },
     {
+      type: 'crossword',
+      label: '🔡 Kreuzworträtsel (crossword)',
+      description:
+        'Kreuzworträtsel: Zelle antippen und Buchstaben eintippen. Du legst Wörter mit Frage, Richtung und Startzelle aufs Gitter — die Vorschau zeigt Kreuzungen sofort. Teilpunkte pro richtiger Zelle.',
+    },
+    {
       type: 'reflection',
       label: 'Reflexion (Freitext)',
       description: 'Offene Frage, freie Antwort. Nicht auto-bewertet — Lehrer:in liest selbst.',

@@ -1,9 +1,10 @@
 // prettier-ignore
 import type {
-  Block, CategorizeBlock, FillBlankBlock, HotspotBlock, LabelImageBlock,
+  Block, CategorizeBlock, CrosswordBlock, FillBlankBlock, HotspotBlock, LabelImageBlock,
   MarkWordsBlock, MemoryBlock, MatchBlock, MultipleChoiceBlock, OrderBlock, TrueFalseBlock,
 } from '@/lib/schemas/blocks';
 import { isFuzzyMatch } from '@/lib/blocks/levenshtein';
+import { gradeCrosswordCells } from '@/lib/blocks/crossword-grid';
 
 // Antwort-Formate pro auswertbarem Block-Typ.
 export type MultipleChoiceAnswer = string[]; // gewählte Option-IDs
@@ -17,10 +18,12 @@ export type OrderAnswer = string[]; // itemIds in gewählter Reihenfolge
 export type HotspotAnswer = string[]; // angetippte areaIds
 export type LabelImageAnswer = Record<string, string>; // zoneId → gewählter Begriff
 export type MemoryAnswer = string[]; // erfolgreich gematchte pairIds
+export type CrosswordAnswer = Record<string, string>; // "r,c" → eingegebener Buchstabe
 // prettier-ignore
 export type BlockAnswer =
   | MultipleChoiceAnswer | TrueFalseAnswer | FillBlankAnswer | MatchAnswer | CategorizeAnswer
-  | MarkWordsAnswer | OrderAnswer | HotspotAnswer | LabelImageAnswer | MemoryAnswer | string;
+  | MarkWordsAnswer | OrderAnswer | HotspotAnswer | LabelImageAnswer | MemoryAnswer
+  | CrosswordAnswer | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
 // Präsentationsfolie oder unbenotete Live-Interaktion).
@@ -202,6 +205,8 @@ const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undef
   hotspot: (b, a) => evalHotspot(b as HotspotBlock, (a as HotspotAnswer) ?? []),
   label_image: (b, a) => evalLabelImage(b as LabelImageBlock, (a as LabelImageAnswer) ?? {}),
   memory: (b, a) => evalMemory(b as MemoryBlock, (a as MemoryAnswer) ?? []),
+  // Zell-Logik + Formel leben in crossword-grid.ts (geteilt mit Renderer/Editor).
+  crossword: (b, a) => gradeCrosswordCells(b as CrosswordBlock, (a as CrosswordAnswer) ?? {}),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

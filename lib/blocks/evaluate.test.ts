@@ -537,3 +537,30 @@ describe('gradeBlock — memory', () => {
     expect(gradeBlock(memory, ['p1', 'p1'])).toBe(0.25);
   });
 });
+
+// Kreuzworträtsel — Teilpunkte = richtige Zellen / füllbare Zellen. MAUS
+// (across) + MONITOR (down) teilen das M bei (0,0) → 10 Zellen. Die
+// Zell-Ableitung selbst ist in crossword-grid.test.ts abgedeckt.
+const crossword: Block = {
+  id: 'cw',
+  type: 'crossword',
+  instruction: 'Fülle das Kreuzworträtsel aus.',
+  rows: 7,
+  cols: 5,
+  words: [
+    { id: 'w1', answer: 'MAUS', clue: 'Eingabegerät', direction: 'across', row: 0, col: 0 },
+    { id: 'w2', answer: 'MONITOR', clue: 'Zeigt das Bild', direction: 'down', row: 0, col: 0 },
+  ],
+};
+
+describe('gradeBlock — crossword', () => {
+  it('eine richtige Zelle von 10 → 0.1', () => {
+    expect(gradeBlock(crossword, { '0,0': 'M' })).toBe(0.1);
+  });
+  it('leere Antwort → 0', () => {
+    expect(gradeBlock(crossword, {})).toBe(0);
+  });
+  it('undefined-Antwort → 0', () => {
+    expect(gradeBlock(crossword, undefined)).toBe(0);
+  });
+});

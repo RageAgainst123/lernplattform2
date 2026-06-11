@@ -21,7 +21,7 @@
 
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
-(diskriminierte Union). 18 Block-Typen total — verteilt auf **drei Gruppen**:
+(diskriminierte Union). 20 Block-Typen total — verteilt auf **drei Gruppen**:
 Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (10 davon auto-bewertbar),
 und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
 nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
@@ -68,6 +68,8 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 | `order`           | Items in Reihenfolge bringen      | ✅ ja (Teilpunkte) | `items[]` in korrekter Reihenfolge           |
 | `hotspot`         | Richtige Stellen im Bild antippen | ✅ ja (Teilpunkte) | `areas[].isCorrect`                          |
 | `label_image`     | Stellen im Bild beschriften       | ✅ ja (Teilpunkte) | `zones[].label` (Soll-Begriff pro Zone)      |
+| `memory`          | Paare-Spiel (Karten aufdecken)    | ✅ ja (Teilpunkte) | `pairs[]` (a + b bilden das Paar)            |
+| `crossword`       | Kreuzworträtsel ausfüllen         | ✅ ja (Teilpunkte) | `words[].answer` + Startzelle/Richtung       |
 | `reflection`      | Freie offene Antwort              | ❌ nein            | — (manuell von Lehrer:in beurteilt)          |
 
 **Gruppe C — Live-Interaktionen** (nur `display_mode='presentation'`, Stimmen in `live_votes`, **nicht bewertet** — zählen nicht zu `max_score`):
@@ -88,7 +90,7 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 ## 3. Felder pro Block-Typ
 
 Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
-Modul) und `type` (einer der 18 Werte aus der Tabelle in §2).
+Modul) und `type` (einer der 20 Werte aus der Tabelle in §2).
 
 > **Didaktik-Felder auf jedem bewertbaren Block (optional).** Alle
 > auto-bewertbaren Worksheet-Typen (`multiple_choice` … `label_image`) tragen
@@ -347,7 +349,89 @@ hat genau einen richtigen Begriff.
 }
 ```
 
-### 3.9 `reflection` — Freie Antwort (nicht auto-bewertet)
+### 3.9 `memory` — Memory / Paare-Spiel (bewertet, Teilpunkte)
+
+Schüler:in deckt zwei Karten auf; bilden sie ein definiertes Paar, bleiben sie
+offen, sonst klappen sie zurück. Eine Karte trägt **genau** `text` ODER
+`imageUrl` — so gehen Begriff–Begriff, Begriff–Definition und Begriff–Bild.
+
+| Feld          | Typ                             | Pflicht | Regeln                                |
+| ------------- | ------------------------------- | ------- | ------------------------------------- |
+| `instruction` | string                          | ✅      | Aufgabenstellung                      |
+| `pairs`       | Array (3–8)                     | ✅      | `id` eindeutig                        |
+| `pairs[].a`   | `{ text? }` od. `{ imageUrl? }` | ✅      | **genau eines** von `text`/`imageUrl` |
+| `pairs[].b`   | wie `a`                         | ✅      | zweite Karte des Paares               |
+
+**Bewertung:** Teilpunkte = gefundene Paare / Anzahl Paare. Falsche Flips
+kosten nichts (Spiel-Charakter) — der Score spiegelt den Stand beim Abgeben.
+
+```json
+{
+  "id": "mem1",
+  "type": "memory",
+  "instruction": "Finde die passenden Paare.",
+  "pairs": [
+    { "id": "p1", "a": { "text": "Maus" }, "b": { "text": "Eingabegerät" } },
+    { "id": "p2", "a": { "text": "Bildschirm" }, "b": { "text": "Ausgabegerät" } },
+    { "id": "p3", "a": { "text": "CPU" }, "b": { "text": "Rechenwerk" } }
+  ]
+}
+```
+
+### 3.10 `crossword` — Kreuzworträtsel (bewertet, Teilpunkte)
+
+Autor:in legt Wörter mit Frage, Richtung und Startzelle auf ein festes Gitter;
+die füllbaren Zellen werden daraus **abgeleitet**. Schüler:in tippt eine Zelle
+an und gibt Buchstaben ein (Auto-Advance entlang des Worts; Re-Tap auf einer
+Kreuzungszelle wechselt die Richtung).
+
+| Feld                | Typ                  | Pflicht | Regeln                                                   |
+| ------------------- | -------------------- | ------- | -------------------------------------------------------- |
+| `instruction`       | string               | ✅      | Aufgabenstellung                                         |
+| `rows`/`cols`       | int 2–15             | ✅      | Gitter-Größe                                             |
+| `words`             | Array (2–10)         | ✅      | `id` eindeutig                                           |
+| `words[].answer`    | string (≥ 2)         | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].clue`      | string               | ✅      | Frage/Hinweis                                            |
+| `words[].direction` | `'across' \| 'down'` | ✅      | waagrecht / senkrecht                                    |
+| `words[].row`/`col` | int ≥ 0              | ✅      | Startzelle (0-basiert); Wort muss ins Gitter passen      |
+
+**Kreuzungen:** teilen sich zwei Wörter eine Zelle, **muss der Buchstabe
+übereinstimmen** — sonst lehnen Schema + `validate:module` den Block ab.
+KI-Hinweis: Koordinaten sorgfältig rechnen (across belegt `(row, col+i)`,
+down `(row+i, col)`); im Zweifel Wörter ohne Kreuzung nebeneinander legen.
+
+**Bewertung:** Teilpunkte = richtige Zellen / füllbare Zellen (Kreuzungszellen
+zählen einmal; Eingabe case-insensitiv).
+
+```json
+{
+  "id": "cw1",
+  "type": "crossword",
+  "instruction": "Fülle das Kreuzworträtsel aus.",
+  "rows": 7,
+  "cols": 5,
+  "words": [
+    {
+      "id": "w1",
+      "answer": "MAUS",
+      "clue": "Eingabegerät zum Klicken",
+      "direction": "across",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "w2",
+      "answer": "MONITOR",
+      "clue": "Zeigt das Bild an",
+      "direction": "down",
+      "row": 0,
+      "col": 0
+    }
+  ]
+}
+```
+
+### 3.11 `reflection` — Freie Antwort (nicht auto-bewertet)
 
 | Feld          | Typ    | Pflicht  | Hinweis                                 |
 | ------------- | ------ | -------- | --------------------------------------- |
@@ -368,7 +452,7 @@ hat genau einen richtigen Begriff.
 }
 ```
 
-### 3.10 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
+### 3.12 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
 
 Großformatige Folie am Beamer. **Nur** in Modulen mit `display_mode='presentation'`
 sinnvoll — im Worksheet-Modus wirkt sie sperrig.
@@ -388,7 +472,7 @@ sinnvoll — im Worksheet-Modus wirkt sie sperrig.
 }
 ```
 
-### 3.11 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
+### 3.13 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
 
 Unbenoteter Meinungsbild-Block. Schüler:innen sehen Optionen auf ihrem Gerät,
 am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
@@ -415,7 +499,7 @@ am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
 }
 ```
 
-### 3.12 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
+### 3.14 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
 
 Wie `live_poll`, aber mit **richtiger Antwort**. Schüler:innen sehen die Antwort
 **nicht** vorab (das `correct`-Flag wird serverseitig entfernt, bevor es ans
@@ -446,7 +530,7 @@ Option(en) grün.
 }
 ```
 
-### 3.13 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
+### 3.15 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
 
 Schüler:innen tippen ein Wort oder einen kurzen Satz (max 40 Zeichen). Am Beamer
 erscheinen die Beiträge als Wortwolke — häufige Wörter werden größer
@@ -464,7 +548,7 @@ dargestellt (lowercase + getrimmter Vergleich für Duplikat-Zählung).
 }
 ```
 
-### 3.14 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
+### 3.16 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
 
 Schüler:innen klicken einen Wert auf einer Skala (Default 1–5). Am Beamer werden
 Durchschnitt und Verteilung als Balkendiagramm angezeigt. Gut für
@@ -490,7 +574,7 @@ Selbsteinschätzung oder Stimmungsbilder mit Abstufung.
 }
 ```
 
-### 3.15 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
+### 3.17 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
 
 Schnelles Drei-Tasten-Signal: 🟢 verstanden / 🟡 unsicher / 🔴 noch nicht. Keine
 freien Optionen — die drei Werte sind im Code fest verdrahtet, der Beamer zeigt
@@ -574,6 +658,8 @@ als `Record<blockId, answer>` in `student_progress.answers`:
 - [ ] Jeder `order`: `item`-`id`s eindeutig, kein leerer `item.text`.
 - [ ] Jeder `hotspot`: **≥ 1** Zone mit `isCorrect: true`; `area`-`id`s eindeutig; Koords ∈ [0,1]; Kreis → `r`, Rechteck → `width`+`height`; im Gruppen-Modus hat jede Gruppe ≥ 1 richtige Zone.
 - [ ] Jeder `label_image`: **≥ 2** Zonen; `zone`-`id`s eindeutig; jede Zone hat ein nicht-leeres `label`; **Labels eindeutig**; Koords ∈ [0,1]; Kreis → `r`, Rechteck → `width`+`height`.
+- [ ] Jeder `memory`: 3–8 Paare; `pair`-`id`s eindeutig; jede Karte hat **genau** `text` ODER `imageUrl`.
+- [ ] Jeder `crossword`: 2–10 Wörter; `word`-`id`s eindeutig; `answer` nur Großbuchstaben; jedes Wort **passt ins Gitter**; **Kreuzungen stimmen im Buchstaben überein**.
 - [ ] Mindestens **ein** auto-bewertbarer Block, falls eine Prozent-Note erwünscht ist.
 - [ ] **Keine** Live-Blöcke (`live_poll`, `quiz_poll`, `word_cloud`, `scale`,
       `understanding`, `slide`) — die brauchen `display_mode='presentation'`.

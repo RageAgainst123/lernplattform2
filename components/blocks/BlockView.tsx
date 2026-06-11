@@ -125,6 +125,7 @@ export function BlockView({ block, answer, checked, readOnly = false, onAnswer }
     case 'order':
     case 'hotspot':
     case 'label_image':
+    case 'memory':
       return renderAssignment(block, c);
   }
 }

@@ -1,14 +1,7 @@
+// prettier-ignore
 import type {
-  Block,
-  CategorizeBlock,
-  FillBlankBlock,
-  HotspotBlock,
-  LabelImageBlock,
-  MarkWordsBlock,
-  MatchBlock,
-  MultipleChoiceBlock,
-  OrderBlock,
-  TrueFalseBlock,
+  Block, CategorizeBlock, FillBlankBlock, HotspotBlock, LabelImageBlock,
+  MarkWordsBlock, MemoryBlock, MatchBlock, MultipleChoiceBlock, OrderBlock, TrueFalseBlock,
 } from '@/lib/schemas/blocks';
 import { isFuzzyMatch } from '@/lib/blocks/levenshtein';
 
@@ -23,17 +16,11 @@ export type MarkWordsAnswer = number[]; // markierte wordIndex
 export type OrderAnswer = string[]; // itemIds in gewählter Reihenfolge
 export type HotspotAnswer = string[]; // angetippte areaIds
 export type LabelImageAnswer = Record<string, string>; // zoneId → gewählter Begriff
+export type MemoryAnswer = string[]; // erfolgreich gematchte pairIds
+// prettier-ignore
 export type BlockAnswer =
-  | MultipleChoiceAnswer
-  | TrueFalseAnswer
-  | FillBlankAnswer
-  | MatchAnswer
-  | CategorizeAnswer
-  | MarkWordsAnswer
-  | OrderAnswer
-  | HotspotAnswer
-  | LabelImageAnswer
-  | string;
+  | MultipleChoiceAnswer | TrueFalseAnswer | FillBlankAnswer | MatchAnswer | CategorizeAnswer
+  | MarkWordsAnswer | OrderAnswer | HotspotAnswer | LabelImageAnswer | MemoryAnswer | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
 // Präsentationsfolie oder unbenotete Live-Interaktion).
@@ -177,22 +164,24 @@ function evalLabelImage(block: LabelImageBlock, answer: LabelImageAnswer): numbe
   return correct / block.zones.length;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Erweiterbarkeit — einen NEUEN Block-Typ ins Scoring aufnehmen:
-//   1. lib/schemas/blocks.ts  → Block-Typ + Antwort-Format (Zod) definieren
-//   2. HIER in gradeBlock()   → einen `case` mit der Korrektheits-Prüfung
-//   3. components/blocks/      → Renderer (Anzeige + Eingabe)
-// Die gesamte Bewertungs-Pipeline (scoreModule / maxScore / percentScore /
-// isPassed / Lehrer:innen-Matrix) läuft danach OHNE Änderung weiter, weil sie
-// ausschließlich über gradeBlock() + isGraded() geht — nie typ-spezifisch.
+// Memory / Paare-Spiel: Schüler:in deckt Karten auf und findet Paare. Die
+// Antwort ist die Menge der erfolgreich gematchten pairIds. Teilpunkte =
+// gefundene Paare / Anzahl Paare. Fremd-/Doppel-IDs werden ignoriert
+// (Set-Dedup + Filter gegen die echten pairIds) — robust gegen manipulierte
+// Antworten.
+function evalMemory(block: MemoryBlock, answer: MemoryAnswer): number {
+  if (block.pairs.length === 0) return 0;
+  const valid = new Set(block.pairs.map((p) => p.id));
+  const matched = new Set(answer.filter((id) => valid.has(id)));
+  return matched.size / block.pairs.length;
+}
+
+// Erweiterbarkeit — neuen Block-Typ ins Scoring aufnehmen: (1) Schema + Antwort-
+// Format in blocks.ts, (2) Eintrag in CHECKERS (binär) ODER PARTIAL_GRADERS
+// (Teilpunkte), (3) Renderer. Die Pipeline (scoreModule/maxScore/percentScore/
+// isPassed/Matrix) läuft danach unverändert über gradeBlock() + isGraded().
 //
-// gradeBlock liefert ein TEILERGEBNIS 0.0–1.0. Heute ist jeder Block binär
-// (0 oder 1). Für künftige TEILPUNKTE (z. B. 3 von 4 Zuordnungen = 0.75) nur
-// hier den jeweiligen `case` auf einen Bruchwert umstellen — sonst nichts.
-// ─────────────────────────────────────────────────────────────────────────
-// Korrektheits-Prüfer pro auswertbarem Block-Typ, gibt boolean zurück. Ein neuer
-// auto-bewertbarer Block-Typ braucht hier genau einen Eintrag (+ Schema + Renderer).
-// BINÄRE Blöcke (alles oder nichts) gehören hierher.
+// CHECKERS: binäre Prüfer (alles oder nichts), boolean. Genau ein Eintrag pro Typ.
 const CHECKERS: Record<string, (block: Block, answer: BlockAnswer | undefined) => boolean> = {
   multiple_choice: (b, a) =>
     evalMultipleChoice(b as MultipleChoiceBlock, (a as MultipleChoiceAnswer) ?? []),
@@ -212,6 +201,7 @@ const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undef
   order: (b, a) => evalOrder(b as OrderBlock, (a as OrderAnswer) ?? []),
   hotspot: (b, a) => evalHotspot(b as HotspotBlock, (a as HotspotAnswer) ?? []),
   label_image: (b, a) => evalLabelImage(b as LabelImageBlock, (a as LabelImageAnswer) ?? {}),
+  memory: (b, a) => evalMemory(b as MemoryBlock, (a as MemoryAnswer) ?? []),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

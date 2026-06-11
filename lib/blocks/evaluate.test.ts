@@ -502,3 +502,38 @@ describe('gradeBlock — label_image', () => {
     expect(gradeBlock(labelImage, undefined)).toBe(0);
   });
 });
+
+// Memory / Paare-Spiel — Teilpunkte = gefundene Paare / Anzahl Paare. Antwort
+// ist die Menge der gematchten pairIds.
+const memory: Block = {
+  id: 'mem',
+  type: 'memory',
+  instruction: 'Finde die Paare.',
+  pairs: [
+    { id: 'p1', a: { text: 'Maus' }, b: { text: 'Eingabegerät' } },
+    { id: 'p2', a: { text: 'Bildschirm' }, b: { text: 'Ausgabegerät' } },
+    { id: 'p3', a: { text: 'CPU' }, b: { text: 'Rechenwerk' } },
+    { id: 'p4', a: { text: 'RAM' }, b: { text: 'Arbeitsspeicher' } },
+  ],
+};
+
+describe('gradeBlock — memory', () => {
+  it('alle Paare gefunden → 1', () => {
+    expect(gradeBlock(memory, ['p1', 'p2', 'p3', 'p4'])).toBe(1);
+  });
+  it('2 von 4 Paaren → 0.5', () => {
+    expect(gradeBlock(memory, ['p1', 'p2'])).toBe(0.5);
+  });
+  it('leere Antwort → 0', () => {
+    expect(gradeBlock(memory, [])).toBe(0);
+  });
+  it('undefined-Antwort → 0', () => {
+    expect(gradeBlock(memory, undefined)).toBe(0);
+  });
+  it('Fremd-id wird ignoriert → 0', () => {
+    expect(gradeBlock(memory, ['bogus'])).toBe(0);
+  });
+  it('doppelte id zählt nur einmal', () => {
+    expect(gradeBlock(memory, ['p1', 'p1'])).toBe(0.25);
+  });
+});

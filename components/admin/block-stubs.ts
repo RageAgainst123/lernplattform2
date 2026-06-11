@@ -31,6 +31,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   order: 'ord',
   hotspot: 'hs',
   label_image: 'li',
+  memory: 'mem',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -123,6 +124,17 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
     zones: [
       { id: 'z1', label: 'Begriff A', x: 0.35, y: 0.4, shape: 'circle', r: 0.08, rotation: 0 },
       { id: 'z2', label: 'Begriff B', x: 0.65, y: 0.4, shape: 'circle', r: 0.08, rotation: 0 },
+    ],
+  }),
+  // Memory: 3 Beispiel-Paare (min 3 erforderlich), Begriffe ersetzbar.
+  memory: (id) => ({
+    id,
+    type: 'memory',
+    instruction: 'Finde die passenden Paare.',
+    pairs: [
+      { id: 'p1', a: { text: 'Begriff A' }, b: { text: 'Erklärung A' } },
+      { id: 'p2', a: { text: 'Begriff B' }, b: { text: 'Erklärung B' } },
+      { id: 'p3', a: { text: 'Begriff C' }, b: { text: 'Erklärung C' } },
     ],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),

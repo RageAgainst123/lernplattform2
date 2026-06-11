@@ -1,6 +1,6 @@
 import type { BlockType } from '@/lib/schemas/blocks';
 
-// Kuratierter Katalog aller 16 Block-Typen mit lehrer:innen-verständlicher
+// Kuratierter Katalog aller 20 Block-Typen mit lehrer:innen-verständlicher
 // Kurzbeschreibung — damit Geo im „Block hinzufügen"-Dialog nicht raten muss
 // was ein Typ tut. Quelle der Beschreibungen: docs/MODUL-SPEZIFIKATION.md §3.
 // Reihenfolge innerhalb jeder Gruppe = empfohlene Verwendungs-Häufigkeit.
@@ -81,6 +81,12 @@ export const BLOCK_CATALOG = {
       label: '🏷️ Bild-Beschriften (label_image)',
       description:
         'Stellen im Bild mit Begriffen beschriften — Zone antippen, passenden Begriff wählen (z.B. „Beschrifte den Computer"). Teilpunkte pro richtig zugeordneter Zone.',
+    },
+    {
+      type: 'memory',
+      label: '🃏 Memory (Paare finden)',
+      description:
+        'Memory-Spiel: Karte antippen, zweite Karte antippen — passt das Paar, bleibt es offen. Begriff–Begriff, Begriff–Definition oder Begriff–Bild. Teilpunkte pro gefundenem Paar.',
     },
     {
       type: 'reflection',

@@ -13,6 +13,7 @@ import { MarkWordsForm } from './MarkWordsForm';
 import { OrderForm } from './OrderForm';
 import { HotspotForm } from './HotspotForm';
 import { LabelImageForm } from './LabelImageForm';
+import { MemoryForm } from './MemoryForm';
 
 // Dispatcher: rendert das passende Form für den Block-Typ. Wenn kein
 // dediziertes Form existiert (z.B. live-Blöcke wie slide, live_poll), wird
@@ -39,6 +40,7 @@ const FORM_TYPES = new Set([
   'order',
   'hotspot',
   'label_image',
+  'memory',
 ] as const);
 
 export function hasForm(type: Block['type']): boolean {
@@ -80,6 +82,8 @@ function renderTaskForm({ block, onChange }: Props): React.ReactElement | null {
       return <HotspotForm value={block} onChange={onChange} />;
     case 'label_image':
       return <LabelImageForm value={block} onChange={onChange} />;
+    case 'memory':
+      return <MemoryForm value={block} onChange={onChange} />;
     default:
       return null;
   }

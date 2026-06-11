@@ -25,6 +25,7 @@ const GRADED = new Set([
   'order',
   'hotspot',
   'label_image',
+  'memory',
 ]);
 
 function readInput() {
@@ -248,6 +249,29 @@ for (const b of blocks) {
       }
       if (z.rotation !== undefined && (z.rotation < 0 || z.rotation > 359)) {
         errors.push(`${b.id} (label_image): Zone "${z.id}" rotation außerhalb [0,359].`);
+      }
+    }
+  }
+
+  if (b.type === 'memory') {
+    // 3–8 Paare erzwingt das Schema. Hier: eindeutige pair-ids + jede Karte
+    // trägt genau text ODER imageUrl (sonst leer/mehrdeutig).
+    const pairIds = b.pairs.map((p) => p.id);
+    if (new Set(pairIds).size !== pairIds.length) {
+      errors.push(`${b.id} (memory): doppelte pair-id.`);
+    }
+    for (const p of b.pairs) {
+      for (const [side, c] of [
+        ['a', p.a],
+        ['b', p.b],
+      ]) {
+        const hasText = typeof c.text === 'string' && c.text.trim() !== '';
+        const hasImg = typeof c.imageUrl === 'string' && c.imageUrl !== '';
+        if (hasText === hasImg) {
+          errors.push(
+            `${b.id} (memory): Paar "${p.id}" Karte ${side} braucht genau text ODER imageUrl.`
+          );
+        }
       }
     }
   }

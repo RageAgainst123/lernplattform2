@@ -8,6 +8,7 @@ import { MarkWordsBlock } from '@/components/blocks/MarkWordsBlock';
 import { OrderBlock } from '@/components/blocks/OrderBlock';
 import { HotspotBlock } from '@/components/blocks/HotspotBlock';
 import { LabelImageBlock } from '@/components/blocks/LabelImageBlock';
+import { MemoryBlock } from '@/components/blocks/MemoryBlock';
 
 // Renderer-Dispatcher für die interaktiven Zuordnungs-/Markier-/Reihenfolge-/
 // Hotspot-Blöcke. Ausgelagert aus BlockView.tsx, damit beide Dateien unter
@@ -23,7 +24,7 @@ export type AssignmentProps = {
 
 export type AssignmentBlock = Extract<
   Block,
-  { type: 'match' | 'categorize' | 'mark_words' | 'order' | 'hotspot' | 'label_image' }
+  { type: 'match' | 'categorize' | 'mark_words' | 'order' | 'hotspot' | 'label_image' | 'memory' }
 >;
 
 function renderMatch(block: Extract<Block, { type: 'match' }>, p: AssignmentProps) {
@@ -98,6 +99,18 @@ function renderLabelImage(block: Extract<Block, { type: 'label_image' }>, p: Ass
   );
 }
 
+function renderMemory(block: Extract<Block, { type: 'memory' }>, p: AssignmentProps) {
+  return (
+    <MemoryBlock
+      block={block}
+      answer={(p.answer as string[]) ?? []}
+      checked={p.checked}
+      readOnly={p.readOnly}
+      onAnswer={p.onAnswer}
+    />
+  );
+}
+
 export function renderAssignment(block: AssignmentBlock, p: AssignmentProps) {
   switch (block.type) {
     case 'match':
@@ -112,5 +125,7 @@ export function renderAssignment(block: AssignmentBlock, p: AssignmentProps) {
       return renderHotspot(block, p);
     case 'label_image':
       return renderLabelImage(block, p);
+    case 'memory':
+      return renderMemory(block, p);
   }
 }

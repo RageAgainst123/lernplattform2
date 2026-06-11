@@ -9,6 +9,7 @@ import {
 } from './blocks-live.ts';
 import { hotspotAreaSchema, hotspotGroupSchema } from './blocks-hotspot.ts';
 import { labelImageBlockSchema } from './blocks-label-image.ts';
+import { memoryBlockSchema } from './blocks-memory.ts';
 import {
   blockId,
   gradedBlockExtensions,
@@ -19,6 +20,7 @@ import type { BlockCategory } from './blocks-shared.ts';
 
 export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
 export { labelImageBlockSchema };
+export { memoryBlockSchema };
 export { BLOCK_CATEGORIES };
 export type { BlockCategory };
 export type { HotspotShape } from './blocks-hotspot.ts';
@@ -231,6 +233,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   orderBlockSchema,
   hotspotBlockSchema,
   labelImageBlockSchema,
+  memoryBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -257,5 +260,6 @@ export type MarkWordsBlock = z.infer<typeof markWordsBlockSchema>;
 export type OrderBlock = z.infer<typeof orderBlockSchema>;
 export type HotspotBlock = z.infer<typeof hotspotBlockSchema>;
 export type LabelImageBlock = z.infer<typeof labelImageBlockSchema>;
+export type MemoryBlock = z.infer<typeof memoryBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;

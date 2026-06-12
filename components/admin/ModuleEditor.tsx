@@ -27,9 +27,13 @@ type Props = {
   moduleId?: string;
   initialMeta: ModuleMetadata;
   initialBlocks: Block[];
+  // V5: Anzahl Schüler:innen mit Fortschritt in diesem Modul. > 0 → amber
+  // Warn-Banner (nur Hinweis, blockiert nichts) — inhaltliche Änderungen
+  // können gespeicherte Antworten/Scores inkonsistent machen.
+  progressCount?: number;
 };
 
-export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
+export function ModuleEditor({ moduleId, initialMeta, initialBlocks, progressCount }: Props) {
   const router = useRouter();
   const [meta, setMeta] = useState<ModuleMetadata>(initialMeta);
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
@@ -96,6 +100,17 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
         pending={pending}
         onSave={handleSave}
       />
+      {progressCount !== undefined && progressCount > 0 && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          ⚠ {progressCount} Schüler:in{progressCount === 1 ? ' hat' : 'nen haben'} dieses Modul
+          bereits begonnen oder abgeschlossen. Inhaltliche Änderungen (Blöcke löschen, Lösungen
+          ändern) können gespeicherte Antworten und Bewertungen inkonsistent machen — besser das
+          Modul duplizieren und die Kopie bearbeiten.
+        </div>
+      )}
       {error && (
         <div role="alert" className="text-destructive bg-destructive/10 rounded-md p-3 text-sm">
           {error}

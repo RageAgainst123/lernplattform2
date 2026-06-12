@@ -8,7 +8,12 @@ vi.mock('server-only', () => ({}));
 // class-topics.ts (User-Client für class_topics + class_modules, Service-
 // Client für modules + topics).
 
-type TableResponse = { data: unknown; error: { message: string } | null };
+type TableResponse = {
+  data: unknown;
+  error: { message: string } | null;
+  // Für head:true-Count-Queries (getTopicClassAssignmentCount).
+  count?: number | null;
+};
 const responses: Record<string, TableResponse> = {};
 
 function makeQueryBuilder(tableName: string) {
@@ -37,7 +42,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   })),
 }));
 
-import { getAssignedTopicsForClass } from '@/lib/db/class-topics';
+import { getAssignedTopicsForClass, getTopicClassAssignmentCount } from '@/lib/db/class-topics';
 
 beforeEach(() => {
   for (const k of Object.keys(responses)) delete responses[k];
@@ -370,5 +375,22 @@ describe('getAssignedTopicsForClass — Phase V (class_topics als Source of Trut
       'EVA Alt',
       'EVA Extra',
     ]);
+  });
+});
+
+describe('getTopicClassAssignmentCount (V6)', () => {
+  it('liefert die Anzahl der Klassen-Zuweisungen', async () => {
+    responses.class_topics = { data: null, error: null, count: 3 };
+    expect(await getTopicClassAssignmentCount('topic-eva')).toBe(3);
+  });
+
+  it('liefert 0 wenn count null ist (keine Zuweisungen)', async () => {
+    responses.class_topics = { data: null, error: null, count: null };
+    expect(await getTopicClassAssignmentCount('topic-eva')).toBe(0);
+  });
+
+  it('wirft bei DB-Fehler', async () => {
+    responses.class_topics = { data: null, error: { message: 'kaputt' }, count: null };
+    await expect(getTopicClassAssignmentCount('topic-eva')).rejects.toThrow('kaputt');
   });
 });

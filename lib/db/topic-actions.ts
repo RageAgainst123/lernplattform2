@@ -63,6 +63,10 @@ export async function deleteTopic(id: string): Promise<void> {
   // Materialien selbst bleiben erhalten, nur ihre topic_id wird null).
   await svc.from('modules').update({ topic_id: null, sort_order: 0 }).eq('topic_id', id);
   await svc.from('materials').update({ topic_id: null }).eq('topic_id', id);
+  // V6: Klassen-Zuweisungen explizit mitlöschen (FK on delete cascade in
+  // Migration 0013 täte das auch — explizit für Symmetrie zu den Zeilen oben
+  // und damit die Absicht im Code lesbar ist).
+  await svc.from('class_topics').delete().eq('topic_id', id);
   const { error } = await svc.from('topics').delete().eq('id', id);
   if (error) throw new Error('Thema konnte nicht gelöscht werden: ' + error.message);
   revalidatePath('/admin/themen');

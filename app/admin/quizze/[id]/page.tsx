@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/admin-auth';
-import { getModuleByIdForAdmin } from '@/lib/db/modules';
+import { getModuleByIdForAdmin, getModuleProgressCount } from '@/lib/db/modules';
 import { ModuleEditor, type ModuleMetadata } from '@/components/admin/ModuleEditor';
 
 // Quiz bearbeiten. Wenn jemand eine fremde ID auf dem Quiz-Pfad öffnet,
@@ -9,7 +9,10 @@ import { ModuleEditor, type ModuleMetadata } from '@/components/admin/ModuleEdit
 export default async function EditQuizPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
-  const mod = await getModuleByIdForAdmin(id);
+  const [mod, progressCount] = await Promise.all([
+    getModuleByIdForAdmin(id),
+    getModuleProgressCount(id),
+  ]);
   if (!mod) notFound();
   if (mod.activityKind !== 'quiz') {
     const seg =
@@ -31,5 +34,12 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
     activityKind: mod.activityKind,
     displayMode: mod.displayMode,
   };
-  return <ModuleEditor moduleId={id} initialMeta={meta} initialBlocks={mod.content.blocks} />;
+  return (
+    <ModuleEditor
+      moduleId={id}
+      initialMeta={meta}
+      initialBlocks={mod.content.blocks}
+      progressCount={progressCount}
+    />
+  );
 }

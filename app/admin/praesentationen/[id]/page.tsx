@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/admin-auth';
-import { getModuleByIdForAdmin } from '@/lib/db/modules';
+import { getModuleByIdForAdmin, getModuleProgressCount } from '@/lib/db/modules';
 import { ACTIVITY_INFO } from '@/lib/activities';
 import { ModuleEditor, type ModuleMetadata } from '@/components/admin/ModuleEditor';
 
@@ -14,7 +14,10 @@ export default async function EditPraesentationPage({
 }) {
   await requireAdmin();
   const { id } = await params;
-  const mod = await getModuleByIdForAdmin(id);
+  const [mod, progressCount] = await Promise.all([
+    getModuleByIdForAdmin(id),
+    getModuleProgressCount(id),
+  ]);
   if (!mod) notFound();
   if (mod.activityKind !== 'praesentation') {
     redirect(`/admin/${ACTIVITY_INFO[mod.activityKind].urlSegment}/${id}`);
@@ -30,5 +33,12 @@ export default async function EditPraesentationPage({
     activityKind: mod.activityKind,
     displayMode: mod.displayMode,
   };
-  return <ModuleEditor moduleId={id} initialMeta={meta} initialBlocks={mod.content.blocks} />;
+  return (
+    <ModuleEditor
+      moduleId={id}
+      initialMeta={meta}
+      initialBlocks={mod.content.blocks}
+      progressCount={progressCount}
+    />
+  );
 }

@@ -117,6 +117,24 @@ export async function getModulesForAdminByKind(kind: ActivityKind): Promise<Modu
   return (data as ModuleRow[]).map(toModule);
 }
 
+// Phase-V-Audit (V5): wie viele Schüler:innen haben dieses Modul bereits
+// begonnen/abgeschlossen? Für den Warn-Banner im Editor — inhaltliche
+// Änderungen an einem Modul mit Bestand-Fortschritt können gespeicherte
+// Antworten/Scores inkonsistent machen. Service-Role: student_progress ist
+// RLS-geschützt pro Schüler:in, der Admin braucht die Gesamtzahl.
+// MUSS hinter requireAdmin() aufgerufen werden.
+export async function getModuleProgressCount(moduleId: string): Promise<number> {
+  const svc = createServiceClient();
+  const { count, error } = await svc
+    .from('student_progress')
+    .select('*', { count: 'exact', head: true })
+    .eq('module_id', moduleId);
+  if (error) {
+    throw new Error(`Fortschritts-Zahl konnte nicht geladen werden: ${error.message}`);
+  }
+  return count ?? 0;
+}
+
 export type ModuleOption = { id: string; title: string };
 
 // Für das Material-Verknüpfungs-Dropdown: nur veröffentlichte Module derselben

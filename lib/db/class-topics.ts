@@ -163,6 +163,22 @@ export type PublishedTopicOption = {
   schulstufe: number | null;
 };
 
+// Phase-V-Audit (V6): wie viele Klassen haben dieses Thema zugewiesen? Für
+// die Lösch-Warnung im Admin-Themen-Editor. Service-Role: die RLS-Policy auf
+// class_topics ist lehrer-eigen, der Admin braucht den Überblick über ALLE
+// Klassen. MUSS hinter requireAdmin() aufgerufen werden.
+export async function getTopicClassAssignmentCount(topicId: string): Promise<number> {
+  const svc = createServiceClient();
+  const { count, error } = await svc
+    .from('class_topics')
+    .select('*', { count: 'exact', head: true })
+    .eq('topic_id', topicId);
+  if (error) {
+    throw new Error(`Zuweisungs-Zahl konnte nicht geladen werden: ${error.message}`);
+  }
+  return count ?? 0;
+}
+
 export async function getPublishedTopicsAll(): Promise<PublishedTopicOption[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

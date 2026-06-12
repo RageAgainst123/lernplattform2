@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { getTopicByIdForAdmin } from '@/lib/db/topics';
 import { getAvailableModulesForTopic, getModulesForTopic } from '@/lib/db/modules';
+import { getTopicClassAssignmentCount } from '@/lib/db/class-topics';
 import type { ActivityKind, Module } from '@/lib/schemas/entities';
 import { ACTIVITY_KINDS } from '@/lib/activities';
 import { TopicEditor } from '@/components/admin/TopicEditor';
@@ -18,8 +19,12 @@ export default async function EditTopicPage({ params }: { params: Promise<{ id: 
   const topic = await getTopicByIdForAdmin(id);
   if (!topic) notFound();
 
-  // Module gruppiert nach Aktivität (sortiert nach sort_order pro Thema)
-  const allTopicModules = await getModulesForTopic(id);
+  // Module gruppiert nach Aktivität (sortiert nach sort_order pro Thema).
+  // V6: parallel die Klassen-Zuweisungs-Zahl für die Lösch-Warnung laden.
+  const [allTopicModules, assignedClassCount] = await Promise.all([
+    getModulesForTopic(id),
+    getTopicClassAssignmentCount(id),
+  ]);
   const modulesByKind = groupByKind(allTopicModules);
 
   // Verfügbare Module pro Aktivität für das Add-Dropdown — inklusive Module
@@ -46,7 +51,7 @@ export default async function EditTopicPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-8">
-      <TopicEditor topicId={id} initialValue={formValue} />
+      <TopicEditor topicId={id} initialValue={formValue} assignedClassCount={assignedClassCount} />
       <TopicBausteine
         topicId={id}
         modulesByKind={modulesByKind}

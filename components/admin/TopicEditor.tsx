@@ -14,9 +14,12 @@ import { TopicForm, slugify, type TopicFormValue } from './TopicForm';
 type Props = {
   topicId?: string;
   initialValue: TopicFormValue;
+  // V6: Anzahl Klassen, denen dieses Thema zugewiesen ist — macht die
+  // Lösch-Bestätigung ehrlich (Zuweisungen verschwinden mit, FK cascade).
+  assignedClassCount?: number;
 };
 
-export function TopicEditor({ topicId, initialValue }: Props) {
+export function TopicEditor({ topicId, initialValue, assignedClassCount }: Props) {
   const router = useRouter();
   const [value, setValueRaw] = useState<TopicFormValue>(initialValue);
   const [slugTouched, setSlugTouched] = useState(Boolean(topicId));
@@ -62,7 +65,13 @@ export function TopicEditor({ topicId, initialValue }: Props) {
 
   function handleDelete() {
     if (!topicId) return;
-    if (!window.confirm('Thema wirklich löschen? Zugeordnete Module bleiben erhalten.')) return;
+    const classWarning = assignedClassCount
+      ? `⚠ Dieses Thema ist ${assignedClassCount} Klasse(n) zugewiesen — die Schüler:innen verlieren den Zugriff auf den Lernpfad. `
+      : '';
+    if (
+      !window.confirm(`${classWarning}Thema wirklich löschen? Zugeordnete Module bleiben erhalten.`)
+    )
+      return;
     startTransition(async () => {
       try {
         await deleteTopic(topicId);

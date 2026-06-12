@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { saveWordHeftLink } from '@/lib/db/word-heft-actions';
+import { validateOneDriveLink } from '@/lib/onedrive/validate-link';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { WordHeftInstructionsModal } from './WordHeftInstructionsModal';
@@ -51,6 +52,11 @@ function LinkInputBlock({
   pending: boolean;
   onSave: () => void;
 }) {
+  // V8: live erkennen, ob der Link von einem PRIVATEN Microsoft-Konto kommt
+  // (onedrive.live.com / 1drv.ms). Speichern bleibt erlaubt — nur Warnung,
+  // weil die Lehrer:in solche Links mit dem Schul-Konto oft nicht öffnen kann.
+  const check = validateOneDriveLink(url);
+  const personalAccount = check.ok && check.personalAccount;
   return (
     <div className="flex flex-col gap-2 border-t pt-3">
       <label htmlFor="word-link-input" className="text-sm font-medium">
@@ -64,6 +70,15 @@ function LinkInputBlock({
         placeholder="https://nms-pitten-my.sharepoint.com/..."
         disabled={pending}
       />
+      {personalAccount && (
+        <p
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900"
+        >
+          ⚠ Das sieht nach einem privaten Microsoft-Konto aus. Verwende möglichst dein Schul-Konto —
+          sonst kann deine Lehrer:in das Heft eventuell nicht öffnen. Speichern geht trotzdem.
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-destructive text-sm">
           {error}

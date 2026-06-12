@@ -22,8 +22,13 @@ const ALLOWED_HOST_PATTERNS: RegExp[] = [
   /^1drv\.ms$/i,
 ];
 
+// V8: onedrive.live.com / 1drv.ms = privates Microsoft-Konto. Gültig (wir
+// blockieren nicht), aber die Lehrer:in kann solche Links mit dem Schul-Konto
+// oft nicht öffnen → UI zeigt eine Warnung.
+const PERSONAL_HOST_PATTERNS: RegExp[] = [/^onedrive\.live\.com$/i, /^1drv\.ms$/i];
+
 export type LinkValidationResult =
-  | { ok: true; normalizedUrl: string; host: string }
+  | { ok: true; normalizedUrl: string; host: string; personalAccount: boolean }
   | {
       ok: false;
       reason: 'leer' | 'kein_url' | 'kein_https' | 'fremde_domain' | 'zu_lang';
@@ -52,5 +57,6 @@ export function validateOneDriveLink(raw: string): LinkValidationResult {
     return { ok: false, reason: 'fremde_domain' };
   }
 
-  return { ok: true, normalizedUrl: url.toString(), host };
+  const personalAccount = PERSONAL_HOST_PATTERNS.some((pattern) => pattern.test(host));
+  return { ok: true, normalizedUrl: url.toString(), host, personalAccount };
 }

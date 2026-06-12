@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { WordHeftLink, StudentCode, ValidationStatus } from '@/lib/schemas/entities';
 import { studentDisplayName } from '@/lib/db/student-display-name';
+import { daysSince, formatRelativeDe } from '@/lib/utils/relative-time';
 
 // Phase Q5: Klassen-Word-Heft-Übersicht für Lehrer:innen.
 //
@@ -64,11 +65,18 @@ function MatrixRow({ row }: { row: Row }) {
       </li>
     );
   }
+  // V7: „zuletzt geöffnet" pro Heft — amber wenn >21 Tage oder nie, damit
+  // die Lehrer:in inaktive Hefte auf einen Blick sieht.
+  const days = daysSince(row.link.lastOpenedAt);
+  const stale = days === null || days > 21;
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 border-b py-2 last:border-b-0">
       <div className="flex items-center gap-2">
         <span className="text-foreground text-sm">{name}</span>
         <StatusLabel status={row.link.validationStatus} />
+        <span className={`text-xs ${stale ? 'text-amber-700' : 'text-muted-foreground'}`}>
+          zuletzt geöffnet: {formatRelativeDe(row.link.lastOpenedAt)}
+        </span>
       </div>
       <a
         href={row.link.oneDriveUrl}
@@ -103,8 +111,13 @@ export function WordHeftMatrix(props: WordHeftMatrixProps) {
       {!props.isTeacherSsoAuth && !hintDismissed && (
         <MagicLinkHint onDismiss={() => setHintDismissed(true)} />
       )}
-      <p className="text-muted-foreground text-sm">
+      <p className="text-muted-foreground flex items-center gap-2 text-sm">
         {linkCount} von {ssoCodes.length} Schüler:innen haben ein Word-Heft angelegt.
+        {ssoCodes.length - linkCount > 0 && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+            {ssoCodes.length - linkCount} ohne Heft
+          </span>
+        )}
       </p>
       <ul className="rounded-md border px-4">
         {rows

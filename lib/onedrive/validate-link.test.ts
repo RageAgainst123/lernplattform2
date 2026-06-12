@@ -19,12 +19,22 @@ describe('validateOneDriveLink', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('akzeptiert OneDrive Personal (onedrive.live.com)', () => {
-    expect(validateOneDriveLink('https://onedrive.live.com/edit.aspx?cid=abc').ok).toBe(true);
+  it('akzeptiert OneDrive Personal (onedrive.live.com) — markiert als privates Konto (V8)', () => {
+    const result = validateOneDriveLink('https://onedrive.live.com/edit.aspx?cid=abc');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.personalAccount).toBe(true);
   });
 
-  it('akzeptiert 1drv.ms Kurzlinks', () => {
-    expect(validateOneDriveLink('https://1drv.ms/w/s!abc').ok).toBe(true);
+  it('akzeptiert 1drv.ms Kurzlinks — markiert als privates Konto (V8)', () => {
+    const result = validateOneDriveLink('https://1drv.ms/w/s!abc');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.personalAccount).toBe(true);
+  });
+
+  it('Schul-Links (sharepoint.com) sind KEIN privates Konto (V8)', () => {
+    const result = validateOneDriveLink('https://nms-pitten-my.sharepoint.com/x.docx');
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.personalAccount).toBe(false);
   });
 
   it('blockt leere Strings', () => {

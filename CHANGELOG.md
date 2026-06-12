@@ -8,6 +8,60 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## Phase M/CW — Spiel-Blöcke `memory` + `crossword` & „Als Schüler:in testen"-Tab
+
+**2026-06-12** · Tags `block-memory`, `block-crossword` · Commits `66a1e8c`…`3e0a55f`
+
+### „🎒 Als Schüler:in testen"-Tab im Lernmodul-Editor (`66a1e8c`)
+
+- Dritter Editor-Tab neben „Blöcke" und „Vorschau": spielt das Modul **exakt
+  in der Schüler-Sicht** durch — Quiz-Modus Block-für-Block mit Prüfen/Weiter,
+  Worksheet-Modus alle Aufgaben + „Abgeben". Simulierte Score-Auswertung in
+  Prozent + „Neu starten". Keine DB-Schreibung, kein zweiter Browser/Login.
+- Nur für Lernmodule (Präsentationen testet man am Beamer). Komponenten:
+  `StudentTestPanel` + `student-test-quiz` (nutzt denselben
+  `useModuleRunner`-Hook wie die Produktion).
+
+### Neuer Block-Typ `memory` — Paare-Spiel (`0dc94be`)
+
+- Karte antippen, zweite Karte antippen — passt das Paar, bleibt es offen,
+  sonst klappt es nach ~0,7 s zurück. Karten tragen **Text ODER Bild**
+  (Pexels/Upload) → Begriff–Begriff, Begriff–Definition, Begriff–Bild.
+  3–8 Paare, Antwort `string[]` (gematchte pairIds), **Teilpunkte** =
+  gefundene Paare / Anzahl Paare.
+- End-to-end registriert: Schema (`blocks-memory.ts`), Grading
+  (`PARTIAL_GRADERS`), Renderer (`MemoryBlock` + Flip-Hook), `MemoryForm`,
+  Stub/Katalog/Validate (Karte genau `text` XOR `imageUrl`).
+- Bugfix unterwegs: Karten-Liste via `useMemo` stabil referenziert — ohne
+  das löste `useShuffled` einen Endlos-Re-Render-Loop aus (hängende Tests).
+
+### Neuer Block-Typ `crossword` — Kreuzworträtsel (`fd43273`, Optik `3e0a55f`)
+
+- Autor:in legt Wörter mit Frage, Richtung und Startzelle aufs Gitter
+  (2–15×2–15, 2–10 Wörter); die füllbaren Zellen werden **abgeleitet**,
+  Kreuzungen müssen im Buchstaben übereinstimmen (Schema + Validate +
+  **Live-Editor-Vorschau mit Konflikt-Warnung** teilen dieselbe Ableitung
+  `lib/blocks/crossword-grid.ts`). Schüler:in tippt Zellen an und gibt
+  Buchstaben ein — Auto-Advance entlang des Worts, Re-Tap auf Kreuzungen
+  wechselt die Richtung. Antwort `Record<"r,c",Buchstabe>`, **Teilpunkte** =
+  richtige Zellen / füllbare Zellen (zell-basiert, case-insensitiv).
+- Optik wie gedrucktes Rätsel: blockierte Zellen unsichtbar, aktives Wort
+  blau hinterlegt, Startzellen-Nummern, kräftige grün/rot-Bewertung.
+
+### Fixes
+
+- **`LERNMODUL_BLOCKS`-Filter** (`bfedb37`): `label_image`/`memory`/`crossword`
+  fehlten in der Aktivitäts-Allowlist → erschienen nicht im „Block
+  hinzufügen"-Dialog (label_image schon seit A3.8). Schutzwall-Test erweitert.
+- **`hint`/`maxAttempts` generisch** (`3e0a55f`): der Quiz-Runner las beide
+  Felder nur für 4 alte Typen (mc/tf/fill_blank/match) — jetzt für **alle**
+  bewertbaren Blöcke („Nochmal versuchen" + HintBox funktionieren damit auch
+  bei hotspot, label_image, memory, crossword, categorize, mark_words, order).
+- Test-Draft `supabase/seeds/_drafts/test-memory-crossword.json` (`a5f7fb8`)
+  zum Import-Ausprobieren beider Typen (mit `hint` + `maxAttempts: 3`).
+
+---
+
 ## Phase A3.7/A3.8 — Versteckte Zonen, „Bild-Beschriften", Kontrast-Politur
 
 **2026-06-10** · Tags `phase-a3-7…a3-12-savepoint`

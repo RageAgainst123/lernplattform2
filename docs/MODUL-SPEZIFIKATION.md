@@ -15,14 +15,14 @@
 > pnpm validate:module pfad/zu/modul.json
 > ```
 >
-> Stand: 2026-06-10.
+> Stand: 2026-06-12.
 
 ## 1. Das große Ganze in drei Sätzen
 
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
 (diskriminierte Union). 20 Block-Typen total — verteilt auf **drei Gruppen**:
-Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (10 davon auto-bewertbar),
+Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (11 davon auto-bewertbar),
 und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
 nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
 
@@ -93,7 +93,7 @@ Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
 Modul) und `type` (einer der 20 Werte aus der Tabelle in §2).
 
 > **Didaktik-Felder auf jedem bewertbaren Block (optional).** Alle
-> auto-bewertbaren Worksheet-Typen (`multiple_choice` … `label_image`) tragen
+> auto-bewertbaren Worksheet-Typen (`multiple_choice` … `crossword`) tragen
 > zusätzlich drei optionale Felder (Phase W):
 >
 > | Feld          | Typ                                    | Wirkung                                                                                  |
@@ -607,15 +607,15 @@ Sie ist **typ-agnostisch**: jede Auswertung läuft über `gradeBlock()` +
 > Für eine bewertbare Quiz-Frage nimm `multiple_choice` oder `true_false` im
 > Worksheet-Modus.
 
-| Funktion                          | Was sie liefert                                                                                                                                              |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                                        |
-| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot`/`label_image` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
-| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                                         |
-| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                                     |
-| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                                          |
-| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                                          |
-| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                                |
+| Funktion                          | Was sie liefert                                                                                                                                                                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                                                             |
+| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot`/`label_image`/`memory`/`crossword` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
+| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                                                              |
+| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                                                          |
+| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                                                               |
+| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                                                               |
+| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                                                     |
 
 **Bestehens-Schwelle** (`pass_threshold`) lebt **pro Klassen-Zuweisung**, nicht
 pro Modul (siehe ADR-0011). Ein Modul mit `max_score = 0` kann nie „bestanden"
@@ -637,6 +637,8 @@ als `Record<blockId, answer>` in `student_progress.answers`:
 | `order`           | `string[]` (itemId-Reihenfolge) | `["oe1","oe2","oe3"]`                     |
 | `hotspot`         | `string[]` (areaId)             | `["hs-tastatur","hs-maus"]`               |
 | `label_image`     | `Record<zoneId,label>`          | `{ "z1":"Tastatur", "z2":"Maus" }`        |
+| `memory`          | `string[]` (gematchte pairIds)  | `["p1","p3"]`                             |
+| `crossword`       | `Record<"r,c",Buchstabe>`       | `{ "0,0":"M", "0,1":"A" }`                |
 | `reflection`      | `string`                        | `"Ich nutze sie für …"`                   |
 
 ## 5. Pflicht-Checkliste vor dem Import

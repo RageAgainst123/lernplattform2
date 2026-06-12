@@ -26,7 +26,7 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 
 ### Lerninhalte
 
-Module bestehen aus Blöcken (Block-Engine, **18 Typen**). Vollständige
+Module bestehen aus Blöcken (Block-Engine, **20 Typen**). Vollständige
 Spezifikation in [`docs/MODUL-SPEZIFIKATION.md`](docs/MODUL-SPEZIFIKATION.md).
 
 **Theorie/Folie** (nicht bewertet): `text`, `infobox`, `slide`.
@@ -44,6 +44,8 @@ Spezifikation in [`docs/MODUL-SPEZIFIKATION.md`](docs/MODUL-SPEZIFIKATION.md).
 | `order` ⊕         | Items in die richtige Reihenfolge bringen                  |
 | `hotspot` ⊕       | Richtige Stellen im Bild antippen (Zonen, Gruppen, Zoom)   |
 | `label_image` ⊕   | Stellen im Bild beschriften (Zone tippen → Begriff wählen) |
+| `memory` ⊕        | Paare-Spiel: Karten aufdecken, Paare finden (Text/Bild)    |
+| `crossword` ⊕     | Kreuzworträtsel: Zelle tippen, Buchstaben eingeben         |
 | `reflection`      | Freitext-Antwort der Schüler:in (manuell bewertet)         |
 
 **Live-Interaktionen** (nur Presentation-Modus): `live_poll`, `quiz_poll`,
@@ -59,9 +61,12 @@ Module haben zwei **Anzeige-Modi** (Spalte `modules.display_mode`):
 
 - **Reiche Aufgabentypen mit Teilpunkten** (Phasen P0/A/W): `categorize`,
   `order`, `mark_words`, `hotspot` (Bild-Hotspots mit Zonen/Gruppen/Zoom/
-  Frei-Klick) und `label_image` (Bild beschriften). Numerische Scores
-  (Migration 0024, `PARTIAL_GRADERS`), plus optionale Didaktik-Felder pro
-  Block (`hint`, `maxAttempts`, `category`). Anlegbar direkt im Admin-Editor.
+  Frei-Klick), `label_image` (Bild beschriften), `memory` (Paare-Spiel) und
+  `crossword` (Kreuzworträtsel mit Live-Editor-Vorschau). Numerische Scores
+  (Migration 0024, `PARTIAL_GRADERS`), plus optionale Didaktik-Felder auf
+  **jedem** bewertbaren Block (`hint`, `maxAttempts`, `category`). Anlegbar
+  direkt im Admin-Editor; dort testet der Tab **„🎒 Als Schüler:in testen"**
+  jedes Lernmodul ohne zweiten Browser exakt in der Schüler-Sicht.
 - **Themen-Lernpfade** (Phase G): Themen als first-class Entity mit Modul-
   Sortierung, Abschlusstest-Voraussetzungs-Check. Migration 0013.
 - **Schulheft** für Code+PIN-Schüler:innen (Phase H+): Tiptap-Editor mit
@@ -145,7 +150,7 @@ app/              Next.js Routes (App Router)
 components/
   ui/             shadcn/ui (via CLI verwaltet, nicht manuell)
   site/           Globaler Header/Footer/Shell (SiteHeader, HeaderAuth, MobileMenu)
-  blocks/         Block-Engine (7 Renderer + ModuleRunner + WorksheetRunner)
+  blocks/         Block-Engine (Renderer für 20 Block-Typen + ModuleRunner + WorksheetRunner)
   student/        ModuleCard, StatusSummary, StudentLoginForm
   teacher/        Code-Liste, CodeListPdf (PDF-Export, dynamischer Import)
   admin/          Modul-Editor (BlockList, BlockEditor, ImportJsonDialog)

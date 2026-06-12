@@ -16,6 +16,10 @@
 | A4    | `mark_words` — Markieren im Text (geteilte `tokenize.ts`)                                                                                     | ✅ fertig + getestet              |
 | A2    | `order` — Reihenfolge sortieren (Teilpunkte via Anteil korrekter Nachbarpaare)                                                                | ✅ fertig + getestet              |
 | A3    | `hotspot` — Bild-Hotspots (Kreis/Rechteck + Rotation, Gruppen-Modus, Upload + Pexels, Teilpunkte) + testbare Editor-Vorschau                  | ✅ fertig + getestet              |
+| A3.8  | `label_image` — Bild beschriften (Zone tippen → Begriff wählen, Teilpunkte)                                                                   | ✅ fertig + getestet              |
+| —     | **„🎒 Als Schüler:in testen"-Tab** im Lernmodul-Editor (Schüler-Sicht ohne 2. Browser, simulierte %-Auswertung)                               | ✅ fertig + getestet              |
+| M     | `memory` — Paare-Spiel (3–8 Paare, Karten Text/Bild, Teilpunkte = gefundene Paare)                                                            | ✅ fertig + getestet              |
+| CW    | `crossword` — Kreuzworträtsel (Wörter + Startzelle/Richtung, abgeleitete Zellen, Editor-Live-Vorschau, Teilpunkte pro Zelle)                  | ✅ fertig + getestet              |
 | E1    | Score/Progress-Politur (Fortschrittsbalken im Worksheet, Teilpunkte-Aufschlüsselung)                                                          | 🔜 offen                          |
 | B0–B6 | **DGB-Vokabeltrainer** + Spaced Repetition (Herzstück): Lexikon, Modul-Verknüpfung, SM-2, `/s/vokabeln`, `lesetext`-Tooltips, Lehrer-Diagnose | 🔜 offen                          |
 | E2    | Mastery-Gamification (Begriffe-sicher-Anzeige)                                                                                                | 🔜 offen                          |
@@ -24,7 +28,8 @@
 
 ## Empfohlene Reihenfolge
 
-**A2 ✅ → A3 ✅ → E1 → B0…B6 → E2 → D → F (zuletzt).** Nächster Schritt: **E1**.
+**A2 ✅ → A3 ✅ → A3.8 ✅ → M/CW ✅ → E1 → B0…B6 → E2 → D → F (zuletzt).**
+Nächster Schritt: **E1**.
 
 Begründung: Erst die Inhalte reich machen (neue Aufgabentypen + Vokabeltrainer),
 dann die „Abgabe-Disziplin" (Selbst-Check + Schwelle) als Schicht drüberlegen.

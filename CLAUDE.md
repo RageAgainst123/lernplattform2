@@ -145,16 +145,21 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   - `MobileMenu.tsx` — Client; Auth-Block + Logout-Form als Sub-Komp.
   - `SiteFooter.tsx`, `SiteShell.tsx`, `Logo.tsx`
 - **`components/blocks/`** — Block-Renderer + Modul-Runner
-  - **18 Block-Typen** (Single Source: `lib/schemas/blocks.ts`). Gruppe A
+  - **20 Block-Typen** (Single Source: `lib/schemas/blocks.ts`). Gruppe A
     Theorie: `text`, `infobox`, `slide`. Gruppe B Worksheet (auto-bewertbar
     außer reflection): `multiple_choice`, `true_false`, `fill_blank`, `match`,
-    `categorize`, `mark_words`, `order`, `hotspot`, `label_image`, `reflection`.
-    Gruppe C Live (Presentation): `live_poll`, `quiz_poll`, `word_cloud`,
-    `scale`, `understanding`. Vollständige Spec: `docs/MODUL-SPEZIFIKATION.md`.
-  - `BlockView.tsx` — Switch-Dispatcher; Zuordnungs-/Bild-Aufgaben über
+    `categorize`, `mark_words`, `order`, `hotspot`, `label_image`, `memory`,
+    `crossword`, `reflection`. Gruppe C Live (Presentation): `live_poll`,
+    `quiz_poll`, `word_cloud`, `scale`, `understanding`. Vollständige Spec:
+    `docs/MODUL-SPEZIFIKATION.md`.
+  - `BlockView.tsx` — Switch-Dispatcher; Zuordnungs-/Bild-/Spiel-Aufgaben über
     `block-assignment-renderers.tsx`. Bild-Block-Renderer: `HotspotBlock` +
     `hotspot-overlay/-hidden/-groups/-zoom/-feedback`, `LabelImageBlock` +
-    `label-image-marker/-pool/-stages` + `use-label-image`.
+    `label-image-marker/-pool/-stages` + `use-label-image`. Spiel-Renderer:
+    `MemoryBlock` + `memory-cards` + `use-memory-game` (Flip-State-Machine),
+    `CrosswordBlock` + `crossword-grid.tsx` + `use-crossword` (Gitter-Ableitung
+    geteilt in `lib/blocks/crossword-grid.ts` — Schema/Grading/Editor-Vorschau/
+    Validate nutzen EINE Quelle).
   - `ModuleRunner.tsx` (Quiz-Modus, Block-für-Block) + `useModuleRunner.ts`
   - `WorksheetRunner.tsx` (Worksheet-Modus, alle Aufgaben auf einer Seite)
     - `useWorksheetState.ts` + `WorksheetStatusBanner.tsx` + `WorksheetTaskBlock.tsx`
@@ -165,7 +170,9 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   `StatusSummary.tsx` (Zähler-Pille), `StudentLoginForm.tsx`
 - **`components/teacher/`** — PDF-Export der Code-Liste, Code-Generator-UI
 - **`components/admin/`** — Modul-Editor (BlockList, BlockEditor), Material-Upload,
-  ImportJsonDialog
+  ImportJsonDialog. Editor-Tabs: Blöcke / Vorschau / **„🎒 Als Schüler:in
+  testen"** (`StudentTestPanel` + `student-test-quiz` — spielt das Modul exakt
+  in der Schüler-Sicht durch, ohne DB/Routing/zweiten Browser; nur Lernmodule)
 
 ### Zugang/Schutz
 
@@ -191,6 +198,11 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   `useShuffled<T>()` aus `components/blocks/useShuffled.ts` (initial Original-
   Reihenfolge, Mix in `useEffect` nach Mount). Sonst weicht Server- und
   Client-Render ab → React verwirft Tree.
+- **`useShuffled` braucht eine STABILE Array-Referenz!** Niemals ein inline
+  erzeugtes Array (`block.items.map(…)`/`flatMap`) direkt übergeben — der
+  Effect feuert dann bei jedem Render neu → **Endlos-Re-Render-Loop**, Tests
+  hängen für immer. Eingabe vorher mit `useMemo` stabilisieren (Beispiele:
+  `FillBlankBlock.tsx`, `use-memory-game.ts` — dort war genau das der Bug).
 
 ### Supabase + Auth
 
@@ -320,7 +332,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - **Niemals** `package.json`-Hauptversionen ohne Auftrag anheben — der
   Stack ist bewusst stabil (Next 16 hat schon genug Breaking Changes).
 
-## Phasen-Status (Stand 2026-06-10)
+## Phasen-Status (Stand 2026-06-12)
 
 - ✅ **Phase 1:** Scaffold (Next 16, Tailwind v4, ESLint strict, Vitest)
 - ✅ **Phase 2:** shadcn/ui-Setup, Demo-Verifikation
@@ -453,7 +465,21 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   Begriff wählen). Showcase-Lernmodul (Seed 0007, 18 Blöcke). Marker-Kontrast
   - transparentere Bewertungs-Overlays (Audit-Politur). Tags
     `phase-a1-savepoint` … `phase-a3-12-savepoint`. Spec:
-    `docs/MODUL-SPEZIFIKATION.md` (18 Block-Typen).
+    `docs/MODUL-SPEZIFIKATION.md` (20 Block-Typen).
+- ✅ **Test-Tab „🎒 Als Schüler:in testen"** (Commit `66a1e8c`): dritter
+  Editor-Tab spielt jedes Lernmodul exakt in der Schüler-Sicht durch (Quiz
+  Block-für-Block / Worksheet mit Abgeben), simulierte %-Auswertung, ohne
+  DB/zweiten Browser. `StudentTestPanel` + `student-test-quiz`.
+- ✅ **Phase M/CW (Spiel-Blöcke `memory` + `crossword`):** Tags `block-memory`
+  - `block-crossword`. `memory` = Paare-Spiel (3–8 Paare, Karten Text ODER
+    Bild, Teilpunkte = gefundene/Anzahl). `crossword` = Kreuzworträtsel
+    (Wörter + Startzelle/Richtung aufs Gitter, Zellen abgeleitet via geteiltem
+    `lib/blocks/crossword-grid.ts`, Live-Editor-Vorschau mit Konflikt-Warnung,
+    Teilpunkte = richtige Zellen/füllbare, Optik wie gedrucktes Rätsel).
+    Nebenbei gefixt: `LERNMODUL_BLOCKS`-Allowlist (label_image/memory/crossword
+    fehlten im Block-Dialog) und `hint`/`maxAttempts` generisch für ALLE
+    bewertbaren Typen (vorher las der Runner sie nur für mc/tf/fill_blank/match).
+    Test-Draft `supabase/seeds/_drafts/test-memory-crossword.json`.
 - 🔜 **Phase U2 (Pre-Launch HIGH/MED):** ProgressMatrixLive Polling-
   Fallback, Broadcast-Timeout senken, `isAssigned`-Check in
   submitWorksheet, `enabled`-Option im Hook, Suspense-Boundaries,

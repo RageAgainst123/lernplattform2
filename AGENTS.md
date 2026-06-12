@@ -12,16 +12,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 1. **Lies zuerst** `docs/QUICKSTART-MODUL.md` — der durchgehende Ablauf
    (generieren → validieren → testen → freigeben).
-2. **Format + Felder** stehen in `docs/MODUL-SPEZIFIKATION.md` (18 Block-Typen,
+2. **Format + Felder** stehen in `docs/MODUL-SPEZIFIKATION.md` (20 Block-Typen,
    je eine Feld-Tabelle + valides Beispiel-JSON). Das ist die verbindliche
-   Wahrheit — kein Quellcode nötig, um JSON zu erzeugen.
+   Wahrheit — kein Quellcode nötig, um JSON zu erzeugen. Auch die Spiel-Typen
+   `memory` (Paare) und `crossword` (Kreuzworträtsel) sind per JSON baubar;
+   nur `hotspot`/`label_image` brauchen den Editor (Bild-Koordinaten).
 3. **Validiere jedes erzeugte Modul** im Closed Loop, bis grün:
    ```bash
    pnpm validate:module pfad/zu/modul.json
    ```
    Die Fehlermeldung nennt Block + Feld — korrigieren und erneut laufen lassen.
-4. **Stelle nichts selbst online.** Du lieferst validiertes JSON; das
-   Veröffentlichen ist ein bewusster Mensch-Schritt (siehe Quickstart §4).
+   Bei `crossword` prüft das Script auch Gitter-Fit + Kreuzungs-Konflikte.
+4. **Stelle nichts selbst online.** Du lieferst validiertes JSON; der Mensch
+   importiert es im Editor, spielt es im Tab **„🎒 Als Schüler:in testen"**
+   durch und veröffentlicht bewusst (siehe Quickstart §4).
 
 Single Source of Truth ist immer der Code (`lib/schemas/blocks.ts` Struktur,
 `lib/blocks/evaluate.ts` Bewertung). Bei Widerspruch gewinnt der Code.

@@ -19,7 +19,7 @@ vermischt. Tatsächlich gibt es **zwei verschiedene Dinge**:
 |                  | **Material**                                          | **Modul**                                                           |
 | ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------- |
 | **Was**          | PDF (Theorie, Arbeitsblatt, Lösung, Stundenbild)      | Interaktive Block-Aufgabe (Quiz, Lückentext, Zuordnen, Reflexion …) |
-| **Format**       | Datei zum Ansehen/Drucken                             | 18 Block-Typen am Bildschirm, zwei Anzeige-Modi (s. u.)             |
+| **Format**       | Datei zum Ansehen/Drucken                             | 20 Block-Typen am Bildschirm, zwei Anzeige-Modi (s. u.)             |
 | **Sichtbarkeit** | **Öffentlich**, ohne Login                            | Schüler:innen **nach Zuweisung** durch Lehrer:in                    |
 | **Interaktion**  | herunterladen, ausdrucken                             | bearbeiten, Antworten, Fortschritt wird gespeichert                 |
 | **Tabelle**      | `materials` (Schema fertig; Inhalte je nach DB-Stand) | `modules` (mit `display_mode`-Spalte; EVA- + Suchen-Demo)           |

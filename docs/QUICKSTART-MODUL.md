@@ -16,7 +16,7 @@
 ```
 [1] KI generiert     →  Modul-JSON  ────────────┐
 [2] KI/Du validiert  →  pnpm validate:module     │  kein Mensch online,
-[3] Du testest       →  Editor-Vorschau + Schüler-Sicht (lokal, unveröffentlicht)
+[3] Du testest       →  Editor-Tab „🎒 Als Schüler:in testen" (lokal, unveröffentlicht)
 [4] Du gibst frei    →  „Veröffentlicht" anhaken + Klasse zuweisen  ←─ einziger Freigabe-Klick
 ```
 
@@ -44,13 +44,19 @@ Aufbau (Reihenfolge verbindlich): 1 text (Hook) → 1 infobox (Merke) →
 3–5 Aufgaben → 1 reflection.
 
 Erlaubte Aufgaben-Typen (mit Teilpunkten, wo sinnvoll): multiple_choice,
-true_false, fill_blank, match, categorize, mark_words, order.
+true_false, fill_blank, match, categorize, mark_words, order, memory,
+crossword.
 (hotspot/label_image NICHT per JSON — die baue ich später im Editor mit Bild.)
+(crossword: Koordinaten sorgfältig — across belegt (row, col+i), down
+(row+i, col); geteilte Kreuzungszellen MÜSSEN denselben Buchstaben haben,
+validate:module prüft das. Im Zweifel Wörter ohne Kreuzung legen.)
 
 Format: { "blocks": [ … ] }. Jede id eindeutig. Halte dich exakt an die
 Feld-Definitionen + Beispiele in docs/MODUL-SPEZIFIKATION.md §3.
 Bei mind. einem Aufgaben-Block ein "hint" und "feedbackWrong" setzen,
-das eine typische Falschvorstellung anspricht.
+das eine typische Falschvorstellung anspricht. ALLE bewertbaren Blöcke
+(auch memory/crossword) unterstützen optional "hint" (HintBox nach dem
+1. Fehlversuch) und "maxAttempts" (1–5 Versuche, −25 % je Wiederholung).
 
 Gib NUR das JSON zurück.
 ```
@@ -106,22 +112,27 @@ Im Block-Editor **„+ Block hinzufügen"** → `Bild-Hotspots` oder
 `Bild-Beschriften` → Bild laden (Upload oder Pexels) → Zonen aufs Bild ziehen →
 pro Zone den Begriff/„richtig"-Status setzen. Fertig.
 
-### 3c. In der Vorschau durchspielen
+### 3c. Im Tab „🎒 Als Schüler:in testen" durchspielen
 
-Tab **„Vorschau"** im Editor:
+Der dritte Editor-Tab spielt das Modul **exakt in der Schüler-Sicht** durch —
+gleicher Renderer, gleiche Bewertung, aber ohne Login, ohne zweiten Browser,
+ohne DB-Schreibung:
 
-- Blättert **Block für Block** durch (← Zurück / Weiter →).
-- Bei jeder Aufgabe **„Prüfen"** → du siehst **grün/rot/gelb + Teilpunkte +
-  HintBox** — exakt wie die Schüler:in es sehen wird (gleicher Renderer).
-- So prüfst du **ohne Test-Login** und ohne Veröffentlichung, ob Lösungen,
-  Feedback und Punkte stimmen.
+- **Quiz-Modus:** Block für Block mit „Prüfen" → grün/rot + Teilpunkte +
+  HintBox; bei `maxAttempts > 1` erscheint „Nochmal versuchen".
+- **Arbeitsblatt-Modus:** alle Aufgaben auf einer Seite + „Abgeben (Test)".
+- Am Ende eine **simulierte %-Auswertung** + „Neu starten". Nichts wird
+  gespeichert — beliebig oft wiederholen.
 
-### 3d. (Optional) Echte Schüler-Sicht
+(Der Tab **„Vorschau"** daneben zeigt zusätzlich jeden Block einzeln mit
+„Prüfen"-Knopf — praktisch zum schnellen Checken einzelner Lösungen.)
 
-Wenn du es 1:1 wie ein Kind erleben willst: dem Modul testweise eine Test-Klasse
-zuweisen und als Test-Schüler:in (`/k` → `TEST00` → `5T-01` → PIN `0000`)
-durchspielen. Danach Zuweisung wieder entfernen, falls es noch nicht freigegeben
-sein soll.
+### 3d. (Optional) Echte Schüler-Sicht mit Login
+
+Durch den Test-Tab nur noch selten nötig. Wenn du es trotzdem 1:1 mit echtem
+Login erleben willst: dem Modul testweise eine Test-Klasse zuweisen und als
+Test-Schüler:in (`/k` → `TEST00` → `5T-01` → PIN `0000`) durchspielen. Danach
+Zuweisung wieder entfernen, falls es noch nicht freigegeben sein soll.
 
 ---
 
@@ -142,10 +153,10 @@ verschwindet wieder aus dem öffentlichen/zuweisbaren Bereich.
 
 ## Wer macht was — die Arbeitsteilung in einem Satz
 
-| Rolle  | Macht                                                                          |
-| ------ | ------------------------------------------------------------------------------ |
-| **KI** | JSON erzeugen + `validate:module` bis grün (vollautomatisch).                  |
-| **Du** | Vorschau prüfen, ggf. Bild-Aufgaben ergänzen, **„Veröffentlicht"** + zuweisen. |
+| Rolle  | Macht                                                                                   |
+| ------ | --------------------------------------------------------------------------------------- |
+| **KI** | JSON erzeugen + `validate:module` bis grün (vollautomatisch).                           |
+| **Du** | Im Test-Tab durchspielen, ggf. Bild-Aufgaben ergänzen, **„Veröffentlicht"** + zuweisen. |
 
 ---
 

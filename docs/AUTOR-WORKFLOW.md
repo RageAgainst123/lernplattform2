@@ -213,12 +213,17 @@ und numerisch fortlaufend pro Typ.
 > - **`categorize`** — Items in 2–4 Behälter einsortieren (Teilpunkte)
 > - **`mark_words`** — Wörter im Fließtext markieren (Teilpunkte)
 > - **`order`** — Items in die richtige Reihenfolge bringen (Teilpunkte)
+> - **`memory`** — Paare-Spiel: Karten aufdecken, Paare finden (Teilpunkte)
+> - **`crossword`** — Kreuzworträtsel: Wörter mit Frage, Richtung + Startzelle aufs Gitter (Teilpunkte pro Zelle)
 > - **`hotspot`** — richtige Stellen im Bild antippen (Zonen, optional Gruppen / versteckter Frei-Klick-Modus / Zoom)
 > - **`label_image`** — Stellen im Bild mit Begriffen beschriften (Zone tippen → Begriff wählen)
 >
-> Diese fünf bauen sich im Admin-Editor am einfachsten direkt zusammen (Bild
-> laden, Zonen aufziehen) statt per KI-JSON. Alle tragen optional `hint`,
-> `maxAttempts` und `category` (siehe §3-Kopf der Spezifikation).
+> `categorize`/`mark_words`/`order`/`memory`/`crossword` sind **KI-JSON-tauglich**
+> (bei `crossword` Kreuzungen sorgfältig rechnen — `validate:module` meldet
+> Konflikte). Nur die zwei **Bild-Typen** `hotspot`/`label_image` baust du im
+> Admin-Editor direkt zusammen (Bild laden, Zonen aufziehen) statt per KI-JSON.
+> **Alle bewertbaren Blöcke** tragen optional `hint`, `maxAttempts` und
+> `category` (siehe §3-Kopf der Spezifikation).
 
 ## 5. Prompt-Vorlage „PDF" (copy-paste-fertig)
 
@@ -449,7 +454,7 @@ ersten Module dafür entstehen.
 - [`docs/QUICKSTART-MODUL.md`](QUICKSTART-MODUL.md) — der kompakte „KI generiert → testen → freigeben"-Ablauf (Einstieg, falls dieser Workflow zu detailliert ist)
 - [`docs/THEMA-WORKFLOW.md`](THEMA-WORKFLOW.md) — didaktisches Standard-Stundenbild
   eines Themas (die Ebene ÜBER diesem technischen Workflow)
-- [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 18 Block-Typen
+- [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 20 Block-Typen
   im Detail (Felder, Beispiel-JSON, Bewertung)
 - [`docs/INHALTSKONZEPT.md`](INHALTSKONZEPT.md) — Material vs. Modul,
   Display-Modes, Status-Logik

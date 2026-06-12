@@ -1,11 +1,12 @@
 // prettier-ignore
 import type {
   Block, CategorizeBlock, CrosswordBlock, FillBlankBlock, HotspotBlock, LabelImageBlock,
-  MarkWordsBlock, MemoryBlock, MatchBlock, MultipleChoiceBlock, OrderBlock, TrueFalseBlock,
-  WordSearchBlock,
+  MarkWordsBlock, MemoryBlock, MatchBlock, MultipleChoiceBlock, OrderBlock, ScrambleBlock,
+  TrueFalseBlock, WordSearchBlock,
 } from '@/lib/schemas/blocks';
 import { isFuzzyMatch } from '@/lib/blocks/levenshtein';
 import { gradeCrosswordCells } from '@/lib/blocks/crossword-grid';
+import { gradeScrambleWords } from '@/lib/blocks/scramble';
 
 // Antwort-Formate pro auswertbarem Block-Typ.
 export type MultipleChoiceAnswer = string[]; // gewählte Option-IDs
@@ -21,23 +22,18 @@ export type LabelImageAnswer = Record<string, string>; // zoneId → gewählter 
 export type MemoryAnswer = string[]; // erfolgreich gematchte pairIds
 export type CrosswordAnswer = Record<string, string>; // "r,c" → eingegebener Buchstabe
 export type WordSearchAnswer = string[]; // gefundene wordIds
+export type ScrambleAnswer = Record<string, string>; // wordId → gebautes Wort
 // prettier-ignore
 export type BlockAnswer =
   | MultipleChoiceAnswer | TrueFalseAnswer | FillBlankAnswer | MatchAnswer | CategorizeAnswer
   | MarkWordsAnswer | OrderAnswer | HotspotAnswer | LabelImageAnswer | MemoryAnswer
-  | CrosswordAnswer | WordSearchAnswer | string;
+  | CrosswordAnswer | WordSearchAnswer | ScrambleAnswer | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
 // Präsentationsfolie oder unbenotete Live-Interaktion).
+// prettier-ignore
 const NON_GRADED = new Set([
-  'text',
-  'infobox',
-  'reflection',
-  'slide',
-  'live_poll',
-  'quiz_poll',
-  'word_cloud',
-  'scale',
+  'text', 'infobox', 'reflection', 'slide', 'live_poll', 'quiz_poll', 'word_cloud', 'scale',
   'understanding',
 ]);
 
@@ -208,6 +204,8 @@ const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undef
   // Zell-Logik + Formel leben in crossword-grid.ts (geteilt mit Renderer/Editor).
   crossword: (b, a) => gradeCrosswordCells(b as CrosswordBlock, (a as CrosswordAnswer) ?? {}),
   word_search: (b, a) => foundRatio((b as WordSearchBlock).words, (a as WordSearchAnswer) ?? []),
+  // Wort-Vergleich lebt in scramble.ts (geteilt mit Renderer/Editor-Vorschau).
+  scramble: (b, a) => gradeScrambleWords(b as ScrambleBlock, (a as ScrambleAnswer) ?? {}),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

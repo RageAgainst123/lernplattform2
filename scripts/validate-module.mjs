@@ -31,6 +31,7 @@ const GRADED = new Set([
   'memory',
   'crossword',
   'word_search',
+  'scramble',
 ]);
 
 function readInput() {

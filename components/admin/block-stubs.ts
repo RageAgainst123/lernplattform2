@@ -34,6 +34,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   memory: 'mem',
   crossword: 'cw',
   word_search: 'wsr',
+  scramble: 'sal',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -172,6 +173,13 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
       { id: 'w2', word: 'MONITOR', direction: 'down', row: 0, col: 0 },
       { id: 'w3', word: 'TABLET', direction: 'diag', row: 1, col: 1 },
     ],
+  }),
+  // Buchstabensalat: 1 Beispiel-Wort mit Hinweis, sofort ersetzbar.
+  scramble: (id) => ({
+    id,
+    type: 'scramble',
+    instruction: 'Bringe die Buchstaben in die richtige Reihenfolge.',
+    words: [{ id: 'w1', word: 'TASTATUR', hint: 'Eingabegerät mit Tasten' }],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),
   live_poll: (id) => ({

@@ -7,8 +7,9 @@ import {
   scaleBlockSchema,
   understandingBlockSchema,
 } from './blocks-live.ts';
-import { hotspotAreaSchema, hotspotGroupSchema } from './blocks-hotspot.ts';
+import { hotspotBlockSchema } from './blocks-hotspot.ts';
 import { refineModuleContent } from './blocks-refine.ts';
+import { scrambleBlockSchema } from './blocks-scramble.ts';
 import { labelImageBlockSchema } from './blocks-label-image.ts';
 import { memoryBlockSchema } from './blocks-memory.ts';
 import { crosswordBlockSchema } from './blocks-crossword.ts';
@@ -22,7 +23,8 @@ import {
 import type { BlockCategory } from './blocks-shared.ts';
 
 export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
-export { labelImageBlockSchema, memoryBlockSchema, crosswordBlockSchema, wordSearchBlockSchema };
+// prettier-ignore
+export { hotspotBlockSchema, labelImageBlockSchema, memoryBlockSchema, crosswordBlockSchema, wordSearchBlockSchema, scrambleBlockSchema };
 export { BLOCK_CATEGORIES };
 export type { BlockCategory };
 export type { HotspotShape } from './blocks-hotspot.ts';
@@ -181,36 +183,8 @@ export const orderBlockSchema = z.object({
   ...gradedBlockExtensions,
 });
 
-// Bild-Hotspots: sichtbare Zonen auf einem Bild, manche sind richtig. Schüler:in
-// tippt die richtigen an. Teilpunkte (richtig − falsch) / Anzahl-richtige.
-// Zonen-Schema (Kreis/Rechteck, Rotation) lebt in blocks-hotspot.ts.
-export const hotspotBlockSchema = z.object({
-  id: blockId,
-  type: z.literal('hotspot'),
-  instruction: z.string(),
-  imageUrl: z.string().url(),
-  imageAlt: z.string().optional(),
-  // Optional: Gruppen-Modus. Ohne groups = eine Frage (Einfach-Modus).
-  groups: z.array(hotspotGroupSchema).max(6).optional(),
-  // Darf beim frisch erstellten Block leer sein (der/die Admin zeichnet die
-  // Zonen selbst). Dass ein VERÖFFENTLICHTES Modul mindestens eine richtige
-  // Zone hat, prüft publishGateIssues (blocks-refine.ts) — nicht das
-  // Struktur-Schema.
-  areas: z.array(hotspotAreaSchema).max(20),
-  // true (Default, Bestandsverhalten) = Zonen-Rahmen sind für Schüler:innen
-  // sichtbar und anklickbar. false = Rahmen versteckt → Schüler:in klickt frei
-  // aufs Bild („Finde das Objekt"). Im versteckten Modus gibt es KEIN Live-
-  // Feedback pro Klick (neutrale Marker), erst beim Prüfen wird aufgelöst — so
-  // wird Herumraten verhindert.
-  revealZones: z.boolean().default(true),
-  // Optional (nur versteckter Modus): begrenzt die Anzahl Klicks. undefined =
-  // unbegrenzt. Sinnvoll = Anzahl der richtigen Zonen, dann ist Raten teuer.
-  maxClicks: z.number().int().min(1).max(20).optional(),
-  // true = Bild kann gezoomt/verschoben werden (Buttons +/−, Pan via Scrollen).
-  // Für detailreiche Bilder. Default false = Bestandsverhalten.
-  zoomable: z.boolean().default(false),
-  ...gradedBlockExtensions,
-});
+// Bild-Hotspots: Schema lebt in blocks-hotspot.ts (zusammen mit Zonen-/
+// Gruppen-Schema), importiert + re-exportiert oben.
 
 // Bild-Beschriften: Stellen im Bild den richtigen Begriffen zuordnen. Schema +
 // Doku in blocks-label-image.ts (eigene Datei, vermeidet Zirkel-Import).
@@ -239,6 +213,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   memoryBlockSchema,
   crosswordBlockSchema,
   wordSearchBlockSchema,
+  scrambleBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -276,5 +251,6 @@ export type LabelImageBlock = z.infer<typeof labelImageBlockSchema>;
 export type MemoryBlock = z.infer<typeof memoryBlockSchema>;
 export type CrosswordBlock = z.infer<typeof crosswordBlockSchema>;
 export type WordSearchBlock = z.infer<typeof wordSearchBlockSchema>;
+export type ScrambleBlock = z.infer<typeof scrambleBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;

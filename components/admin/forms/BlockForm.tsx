@@ -16,6 +16,7 @@ import { LabelImageForm } from './LabelImageForm';
 import { MemoryForm } from './MemoryForm';
 import { CrosswordForm } from './CrosswordForm';
 import { WordSearchForm } from './WordSearchForm';
+import { ScrambleForm } from './ScrambleForm';
 
 // Dispatcher: rendert das passende Form für den Block-Typ. Wenn kein
 // dediziertes Form existiert (z.B. live-Blöcke wie slide, live_poll), wird
@@ -45,6 +46,7 @@ const FORM_TYPES = new Set([
   'memory',
   'crossword',
   'word_search',
+  'scramble',
 ] as const);
 
 export function hasForm(type: Block['type']): boolean {
@@ -86,17 +88,28 @@ function renderTaskForm({ block, onChange }: Props): React.ReactElement | null {
       return <HotspotForm value={block} onChange={onChange} />;
     case 'label_image':
       return <LabelImageForm value={block} onChange={onChange} />;
+    default:
+      return null;
+  }
+}
+
+// Spiel-Block-Forms (memory/crossword/word_search/scramble) — eigener Zweig,
+// damit jeder Dispatcher unter dem Komplexitäts-Limit bleibt.
+function renderGameForm({ block, onChange }: Props): React.ReactElement | null {
+  switch (block.type) {
     case 'memory':
       return <MemoryForm value={block} onChange={onChange} />;
     case 'crossword':
       return <CrosswordForm value={block} onChange={onChange} />;
     case 'word_search':
       return <WordSearchForm value={block} onChange={onChange} />;
+    case 'scramble':
+      return <ScrambleForm value={block} onChange={onChange} />;
     default:
       return null;
   }
 }
 
 export function BlockForm(props: Props): React.ReactElement | null {
-  return renderBasicForm(props) ?? renderTaskForm(props);
+  return renderBasicForm(props) ?? renderTaskForm(props) ?? renderGameForm(props);
 }

@@ -11,6 +11,7 @@ import { LabelImageBlock } from '@/components/blocks/LabelImageBlock';
 import { MemoryBlock } from '@/components/blocks/MemoryBlock';
 import { CrosswordBlock } from '@/components/blocks/CrosswordBlock';
 import { WordSearchBlock } from '@/components/blocks/WordSearchBlock';
+import { ScrambleBlock } from '@/components/blocks/ScrambleBlock';
 
 // Renderer-Dispatcher für die interaktiven Zuordnungs-/Markier-/Reihenfolge-/
 // Hotspot-Blöcke. Ausgelagert aus BlockView.tsx, damit beide Dateien unter
@@ -28,7 +29,7 @@ export type AssignmentProps = {
 export type AssignmentBlock = Extract<
   Block,
   { type: 'match' | 'categorize' | 'mark_words' | 'order' | 'hotspot' | 'label_image' | 'memory'
-    | 'crossword' | 'word_search' }
+    | 'crossword' | 'word_search' | 'scramble' }
 >;
 
 function renderMatch(block: Extract<Block, { type: 'match' }>, p: AssignmentProps) {
@@ -139,6 +140,35 @@ function renderWordSearch(block: Extract<Block, { type: 'word_search' }>, p: Ass
   );
 }
 
+function renderScramble(block: Extract<Block, { type: 'scramble' }>, p: AssignmentProps) {
+  return (
+    <ScrambleBlock
+      block={block}
+      answer={(p.answer as Record<string, string>) ?? {}}
+      checked={p.checked}
+      readOnly={p.readOnly}
+      onAnswer={p.onAnswer}
+    />
+  );
+}
+
+// Spiel-Blöcke (memory/crossword/word_search/scramble) — eigener Zweig,
+// damit beide Dispatcher unter dem Komplexitäts-Limit bleiben.
+type GameBlock = Extract<Block, { type: 'memory' | 'crossword' | 'word_search' | 'scramble' }>;
+
+function renderGame(block: GameBlock, p: AssignmentProps) {
+  switch (block.type) {
+    case 'memory':
+      return renderMemory(block, p);
+    case 'crossword':
+      return renderCrossword(block, p);
+    case 'word_search':
+      return renderWordSearch(block, p);
+    case 'scramble':
+      return renderScramble(block, p);
+  }
+}
+
 export function renderAssignment(block: AssignmentBlock, p: AssignmentProps) {
   switch (block.type) {
     case 'match':
@@ -153,11 +183,7 @@ export function renderAssignment(block: AssignmentBlock, p: AssignmentProps) {
       return renderHotspot(block, p);
     case 'label_image':
       return renderLabelImage(block, p);
-    case 'memory':
-      return renderMemory(block, p);
-    case 'crossword':
-      return renderCrossword(block, p);
-    case 'word_search':
-      return renderWordSearch(block, p);
+    default:
+      return renderGame(block, p);
   }
 }

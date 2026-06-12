@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { blockId, gradedBlockExtensions } from './blocks-shared.ts';
 
 // Zonen-Schema für Bild-Hotspots. Ausgelagert aus blocks.ts (Zeilen-Grenze).
 // Zonen sind Kreise (`shape:'circle'`, `r` = Radius rel. zur Bildbreite) oder
@@ -46,3 +47,35 @@ export const hotspotAreaSchema = z
       });
     }
   });
+
+// Bild-Hotspots: sichtbare Zonen auf einem Bild, manche sind richtig. Schüler:in
+// tippt die richtigen an. Teilpunkte (richtig − falsch) / Anzahl-richtige.
+// Lebte ursprünglich in blocks.ts, hierher gezogen (Zeilen-Grenze) — zu seinem
+// Zonen-/Gruppen-Schema.
+export const hotspotBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('hotspot'),
+  instruction: z.string(),
+  imageUrl: z.string().url(),
+  imageAlt: z.string().optional(),
+  // Optional: Gruppen-Modus. Ohne groups = eine Frage (Einfach-Modus).
+  groups: z.array(hotspotGroupSchema).max(6).optional(),
+  // Darf beim frisch erstellten Block leer sein (der/die Admin zeichnet die
+  // Zonen selbst). Dass ein VERÖFFENTLICHTES Modul mindestens eine richtige
+  // Zone hat, prüft publishGateIssues (blocks-refine.ts) — nicht das
+  // Struktur-Schema.
+  areas: z.array(hotspotAreaSchema).max(20),
+  // true (Default, Bestandsverhalten) = Zonen-Rahmen sind für Schüler:innen
+  // sichtbar und anklickbar. false = Rahmen versteckt → Schüler:in klickt frei
+  // aufs Bild („Finde das Objekt"). Im versteckten Modus gibt es KEIN Live-
+  // Feedback pro Klick (neutrale Marker), erst beim Prüfen wird aufgelöst — so
+  // wird Herumraten verhindert.
+  revealZones: z.boolean().default(true),
+  // Optional (nur versteckter Modus): begrenzt die Anzahl Klicks. undefined =
+  // unbegrenzt. Sinnvoll = Anzahl der richtigen Zonen, dann ist Raten teuer.
+  maxClicks: z.number().int().min(1).max(20).optional(),
+  // true = Bild kann gezoomt/verschoben werden (Buttons +/−, Pan via Scrollen).
+  // Für detailreiche Bilder. Default false = Bestandsverhalten.
+  zoomable: z.boolean().default(false),
+  ...gradedBlockExtensions,
+});

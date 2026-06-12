@@ -128,6 +128,7 @@ export function BlockView({ block, answer, checked, readOnly = false, onAnswer }
     case 'memory':
     case 'crossword':
     case 'word_search':
+    case 'scramble':
       return renderAssignment(block, c);
   }
 }

@@ -2,8 +2,10 @@
 
 import type { TextBlock } from '@/lib/schemas/blocks';
 import { FieldLabel, TextArea, TextInput } from './form-helpers';
+import { ImageSourceBar } from './image-source-bar';
 
-// Form-Editor für text (Theorie-Absatz). Optional ein Bild via URL.
+// Form-Editor für text (Theorie-Absatz). Optional ein Bild — per Upload/
+// Pexels-Picker (V9, geteilte ImageSourceBar) oder als URL-Fallback.
 
 type Props = {
   value: TextBlock;
@@ -25,13 +27,28 @@ export function TextForm({ value, onChange }: Props) {
           rows={5}
         />
       </div>
-      <div>
-        <FieldLabel htmlFor={`${value.id}-img`}>Bild-URL</FieldLabel>
+      <div className="space-y-2">
+        <FieldLabel htmlFor={`${value.id}-img`}>Bild (optional)</FieldLabel>
+        {value.imageUrl ? (
+          <div className="space-y-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value.imageUrl} alt="" className="max-h-40 rounded border object-contain" />
+            <button
+              type="button"
+              onClick={() => set('imageUrl', undefined)}
+              className="text-muted-foreground hover:text-foreground text-xs underline"
+            >
+              ✕ Bild entfernen
+            </button>
+          </div>
+        ) : (
+          <ImageSourceBar onPicked={(url) => set('imageUrl', url)} />
+        )}
         <TextInput
           id={`${value.id}-img`}
           value={value.imageUrl ?? ''}
           onChange={(v) => set('imageUrl', v || undefined)}
-          placeholder="optional, https://…"
+          placeholder="oder Bild-URL einfügen, https://…"
         />
       </div>
     </div>

@@ -5,7 +5,7 @@ import type { LabelImageBlock } from '@/lib/schemas/blocks';
 import { GradedExtensionsFields } from './GradedExtensionsFields';
 import { FieldLabel, TextInput } from './form-helpers';
 import { DEFAULT_R, HotspotImageEditor } from './hotspot-editor';
-import { ImageSourceBar } from './hotspot-image-source-bar';
+import { ImageSourceBar } from './image-source-bar';
 import { RevealToggle, ShapeToggle, ZoomToggle, type HotspotShape } from './hotspot-toolbar';
 import { LabelZoneList } from './label-image-zone-row';
 import { addZone, removeZone, setZoneLabel, updateZone } from './label-image-form-ops';

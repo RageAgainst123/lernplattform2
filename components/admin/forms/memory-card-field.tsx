@@ -1,7 +1,7 @@
 'use client';
 
 import type { MemoryBlock } from '@/lib/schemas/blocks';
-import { ImageSourceBar } from './hotspot-image-source-bar';
+import { ImageSourceBar } from './image-source-bar';
 import { TextInput } from './form-helpers';
 
 // Editor für EINE Memory-Karte (Seite a oder b eines Paares). Umschalter

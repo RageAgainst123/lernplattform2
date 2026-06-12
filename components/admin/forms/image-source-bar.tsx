@@ -5,8 +5,10 @@ import { uploadHotspotImage } from '@/lib/db/hotspot-image-actions';
 import { Button } from '@/components/ui/button';
 import { HotspotPexelsPicker } from './hotspot-image-picker';
 
-// Bildquelle-Leiste des Hotspot-Editors: Upload-Button + Pexels-Suche. Kapselt
-// den Upload-Transition. Ausgelagert aus HotspotForm (Zeilen-Grenze).
+// Bildquelle-Leiste: Upload-Button + Pexels-Suche. Kapselt den Upload-
+// Transition. Ursprünglich für HotspotForm gebaut, inzwischen geteilt von
+// hotspot, label_image, memory-Karten und TextForm (V9) — daher der
+// generische Dateiname (war hotspot-image-source-bar.tsx).
 export function ImageSourceBar({ onPicked }: { onPicked: (url: string) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();

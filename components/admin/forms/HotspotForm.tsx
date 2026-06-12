@@ -6,7 +6,7 @@ import { GradedExtensionsFields } from './GradedExtensionsFields';
 import { FieldLabel, TextInput } from './form-helpers';
 import { DEFAULT_R, HotspotImageEditor } from './hotspot-editor';
 import { ZoneList } from './hotspot-zone-row';
-import { ImageSourceBar } from './hotspot-image-source-bar';
+import { ImageSourceBar } from './image-source-bar';
 import {
   addArea,
   createGroupForArea,

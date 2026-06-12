@@ -8,6 +8,7 @@ import {
   understandingBlockSchema,
 } from './blocks-live.ts';
 import { hotspotAreaSchema, hotspotGroupSchema } from './blocks-hotspot.ts';
+import { refineModuleContent } from './blocks-refine.ts';
 import { labelImageBlockSchema } from './blocks-label-image.ts';
 import { memoryBlockSchema } from './blocks-memory.ts';
 import { crosswordBlockSchema } from './blocks-crossword.ts';
@@ -193,8 +194,9 @@ export const hotspotBlockSchema = z.object({
   // Optional: Gruppen-Modus. Ohne groups = eine Frage (Einfach-Modus).
   groups: z.array(hotspotGroupSchema).max(6).optional(),
   // Darf beim frisch erstellten Block leer sein (der/die Admin zeichnet die
-  // Zonen selbst). Dass ein FERTIGER Block mindestens eine richtige Zone hat,
-  // prüft scripts/validate-module.mjs — nicht das Struktur-Schema.
+  // Zonen selbst). Dass ein VERÖFFENTLICHTES Modul mindestens eine richtige
+  // Zone hat, prüft publishGateIssues (blocks-refine.ts) — nicht das
+  // Struktur-Schema.
   areas: z.array(hotspotAreaSchema).max(20),
   // true (Default, Bestandsverhalten) = Zonen-Rahmen sind für Schüler:innen
   // sichtbar und anklickbar. false = Rahmen versteckt → Schüler:in klickt frei
@@ -246,9 +248,17 @@ export const blockSchema = z.discriminatedUnion('type', [
   understandingBlockSchema,
 ]);
 
+// Strukturelles Schema — an LESE-Grenzen verwenden (student-modules,
+// progress-action, quiz, live-sessions): Bestands-Inhalte dürfen durch neue
+// fachliche Regeln nie unlesbar werden.
 export const moduleContentSchema = z.object({
   blocks: z.array(blockSchema),
 });
+
+// Strikte Variante für SCHREIB-Grenzen (Editor-Save, JSON-Import,
+// createModule/updateModule, validate-module.mjs): zusätzlich die fachlichen
+// IMMER-Regeln aus blocks-refine.ts (doppelte ids, MC ohne richtige Option, …).
+export const moduleContentStrictSchema = moduleContentSchema.superRefine(refineModuleContent);
 
 export type Block = z.infer<typeof blockSchema>;
 export type BlockType = Block['type'];

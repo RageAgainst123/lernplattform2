@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { moduleContentSchema, type Block } from '@/lib/schemas/blocks';
+import { moduleContentStrictSchema, type Block } from '@/lib/schemas/blocks';
+import { publishGateIssues } from '@/lib/schemas/blocks-refine';
 import { createModule, updateModule } from '@/lib/db/module-actions';
 import { ACTIVITY_INFO } from '@/lib/activities';
 import { type ModuleMetadata } from './ModuleMetadataForm';
@@ -43,12 +44,21 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
 
   function handleSave() {
     setError(null);
-    const contentParsed = moduleContentSchema.safeParse({ blocks });
+    const contentParsed = moduleContentStrictSchema.safeParse({ blocks });
     if (!contentParsed.success) {
       setError(
         'Block-Inhalt ungültig: ' + contentParsed.error.issues.map((i) => i.message).join('; ')
       );
       return;
+    }
+    // Publish-Gate: Entwurf-legitime Lücken (z. B. hotspot ohne Zonen) blocken
+    // nur das Veröffentlichen, nicht das Speichern als Entwurf.
+    if (meta.isPublished) {
+      const gate = publishGateIssues(contentParsed.data.blocks);
+      if (gate.length) {
+        setError('Veröffentlichen nicht möglich: ' + gate.join(' '));
+        return;
+      }
     }
     const payload = {
       title: meta.title,

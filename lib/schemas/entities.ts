@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { moduleContentSchema } from '@/lib/schemas/blocks';
+import { moduleContentStrictSchema } from '@/lib/schemas/blocks';
 
 // Entitäts-Schemas (PLATTFORM_MANIFEST §3). Geteilt zwischen Frontend-Forms
 // und Backend-Validierung. Spiegeln die DB-Tabellen wider.
@@ -91,7 +91,9 @@ export const moduleInsertSchema = z.object({
   topic: z.string().optional(),
   topicId: z.uuid().nullable().optional(),
   sortOrder: z.number().int().default(0),
-  content: moduleContentSchema,
+  // Strikt (inkl. fachlicher Regeln aus blocks-refine.ts): moduleInsertSchema
+  // wird nur an Schreib-Grenzen benutzt (createModule/updateModule).
+  content: moduleContentStrictSchema,
   estimatedMinutes: z.number().int().positive().optional(),
   isPublished: z.boolean().default(false),
   activityKind: activityKindSchema.default('lernmodul'),

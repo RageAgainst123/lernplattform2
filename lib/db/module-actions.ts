@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { moduleInsertSchema } from '@/lib/schemas/entities';
+import { publishGateIssues } from '@/lib/schemas/blocks-refine';
 
 // Server Actions für Modul-CRUD im Admin-Bereich. Jede Aktion ruft requireAdmin()
 // und nutzt dann den Service-Role-Client (umgeht RLS bewusst — Sicherheit wird
@@ -15,6 +16,17 @@ import { moduleInsertSchema } from '@/lib/schemas/entities';
 // Formular → Modul-Insert/Update-Input. FormData wird in der Page in ein
 // strukturiertes Objekt übersetzt; hier validieren wir nur via Zod.
 const moduleFormSchema = moduleInsertSchema;
+
+// Publish-Gate serverseitig (Defense in Depth zum Check in ModuleEditor):
+// Entwurf-legitime Lücken (hotspot ohne Zonen, doppelte label_image-Begriffe)
+// dürfen nie veröffentlicht in die DB gelangen.
+function assertPublishable(parsed: z.infer<typeof moduleFormSchema>): void {
+  if (!parsed.isPublished) return;
+  const gate = publishGateIssues(parsed.content.blocks);
+  if (gate.length) {
+    throw new Error('Veröffentlichen nicht möglich: ' + gate.join(' '));
+  }
+}
 
 export type ActionState = { error: string | null; ok?: boolean };
 
@@ -42,6 +54,7 @@ export async function createModule(input: unknown): Promise<{ id: string }> {
   if (!parsed.success) {
     throw new Error('Eingabe ungültig: ' + parsed.error.issues.map((i) => i.message).join('; '));
   }
+  assertPublishable(parsed.data);
   const svc = createServiceClient();
   const { data, error } = await svc
     .from('modules')
@@ -61,6 +74,7 @@ export async function updateModule(id: string, input: unknown): Promise<void> {
   if (!parsed.success) {
     throw new Error('Eingabe ungültig: ' + parsed.error.issues.map((i) => i.message).join('; '));
   }
+  assertPublishable(parsed.data);
   const svc = createServiceClient();
   const { error } = await svc
     .from('modules')

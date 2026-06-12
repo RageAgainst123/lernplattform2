@@ -12,6 +12,7 @@ import { MemoryBlock } from '@/components/blocks/MemoryBlock';
 import { CrosswordBlock } from '@/components/blocks/CrosswordBlock';
 import { WordSearchBlock } from '@/components/blocks/WordSearchBlock';
 import { ScrambleBlock } from '@/components/blocks/ScrambleBlock';
+import { HangmanBlock } from '@/components/blocks/HangmanBlock';
 
 // Renderer-Dispatcher für die interaktiven Zuordnungs-/Markier-/Reihenfolge-/
 // Hotspot-Blöcke. Ausgelagert aus BlockView.tsx, damit beide Dateien unter
@@ -29,7 +30,7 @@ export type AssignmentProps = {
 export type AssignmentBlock = Extract<
   Block,
   { type: 'match' | 'categorize' | 'mark_words' | 'order' | 'hotspot' | 'label_image' | 'memory'
-    | 'crossword' | 'word_search' | 'scramble' }
+    | 'crossword' | 'word_search' | 'scramble' | 'hangman' }
 >;
 
 function renderMatch(block: Extract<Block, { type: 'match' }>, p: AssignmentProps) {
@@ -152,9 +153,25 @@ function renderScramble(block: Extract<Block, { type: 'scramble' }>, p: Assignme
   );
 }
 
-// Spiel-Blöcke (memory/crossword/word_search/scramble) — eigener Zweig,
-// damit beide Dispatcher unter dem Komplexitäts-Limit bleiben.
-type GameBlock = Extract<Block, { type: 'memory' | 'crossword' | 'word_search' | 'scramble' }>;
+function renderHangman(block: Extract<Block, { type: 'hangman' }>, p: AssignmentProps) {
+  return (
+    <HangmanBlock
+      block={block}
+      answer={(p.answer as string[]) ?? []}
+      checked={p.checked}
+      readOnly={p.readOnly}
+      onAnswer={p.onAnswer}
+    />
+  );
+}
+
+// Spiel-Blöcke — eigener Zweig, damit beide Dispatcher unter dem
+// Komplexitäts-Limit bleiben.
+// prettier-ignore
+type GameBlock = Extract<
+  Block,
+  { type: 'memory' | 'crossword' | 'word_search' | 'scramble' | 'hangman' }
+>;
 
 function renderGame(block: GameBlock, p: AssignmentProps) {
   switch (block.type) {
@@ -166,6 +183,8 @@ function renderGame(block: GameBlock, p: AssignmentProps) {
       return renderWordSearch(block, p);
     case 'scramble':
       return renderScramble(block, p);
+    case 'hangman':
+      return renderHangman(block, p);
   }
 }
 

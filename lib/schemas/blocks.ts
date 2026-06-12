@@ -10,6 +10,7 @@ import {
 import { hotspotBlockSchema } from './blocks-hotspot.ts';
 import { refineModuleContent } from './blocks-refine.ts';
 import { scrambleBlockSchema } from './blocks-scramble.ts';
+import { hangmanBlockSchema } from './blocks-hangman.ts';
 import { labelImageBlockSchema } from './blocks-label-image.ts';
 import { memoryBlockSchema } from './blocks-memory.ts';
 import { crosswordBlockSchema } from './blocks-crossword.ts';
@@ -24,7 +25,7 @@ import type { BlockCategory } from './blocks-shared.ts';
 
 export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
 // prettier-ignore
-export { hotspotBlockSchema, labelImageBlockSchema, memoryBlockSchema, crosswordBlockSchema, wordSearchBlockSchema, scrambleBlockSchema };
+export { hotspotBlockSchema, labelImageBlockSchema, memoryBlockSchema, crosswordBlockSchema, wordSearchBlockSchema, scrambleBlockSchema, hangmanBlockSchema };
 export { BLOCK_CATEGORIES };
 export type { BlockCategory };
 export type { HotspotShape } from './blocks-hotspot.ts';
@@ -214,6 +215,7 @@ export const blockSchema = z.discriminatedUnion('type', [
   crosswordBlockSchema,
   wordSearchBlockSchema,
   scrambleBlockSchema,
+  hangmanBlockSchema,
   reflectionBlockSchema,
   slideBlockSchema,
   livePollBlockSchema,
@@ -252,5 +254,6 @@ export type MemoryBlock = z.infer<typeof memoryBlockSchema>;
 export type CrosswordBlock = z.infer<typeof crosswordBlockSchema>;
 export type WordSearchBlock = z.infer<typeof wordSearchBlockSchema>;
 export type ScrambleBlock = z.infer<typeof scrambleBlockSchema>;
+export type HangmanBlock = z.infer<typeof hangmanBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;

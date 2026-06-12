@@ -1,8 +1,8 @@
 // prettier-ignore
 import type {
-  Block, CategorizeBlock, CrosswordBlock, FillBlankBlock, HotspotBlock, LabelImageBlock,
-  MarkWordsBlock, MemoryBlock, MatchBlock, MultipleChoiceBlock, OrderBlock, ScrambleBlock,
-  TrueFalseBlock, WordSearchBlock,
+  Block, CategorizeBlock, CrosswordBlock, FillBlankBlock, HangmanBlock, HotspotBlock,
+  LabelImageBlock, MarkWordsBlock, MemoryBlock, MatchBlock, MultipleChoiceBlock, OrderBlock,
+  ScrambleBlock, TrueFalseBlock, WordSearchBlock,
 } from '@/lib/schemas/blocks';
 import { isFuzzyMatch } from '@/lib/blocks/levenshtein';
 import { gradeCrosswordCells } from '@/lib/blocks/crossword-grid';
@@ -23,11 +23,12 @@ export type MemoryAnswer = string[]; // erfolgreich gematchte pairIds
 export type CrosswordAnswer = Record<string, string>; // "r,c" → eingegebener Buchstabe
 export type WordSearchAnswer = string[]; // gefundene wordIds
 export type ScrambleAnswer = Record<string, string>; // wordId → gebautes Wort
+export type HangmanAnswer = string[]; // gelöste wordIds
 // prettier-ignore
 export type BlockAnswer =
   | MultipleChoiceAnswer | TrueFalseAnswer | FillBlankAnswer | MatchAnswer | CategorizeAnswer
   | MarkWordsAnswer | OrderAnswer | HotspotAnswer | LabelImageAnswer | MemoryAnswer
-  | CrosswordAnswer | WordSearchAnswer | ScrambleAnswer | string;
+  | CrosswordAnswer | WordSearchAnswer | ScrambleAnswer | HangmanAnswer | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
 // Präsentationsfolie oder unbenotete Live-Interaktion).
@@ -206,6 +207,7 @@ const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undef
   word_search: (b, a) => foundRatio((b as WordSearchBlock).words, (a as WordSearchAnswer) ?? []),
   // Wort-Vergleich lebt in scramble.ts (geteilt mit Renderer/Editor-Vorschau).
   scramble: (b, a) => gradeScrambleWords(b as ScrambleBlock, (a as ScrambleAnswer) ?? {}),
+  hangman: (b, a) => foundRatio((b as HangmanBlock).words, (a as HangmanAnswer) ?? []),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

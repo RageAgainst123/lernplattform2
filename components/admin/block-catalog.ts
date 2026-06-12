@@ -107,6 +107,12 @@ export const BLOCK_CATALOG = {
         'Anagramm: durcheinandergewürfelte Buchstaben antippen und das Lösungswort zusammensetzen. Optionaler Hinweis pro Wort, 1–8 Wörter pro Block. Teilpunkte pro richtigem Wort.',
     },
     {
+      type: 'hangman',
+      label: '🪢 Galgenmännchen (hangman)',
+      description:
+        'Wort Buchstabe für Buchstabe erraten — mit Hinweis-Text und begrenzten Fehlversuchen (Herzen). Wörter werden nacheinander gespielt. Teilpunkte pro erratenem Wort.',
+    },
+    {
       type: 'reflection',
       label: 'Reflexion (Freitext)',
       description: 'Offene Frage, freie Antwort. Nicht auto-bewertet — Lehrer:in liest selbst.',

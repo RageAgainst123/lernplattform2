@@ -57,6 +57,7 @@ describe('isBlockAllowedFor', () => {
       'crossword',
       'word_search',
       'scramble',
+      'hangman',
       'reflection',
     ];
     for (const t of yes) expect(isBlockAllowedFor(t, 'lernmodul')).toBe(true);

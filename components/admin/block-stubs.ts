@@ -35,6 +35,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   crossword: 'cw',
   word_search: 'wsr',
   scramble: 'sal',
+  hangman: 'gal',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -174,13 +175,11 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
       { id: 'w3', word: 'TABLET', direction: 'diag', row: 1, col: 1 },
     ],
   }),
-  // Buchstabensalat: 1 Beispiel-Wort mit Hinweis, sofort ersetzbar.
-  scramble: (id) => ({
-    id,
-    type: 'scramble',
-    instruction: 'Bringe die Buchstaben in die richtige Reihenfolge.',
-    words: [{ id: 'w1', word: 'TASTATUR', hint: 'Eingabegerät mit Tasten' }],
-  }),
+  // Buchstabensalat + Galgenmännchen: je 1 Beispiel-Wort, sofort ersetzbar.
+  // prettier-ignore
+  scramble: (id) => ({ id, type: 'scramble', instruction: 'Bringe die Buchstaben in die richtige Reihenfolge.', words: [{ id: 'w1', word: 'TASTATUR', hint: 'Eingabegerät mit Tasten' }] }),
+  // prettier-ignore
+  hangman: (id) => ({ id, type: 'hangman', instruction: 'Errate die gesuchten Begriffe.', maxWrong: 6, words: [{ id: 'w1', word: 'MONITOR', hint: 'Zeigt das Bild an' }] }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),
   live_poll: (id) => ({
     id,

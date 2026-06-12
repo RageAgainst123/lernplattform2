@@ -32,6 +32,7 @@ const GRADED = new Set([
   'crossword',
   'word_search',
   'scramble',
+  'hangman',
 ]);
 
 function readInput() {

@@ -17,6 +17,7 @@ import { MemoryForm } from './MemoryForm';
 import { CrosswordForm } from './CrosswordForm';
 import { WordSearchForm } from './WordSearchForm';
 import { ScrambleForm } from './ScrambleForm';
+import { HangmanForm } from './HangmanForm';
 
 // Dispatcher: rendert das passende Form für den Block-Typ. Wenn kein
 // dediziertes Form existiert (z.B. live-Blöcke wie slide, live_poll), wird
@@ -47,6 +48,7 @@ const FORM_TYPES = new Set([
   'crossword',
   'word_search',
   'scramble',
+  'hangman',
 ] as const);
 
 export function hasForm(type: Block['type']): boolean {
@@ -105,6 +107,8 @@ function renderGameForm({ block, onChange }: Props): React.ReactElement | null {
       return <WordSearchForm value={block} onChange={onChange} />;
     case 'scramble':
       return <ScrambleForm value={block} onChange={onChange} />;
+    case 'hangman':
+      return <HangmanForm value={block} onChange={onChange} />;
     default:
       return null;
   }

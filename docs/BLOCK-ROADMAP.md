@@ -23,7 +23,7 @@ Programmieren** mit steigender Komplexität (Sequenz → Schleife → Debugging 
 verschachtelte Kontrollstrukturen). Das ist die größte Lücke im heutigen
 Block-Katalog — kein einziger Block übt das interaktiv.
 
-## §2 Abdeckung heute (20 Typen) + bereits beschlossene 8
+## §2 Abdeckung heute (23 Typen) + bereits beschlossene Erweiterungen
 
 **Gut abgedeckt:** Begriffe/Fakten (MC, true_false, fill_blank, match,
 categorize, memory, crossword), Text-Analyse (mark_words: Phishing-Signale,
@@ -31,8 +31,9 @@ persönliche Daten), Bild-Arbeit (hotspot, label_image: Hardware!),
 Reihenfolgen (order: Netzwerk-Pakete, Datensicherungs-Schritte),
 Umfragen/Live (live_poll, quiz_poll, word_cloud, scale).
 
-**Beschlossen (Geo, 2026-06-12), noch zu bauen:**
-Wortsuchrätsel · Galgenmännchen · Buchstabensalat · Millionenshow-Modus ·
+**Beschlossen (Geo, 2026-06-12):** ✅ **Welle 1 gebaut (2026-06-12):**
+Wortsuchrätsel (`word_search`), Buchstabensalat (`scramble`),
+Galgenmännchen (`hangman`). **Noch offen:** Millionenshow-Modus ·
 Lernkarten (Flashcards) · Zeitstrahl · Zahlen-Eingabe + Schätz-Slider ·
 Paare verbinden mit Linien.
 Davon zahlen direkt auf den Lehrplan ein: **Zeitstrahl** (Medienwandel,

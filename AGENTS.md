@@ -16,10 +16,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
    ausschließlich ⬜→🤖.
 1. **Lies zuerst** `docs/QUICKSTART-MODUL.md` — der durchgehende Ablauf
    (generieren → validieren → testen → freigeben).
-2. **Format + Felder** stehen in `docs/MODUL-SPEZIFIKATION.md` (20 Block-Typen,
+2. **Format + Felder** stehen in `docs/MODUL-SPEZIFIKATION.md` (23 Block-Typen,
    je eine Feld-Tabelle + valides Beispiel-JSON). Das ist die verbindliche
    Wahrheit — kein Quellcode nötig, um JSON zu erzeugen. Auch die Spiel-Typen
-   `memory` (Paare) und `crossword` (Kreuzworträtsel) sind per JSON baubar;
+   `memory`, `crossword`, `word_search`, `scramble` und `hangman` sind per JSON baubar;
    nur `hotspot`/`label_image` brauchen den Editor (Bild-Koordinaten).
 3. **Validiere jedes erzeugte Modul** im Closed Loop, bis grün:
    ```bash

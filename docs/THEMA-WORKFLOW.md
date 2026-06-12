@@ -41,7 +41,7 @@ Schemas).
 | 4   | **Reflexion/Transfer** | Auf eigenen Alltag übertragen          | `reflection`                                                                                                                                   | 1 Block    |
 | 5   | **Sicherung (analog)** | Festigen auf Papier                    | → verknüpftes **Arbeitsblatt-PDF**                                                                                                             | 1 Material |
 
-> Die volle Block-Typ-Liste (20 Typen, Felder + Beispiel-JSON) steht in
+> Die volle Block-Typ-Liste (23 Typen, Felder + Beispiel-JSON) steht in
 > [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md). Die Bild-Aufgaben
 > (`hotspot`, `label_image`) baut man am einfachsten direkt im Admin-Editor.
 

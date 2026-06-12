@@ -26,7 +26,7 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 
 ### Lerninhalte
 
-Module bestehen aus Blöcken (Block-Engine, **20 Typen**). Vollständige
+Module bestehen aus Blöcken (Block-Engine, **23 Typen**). Vollständige
 Spezifikation in [`docs/MODUL-SPEZIFIKATION.md`](docs/MODUL-SPEZIFIKATION.md).
 
 **Theorie/Folie** (nicht bewertet): `text`, `infobox`, `slide`.

@@ -21,7 +21,7 @@
 
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
-(diskriminierte Union). 20 Block-Typen total — verteilt auf **drei Gruppen**:
+(diskriminierte Union). 23 Block-Typen total — verteilt auf **drei Gruppen**:
 Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (11 davon auto-bewertbar),
 und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
 nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
@@ -70,6 +70,9 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 | `label_image`     | Stellen im Bild beschriften       | ✅ ja (Teilpunkte) | `zones[].label` (Soll-Begriff pro Zone)      |
 | `memory`          | Paare-Spiel (Karten aufdecken)    | ✅ ja (Teilpunkte) | `pairs[]` (a + b bilden das Paar)            |
 | `crossword`       | Kreuzworträtsel ausfüllen         | ✅ ja (Teilpunkte) | `words[].answer` + Startzelle/Richtung       |
+| `word_search`     | Wortsuchrätsel (Suchsel)          | ✅ ja (Teilpunkte) | `words[].word` + Startzelle/Richtung         |
+| `scramble`        | Buchstabensalat zusammensetzen    | ✅ ja (Teilpunkte) | `words[].word` (Buchstaben werden gemischt)  |
+| `hangman`         | Galgenmännchen (Wort raten)       | ✅ ja (Teilpunkte) | `words[].word` + Pflicht-`hint`              |
 | `reflection`      | Freie offene Antwort              | ❌ nein            | — (manuell von Lehrer:in beurteilt)          |
 
 **Gruppe C — Live-Interaktionen** (nur `display_mode='presentation'`, Stimmen in `live_votes`, **nicht bewertet** — zählen nicht zu `max_score`):
@@ -90,10 +93,10 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 ## 3. Felder pro Block-Typ
 
 Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
-Modul) und `type` (einer der 20 Werte aus der Tabelle in §2).
+Modul) und `type` (einer der 23 Werte aus der Tabelle in §2).
 
 > **Didaktik-Felder auf jedem bewertbaren Block (optional).** Alle
-> auto-bewertbaren Worksheet-Typen (`multiple_choice` … `crossword`) tragen
+> auto-bewertbaren Worksheet-Typen (`multiple_choice` … `hangman`) tragen
 > zusätzlich drei optionale Felder (Phase W):
 >
 > | Feld          | Typ                                    | Wirkung                                                                                  |
@@ -431,7 +434,99 @@ zählen einmal; Eingabe case-insensitiv).
 }
 ```
 
-### 3.11 `reflection` — Freie Antwort (nicht auto-bewertet)
+### 3.11 `word_search` — Wortsuchrätsel / Suchsel (bewertet, Teilpunkte)
+
+Autor:in legt Wörter mit Richtung und Startzelle auf ein festes Gitter; die
+Schüler:in markiert ein Wort durch Antippen von Anfangs- und End-Buchstabe.
+Leere Zellen füllen sich automatisch mit deterministischen Füllbuchstaben.
+
+| Feld                | Typ                            | Pflicht | Regeln                                                   |
+| ------------------- | ------------------------------ | ------- | -------------------------------------------------------- |
+| `instruction`       | string                         | ✅      | Aufgabenstellung                                         |
+| `rows`/`cols`       | int 5–15                       | ✅      | Gitter-Größe                                             |
+| `words`             | Array (3–12)                   | ✅      | `id` eindeutig, **Wort-Texte eindeutig**                 |
+| `words[].word`      | string (≥ 2)                   | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].direction` | `'across' \| 'down' \| 'diag'` | ✅      | waagrecht / senkrecht / diagonal nach rechts unten       |
+| `words[].row`/`col` | int ≥ 0                        | ✅      | Startzelle (0-basiert); Wort muss ins Gitter passen      |
+
+**Kreuzungen** sind erlaubt, wenn der geteilte Buchstabe übereinstimmt
+(gleiche Rechenregel wie beim Kreuzworträtsel: across belegt `(row, col+i)`,
+down `(row+i, col)`, diag `(row+i, col+i)`).
+
+**Bewertung:** Teilpunkte = gefundene Wörter / alle Wörter.
+
+```json
+{
+  "id": "wsr1",
+  "type": "word_search",
+  "instruction": "Finde alle versteckten Wörter.",
+  "rows": 8,
+  "cols": 8,
+  "words": [
+    { "id": "w1", "word": "MAUS", "direction": "across", "row": 0, "col": 0 },
+    { "id": "w2", "word": "MONITOR", "direction": "down", "row": 0, "col": 0 },
+    { "id": "w3", "word": "TABLET", "direction": "diag", "row": 1, "col": 1 }
+  ]
+}
+```
+
+### 3.12 `scramble` — Buchstabensalat / Anagramm (bewertet, Teilpunkte)
+
+Pro Wort werden die Buchstaben gemischt angezeigt; die Schüler:in tippt sie in
+der richtigen Reihenfolge an. Optionaler Hinweis pro Wort.
+
+| Feld           | Typ               | Pflicht | Regeln                                                   |
+| -------------- | ----------------- | ------- | -------------------------------------------------------- |
+| `instruction`  | string            | ✅      | Aufgabenstellung                                         |
+| `words`        | Array (1–8)       | ✅      | `id` eindeutig                                           |
+| `words[].word` | string (2–14)     | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].hint` | string (optional) | —       | Denkanstoß, z. B. „Eingabegerät mit Tasten"              |
+
+**Bewertung:** Teilpunkte = richtig zusammengesetzte Wörter / alle Wörter.
+
+```json
+{
+  "id": "sal1",
+  "type": "scramble",
+  "instruction": "Bringe die Buchstaben in die richtige Reihenfolge.",
+  "words": [
+    { "id": "w1", "word": "TASTATUR", "hint": "Eingabegerät mit Tasten" },
+    { "id": "w2", "word": "BILDSCHIRM", "hint": "Ausgabegerät" }
+  ]
+}
+```
+
+### 3.13 `hangman` — Galgenmännchen (bewertet, Teilpunkte)
+
+Wort Buchstabe für Buchstabe über eine Bildschirm-Tastatur erraten, mit
+begrenzten Fehlversuchen (Herzen statt Galgen). Wörter werden nacheinander
+gespielt. Der `hint` ist **Pflicht** — ohne Hinweis ist Raten frustrierend.
+
+| Feld           | Typ           | Pflicht | Regeln                                                   |
+| -------------- | ------------- | ------- | -------------------------------------------------------- |
+| `instruction`  | string        | ✅      | Aufgabenstellung                                         |
+| `maxWrong`     | int 3–10      | —       | Erlaubte Fehlversuche pro Wort (Default 6)               |
+| `words`        | Array (1–6)   | ✅      | `id` eindeutig                                           |
+| `words[].word` | string (2–14) | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].hint` | string        | ✅      | **Pflicht**: Hinweis-Text pro Wort                       |
+
+**Bewertung:** Teilpunkte = erratene Wörter / alle Wörter (verlorene Wörter
+zählen 0, kein Malus).
+
+```json
+{
+  "id": "gal1",
+  "type": "hangman",
+  "instruction": "Errate die gesuchten Begriffe.",
+  "maxWrong": 6,
+  "words": [
+    { "id": "w1", "word": "MONITOR", "hint": "Zeigt das Bild an" },
+    { "id": "w2", "word": "DRUCKER", "hint": "Bringt Dokumente aufs Papier" }
+  ]
+}
+```
+
+### 3.14 `reflection` — Freie Antwort (nicht auto-bewertet)
 
 | Feld          | Typ    | Pflicht  | Hinweis                                 |
 | ------------- | ------ | -------- | --------------------------------------- |
@@ -452,7 +547,7 @@ zählen einmal; Eingabe case-insensitiv).
 }
 ```
 
-### 3.12 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
+### 3.15 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
 
 Großformatige Folie am Beamer. **Nur** in Modulen mit `display_mode='presentation'`
 sinnvoll — im Worksheet-Modus wirkt sie sperrig.
@@ -472,7 +567,7 @@ sinnvoll — im Worksheet-Modus wirkt sie sperrig.
 }
 ```
 
-### 3.13 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
+### 3.16 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
 
 Unbenoteter Meinungsbild-Block. Schüler:innen sehen Optionen auf ihrem Gerät,
 am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
@@ -499,7 +594,7 @@ am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
 }
 ```
 
-### 3.14 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
+### 3.17 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
 
 Wie `live_poll`, aber mit **richtiger Antwort**. Schüler:innen sehen die Antwort
 **nicht** vorab (das `correct`-Flag wird serverseitig entfernt, bevor es ans
@@ -530,7 +625,7 @@ Option(en) grün.
 }
 ```
 
-### 3.15 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
+### 3.18 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
 
 Schüler:innen tippen ein Wort oder einen kurzen Satz (max 40 Zeichen). Am Beamer
 erscheinen die Beiträge als Wortwolke — häufige Wörter werden größer
@@ -548,7 +643,7 @@ dargestellt (lowercase + getrimmter Vergleich für Duplikat-Zählung).
 }
 ```
 
-### 3.16 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
+### 3.19 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
 
 Schüler:innen klicken einen Wert auf einer Skala (Default 1–5). Am Beamer werden
 Durchschnitt und Verteilung als Balkendiagramm angezeigt. Gut für
@@ -574,7 +669,7 @@ Selbsteinschätzung oder Stimmungsbilder mit Abstufung.
 }
 ```
 
-### 3.17 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
+### 3.20 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
 
 Schnelles Drei-Tasten-Signal: 🟢 verstanden / 🟡 unsicher / 🔴 noch nicht. Keine
 freien Optionen — die drei Werte sind im Code fest verdrahtet, der Beamer zeigt
@@ -607,15 +702,15 @@ Sie ist **typ-agnostisch**: jede Auswertung läuft über `gradeBlock()` +
 > Für eine bewertbare Quiz-Frage nimm `multiple_choice` oder `true_false` im
 > Worksheet-Modus.
 
-| Funktion                          | Was sie liefert                                                                                                                                                                   |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                                                             |
-| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot`/`label_image`/`memory`/`crossword` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
-| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                                                              |
-| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                                                          |
-| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                                                               |
-| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                                                               |
-| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                                                     |
+| Funktion                          | Was sie liefert                                                                                                                                                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                                                                                                |
+| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot`/`label_image`/`memory`/`crossword`/`word_search`/`scramble`/`hangman` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
+| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                                                                                                 |
+| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                                                                                             |
+| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                                                                                                  |
+| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                                                                                                  |
+| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                                                                                        |
 
 **Bestehens-Schwelle** (`pass_threshold`) lebt **pro Klassen-Zuweisung**, nicht
 pro Modul (siehe ADR-0011). Ein Modul mit `max_score = 0` kann nie „bestanden"
@@ -639,6 +734,9 @@ als `Record<blockId, answer>` in `student_progress.answers`:
 | `label_image`     | `Record<zoneId,label>`          | `{ "z1":"Tastatur", "z2":"Maus" }`        |
 | `memory`          | `string[]` (gematchte pairIds)  | `["p1","p3"]`                             |
 | `crossword`       | `Record<"r,c",Buchstabe>`       | `{ "0,0":"M", "0,1":"A" }`                |
+| `word_search`     | `string[]` (gefundene wordIds)  | `["w1","w3"]`                             |
+| `scramble`        | `Record<wordId,string>`         | `{ "w1":"TASTATUR" }`                     |
+| `hangman`         | `string[]` (gelöste wordIds)    | `["w1"]`                                  |
 | `reflection`      | `string`                        | `"Ich nutze sie für …"`                   |
 
 ## 5. Pflicht-Checkliste vor dem Import

@@ -1,6 +1,6 @@
 import type { BlockType } from '@/lib/schemas/blocks';
 
-// Kuratierter Katalog aller 20 Block-Typen mit lehrer:innen-verständlicher
+// Kuratierter Katalog aller 23 Block-Typen mit lehrer:innen-verständlicher
 // Kurzbeschreibung — damit Geo im „Block hinzufügen"-Dialog nicht raten muss
 // was ein Typ tut. Quelle der Beschreibungen: docs/MODUL-SPEZIFIKATION.md §3.
 // Reihenfolge innerhalb jeder Gruppe = empfohlene Verwendungs-Häufigkeit.

@@ -148,7 +148,7 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   - `MobileMenu.tsx` — Client; Auth-Block + Logout-Form als Sub-Komp.
   - `SiteFooter.tsx`, `SiteShell.tsx`, `Logo.tsx`
 - **`components/blocks/`** — Block-Renderer + Modul-Runner
-  - **20 Block-Typen** (Single Source: `lib/schemas/blocks.ts`). Gruppe A
+  - **23 Block-Typen** (Single Source: `lib/schemas/blocks.ts`). Gruppe A
     Theorie: `text`, `infobox`, `slide`. Gruppe B Worksheet (auto-bewertbar
     außer reflection): `multiple_choice`, `true_false`, `fill_blank`, `match`,
     `categorize`, `mark_words`, `order`, `hotspot`, `label_image`, `memory`,
@@ -468,7 +468,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   Begriff wählen). Showcase-Lernmodul (Seed 0007, 18 Blöcke). Marker-Kontrast
   - transparentere Bewertungs-Overlays (Audit-Politur). Tags
     `phase-a1-savepoint` … `phase-a3-12-savepoint`. Spec:
-    `docs/MODUL-SPEZIFIKATION.md` (20 Block-Typen).
+    `docs/MODUL-SPEZIFIKATION.md` (23 Block-Typen).
 - ✅ **Test-Tab „🎒 Als Schüler:in testen"** (Commit `66a1e8c`): dritter
   Editor-Tab spielt jedes Lernmodul exakt in der Schüler-Sicht durch (Quiz
   Block-für-Block / Worksheet mit Abgeben), simulierte %-Auswertung, ohne

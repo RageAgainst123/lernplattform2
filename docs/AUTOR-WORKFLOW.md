@@ -454,7 +454,7 @@ ersten Module dafür entstehen.
 - [`docs/QUICKSTART-MODUL.md`](QUICKSTART-MODUL.md) — der kompakte „KI generiert → testen → freigeben"-Ablauf (Einstieg, falls dieser Workflow zu detailliert ist)
 - [`docs/THEMA-WORKFLOW.md`](THEMA-WORKFLOW.md) — didaktisches Standard-Stundenbild
   eines Themas (die Ebene ÜBER diesem technischen Workflow)
-- [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 20 Block-Typen
+- [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — die 23 Block-Typen
   im Detail (Felder, Beispiel-JSON, Bewertung)
 - [`docs/INHALTSKONZEPT.md`](INHALTSKONZEPT.md) — Material vs. Modul,
   Display-Modes, Status-Logik

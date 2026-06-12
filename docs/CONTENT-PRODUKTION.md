@@ -1,5 +1,12 @@
 # Content-Produktion — Soll-Katalog & Batch-Workflow
 
+> ⏸ **PRODUKTION PAUSIERT (Geo, 2026-06-12):** Es werden noch KEINE Batches
+> produziert. Zuerst muss die App alle geplanten Fähigkeiten haben — mehr
+> Block-Typen (Vielfalt gegen Eintönigkeit), Auswertungen, Bewertungs-Workflow.
+> Die Matrix in §3 bleibt als Ideen-Sammlung stehen; kein Thema steht auf ⬜,
+> also gibt es für die KI nichts zu produzieren. Geo hebt die Pause explizit
+> auf, indem er diese Box entfernt und erste ⬜ setzt.
+>
 > **Was dieses Dokument ist:** der Masterplan für die Inhalts-Produktion.
 > Die KI produziert Entwürfe, du (Geo) kuratierst, testest und gibst frei.
 > Es ist ein **lebendes Arbeitsdokument** — die Status-Matrix in §3 wird

@@ -22,7 +22,7 @@
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
 (diskriminierte Union). 23 Block-Typen total — verteilt auf **drei Gruppen**:
-Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (11 davon auto-bewertbar),
+Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (14 davon auto-bewertbar),
 und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
 nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
 

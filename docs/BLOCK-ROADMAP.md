@@ -64,9 +64,10 @@ Schulheft bzw. später evtl. ein Datei-Abgabe-Block; kein Auto-Grading sinnvoll.
 | ------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **1 — Wort-Spiele**            | Wortsuchrätsel, Buchstabensalat, Galgenmännchen                                            | Klein, nutzen die vorhandene Gitter-/Shuffle-Infrastruktur (crossword/useShuffled), sofort spürbar mehr Abwechslung in JEDEM Thema.                          |
 | **2 — Lehrplan-Pflicht klein** | Zahlen-Eingabe + Schätz-Slider, Binär-Übung (L8), Passwort-Check (L4), Code-Debugging (L2) | Kleine Blöcke, decken explizite Lehrplan-Punkte ab (Bit/Byte, Passwörter, Debugging).                                                                        |
-| **3 — Lern-Formate**           | Lernkarten, Zeitstrahl, Paare-Linien, Tabelle (L6)                                         | Didaktische Breite + Wiederholungs-Werkzeug für Abschlusstests.                                                                                              |
-| **4 — Lehrplan-Stars groß**    | Verschlüsselung (L3), Diagramm lesen (L5), Befehls-Sequenz (L1)                            | Die Alleinstellungs-Blöcke; L1 ist das größte Einzelstück (eigener Mini-Runner).                                                                             |
+| **3 — Lern-Formate**           | Lernkarten, Zeitstrahl, Paare-Linien, Tabelle (L6), Parsons-Puzzle (P2), Trace-Fragen (P4) | Didaktische Breite + Wiederholungs-Werkzeug für Abschlusstests; P2/P4 sind kleine Varianten bestehender Blöcke (order/mark_words + Code-Anzeige).            |
+| **4 — Lehrplan-Stars groß**    | Verschlüsselung (L3), Diagramm lesen (L5)                                                  | Die Alleinstellungs-Blöcke unter den „normalen" Block-Typen.                                                                                                 |
 | **5 — Spielmodi & Szenarien**  | Millionenshow-Modus, Chat-Szenario (L7)                                                    | Millionenshow ist ein Anzeige-Modus über MC-Blöcken; Chat-Szenario braucht ein Branching-Datenmodell — beides eher Modul-/Runner-Arbeit als „nur ein Block". |
+| **6 — Robo-Welt**              | Befehls-Sequenz (L1/P1) als eigene Welle                                                   | Größtes Einzelstück der Roadmap (Simulator + Animations-Renderer + Level-Editor, mehrere Sessions) — siehe §6 Programmier-Strang.                            |
 
 Danach (separater Track, vor Content-Produktion): Auswertungen
 (Item-Analyse #255, Hausaufgaben-Modus #254) + Bewertungs-Workflow-Audit.
@@ -77,3 +78,39 @@ Schema (+ superRefine) → Grading in evaluate.ts (PARTIAL_GRADERS wo sinnvoll)
 → Schüler-Renderer → Admin-Form → Stub/Katalog/LERNMODUL_BLOCKS →
 Tests + Gates → eigener Commit + Tag. MODUL-SPEZIFIKATION.md pro Block
 nachziehen, damit die KI ihn später per JSON erzeugen kann.
+
+## §6 Programmier-Strang (Konzept, gestaffelt 1.–4. Klasse)
+
+**Leitidee:** EIN gemeinsames System statt vier Block-Typen — die Staffelung
+steckt in der Konfiguration. Didaktisch nach PRIMM (Predict → Run/Investigate
+→ Modify → Make).
+
+### Die 4 Bausteine
+
+| #   | Baustein                                                                                                                                                                                                                                                                                                                                                                                                 | PRIMM-Phase            | Aufwand             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------- |
+| P1  | **Robo-Welt (`code_sequence`)** — Gitterwelt (Wände, Ziel, Sammelobjekte; Level-Editor wie Hotspot-Editor). Schüler:in steckt Befehlskarten zusammen, Figur läuft Schritt für Schritt animiert. Verfügbare Karten pro Aufgabe konfigurierbar → Klassenstaffelung. Bewertung: Simulator (Ziel erreicht, Teilpunkte über Sammelobjekte, ⭐ bei ≤ optimaler Programmlänge — belohnt Schleifen automatisch). | Run/Investigate + Make | groß (eigene Welle) |
+| P2  | **Parsons-Puzzle (`code_order`)** — gewürfelte Code-/Pseudocode-Zeilen ordnen; ab 4. Klasse mit Einrückung + Distraktor-Zeilen. Variante des `order`-Blocks.                                                                                                                                                                                                                                             | Modify                 | klein               |
+| P3  | **Code-Debugging (`code_debug`)** — Fehlerzeilen antippen (mark_words auf Code-Zeilen); Ausbaustufe: Korrektur aus Dropdown wählen. = L2 aus §3.                                                                                                                                                                                                                                                         | Modify                 | klein               |
+| P4  | **Trace-Fragen** — Code-Schnipsel-Anzeige (Monospace, Zeilennummern) + bestehendes MC / Zahlen-Eingabe: „Was gibt das Programm aus?" Kein eigener Grading-Typ nötig.                                                                                                                                                                                                                                     | Predict                | klein               |
+
+### Staffelung über die Befehlskarten der Robo-Welt
+
+| Klasse     | Verfügbare Karten / Modus                                                        | Lehrplan-Anker                                                                                      |
+| ---------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1. (St. 5) | nur `vor`, `drehen`, `Aktion`                                                    | „Algorithmen nachvollziehen, ausführen, selbstständig formulieren", „Sequenzen"                     |
+| 1.–2.      | + `wiederhole N×`                                                                | „einfache Schleifen"                                                                                |
+| 2. (St. 6) | Debug-Modus: fehlerhaftes Programm vorgegeben → reparieren                       | „Programme erstellen, **testen und debuggen**"                                                      |
+| 3. (St. 7) | + `wenn Wand voraus…`, `wiederhole bis…`                                         | „Computational Thinking … in Programmiersprache umsetzen"                                           |
+| 4. (St. 8) | + verschachtelte Schleifen, `wenn … und/oder …`; umschaltbare Pseudocode-Ansicht | „verschachtelte Schleifen und zusammengesetzte Konditionale", „Pseudocode, (graphische) Notationen" |
+
+**Level-Serien:** 4–5 Robo-Blöcke mit steigender Schwierigkeit = eine komplette
+Programmier-Stunde mit Spiel-Gefühl.
+
+**Bewusst extern:** „einfache Programme oder Webanwendungen mit geeigneten
+Werkzeugen erstellen" (4. Kl.) bleibt bei Scratch/MakeCode als Projektarbeit
+mit Doku im Schulheft — die App übt die Konzepte, die Tools die Praxis.
+
+**Technik:** Simulator als pure Funktion (wie `crossword-grid.ts`), damit
+testbar; superRefine prüft, dass die hinterlegte Musterlösung das Ziel
+erreicht → unlösbare Level sind nicht speicherbar, Block ist KI-JSON-fähig.

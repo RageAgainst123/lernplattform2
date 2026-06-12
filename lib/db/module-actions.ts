@@ -87,6 +87,49 @@ export async function updateModule(id: string, input: unknown): Promise<void> {
   revalidatePath(`/admin/module/${id}`);
 }
 
+// V4: Modul duplizieren — Kopie als Entwurf, ohne Themen-Zuordnung, mit
+// frischem sort_order. Sicherer Workflow für Module mit Bestand-Fortschritt
+// (siehe Warn-Banner im ModuleEditor): Original bleibt unangetastet, die
+// Kopie wird bearbeitet und später veröffentlicht/zugeordnet.
+export async function duplicateModule(id: string): Promise<{ id: string }> {
+  const user = await requireAdmin();
+  const svc = createServiceClient();
+  const { data: source, error: loadError } = await svc
+    .from('modules')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (loadError) throw new Error('Modul konnte nicht geladen werden: ' + loadError.message);
+  if (!source) throw new Error('Modul nicht gefunden.');
+  const row = source as Record<string, unknown>;
+  const { data, error } = await svc
+    .from('modules')
+    .insert({
+      title: `${row.title as string} (Kopie)`,
+      description: row.description,
+      schulstufe: row.schulstufe,
+      kompetenzbereich: row.kompetenzbereich,
+      topic: row.topic,
+      topic_id: null,
+      sort_order: 0,
+      content: row.content,
+      estimated_minutes: row.estimated_minutes,
+      is_published: false,
+      activity_kind: row.activity_kind,
+      display_mode: row.display_mode,
+      created_by: user.id,
+    })
+    .select('id')
+    .single();
+  if (error) throw new Error('Modul konnte nicht dupliziert werden: ' + error.message);
+  revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
+  revalidatePath('/admin/quizze');
+  revalidatePath('/admin/abschlusstests');
+  return { id: data.id as string };
+}
+
 export async function deleteModule(id: string): Promise<void> {
   await requireAdmin();
   const svc = createServiceClient();

@@ -105,6 +105,7 @@ const LERNMODUL_BLOCKS: ReadonlySet<BlockType> = new Set([
   'label_image',
   'memory',
   'crossword',
+  'word_search',
   'reflection',
 ]);
 

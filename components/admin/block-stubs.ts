@@ -33,6 +33,7 @@ const ID_PREFIX: Record<BlockType, string> = {
   label_image: 'li',
   memory: 'mem',
   crossword: 'cw',
+  word_search: 'wsr',
   reflection: 'r',
   live_poll: 'p',
   quiz_poll: 'q',
@@ -156,6 +157,20 @@ const STUB_BUILDERS: Record<BlockType, (id: string) => Block> = {
         col: 0,
       },
       { id: 'w2', answer: 'MONITOR', clue: 'Zeigt das Bild an', direction: 'down', row: 0, col: 0 },
+    ],
+  }),
+  // Wortsuchrätsel: 3 Beispiel-Wörter (min 3), kreuzen sich konfliktfrei im
+  // gemeinsamen M bei (0,0): MAUS waagrecht, MONITOR senkrecht, TABLET diagonal.
+  word_search: (id) => ({
+    id,
+    type: 'word_search',
+    instruction: 'Finde alle versteckten Wörter.',
+    rows: 8,
+    cols: 8,
+    words: [
+      { id: 'w1', word: 'MAUS', direction: 'across', row: 0, col: 0 },
+      { id: 'w2', word: 'MONITOR', direction: 'down', row: 0, col: 0 },
+      { id: 'w3', word: 'TABLET', direction: 'diag', row: 1, col: 1 },
     ],
   }),
   reflection: (id) => ({ id, type: 'reflection', prompt: 'Was hast du gelernt?' }),

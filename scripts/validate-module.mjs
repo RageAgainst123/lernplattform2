@@ -30,6 +30,7 @@ const GRADED = new Set([
   'label_image',
   'memory',
   'crossword',
+  'word_search',
 ]);
 
 function readInput() {

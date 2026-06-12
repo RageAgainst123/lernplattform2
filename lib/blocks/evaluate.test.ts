@@ -564,3 +564,33 @@ describe('gradeBlock — crossword', () => {
     expect(gradeBlock(crossword, undefined)).toBe(0);
   });
 });
+
+// Wortsuchrätsel — Teilpunkte = gefundene / alle Wörter (wie memory).
+const wordSearch: Block = {
+  id: 'wsr',
+  type: 'word_search',
+  instruction: 'Finde alle Wörter.',
+  rows: 8,
+  cols: 8,
+  words: [
+    { id: 'w1', word: 'MAUS', direction: 'across', row: 0, col: 0 },
+    { id: 'w2', word: 'MONITOR', direction: 'down', row: 0, col: 0 },
+    { id: 'w3', word: 'TABLET', direction: 'diag', row: 1, col: 1 },
+  ],
+};
+
+describe('gradeBlock — word_search', () => {
+  it('2 von 3 Wörtern gefunden → 2/3', () => {
+    expect(gradeBlock(wordSearch, ['w1', 'w3'])).toBeCloseTo(2 / 3);
+  });
+  it('alle gefunden → 1', () => {
+    expect(gradeBlock(wordSearch, ['w1', 'w2', 'w3'])).toBe(1);
+  });
+  it('leere/undefined Antwort → 0', () => {
+    expect(gradeBlock(wordSearch, [])).toBe(0);
+    expect(gradeBlock(wordSearch, undefined)).toBe(0);
+  });
+  it('Fremd-ids und Duplikate werden ignoriert', () => {
+    expect(gradeBlock(wordSearch, ['w1', 'w1', 'bogus'])).toBeCloseTo(1 / 3);
+  });
+});

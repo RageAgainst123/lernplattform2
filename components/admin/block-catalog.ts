@@ -95,6 +95,12 @@ export const BLOCK_CATALOG = {
         'Kreuzworträtsel: Zelle antippen und Buchstaben eintippen. Du legst Wörter mit Frage, Richtung und Startzelle aufs Gitter — die Vorschau zeigt Kreuzungen sofort. Teilpunkte pro richtiger Zelle.',
     },
     {
+      type: 'word_search',
+      label: '🔍 Wortsuchrätsel (word_search)',
+      description:
+        'Suchsel: Wörter im Buchstabengitter finden — Anfangs- und End-Buchstabe antippen. Du legst die Wörter mit Richtung (waagrecht/senkrecht/diagonal) aufs Gitter, leere Zellen füllen sich automatisch. Teilpunkte pro gefundenem Wort.',
+    },
+    {
       type: 'reflection',
       label: 'Reflexion (Freitext)',
       description: 'Offene Frage, freie Antwort. Nicht auto-bewertet — Lehrer:in liest selbst.',

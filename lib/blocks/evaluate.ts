@@ -2,6 +2,7 @@
 import type {
   Block, CategorizeBlock, CrosswordBlock, FillBlankBlock, HotspotBlock, LabelImageBlock,
   MarkWordsBlock, MemoryBlock, MatchBlock, MultipleChoiceBlock, OrderBlock, TrueFalseBlock,
+  WordSearchBlock,
 } from '@/lib/schemas/blocks';
 import { isFuzzyMatch } from '@/lib/blocks/levenshtein';
 import { gradeCrosswordCells } from '@/lib/blocks/crossword-grid';
@@ -19,11 +20,12 @@ export type HotspotAnswer = string[]; // angetippte areaIds
 export type LabelImageAnswer = Record<string, string>; // zoneId → gewählter Begriff
 export type MemoryAnswer = string[]; // erfolgreich gematchte pairIds
 export type CrosswordAnswer = Record<string, string>; // "r,c" → eingegebener Buchstabe
+export type WordSearchAnswer = string[]; // gefundene wordIds
 // prettier-ignore
 export type BlockAnswer =
   | MultipleChoiceAnswer | TrueFalseAnswer | FillBlankAnswer | MatchAnswer | CategorizeAnswer
   | MarkWordsAnswer | OrderAnswer | HotspotAnswer | LabelImageAnswer | MemoryAnswer
-  | CrosswordAnswer | string;
+  | CrosswordAnswer | WordSearchAnswer | string;
 
 // Block-Typen ohne automatische Bewertung (reiner Inhalt, freie Antwort,
 // Präsentationsfolie oder unbenotete Live-Interaktion).
@@ -167,16 +169,14 @@ function evalLabelImage(block: LabelImageBlock, answer: LabelImageAnswer): numbe
   return correct / block.zones.length;
 }
 
-// Memory / Paare-Spiel: Schüler:in deckt Karten auf und findet Paare. Die
-// Antwort ist die Menge der erfolgreich gematchten pairIds. Teilpunkte =
-// gefundene Paare / Anzahl Paare. Fremd-/Doppel-IDs werden ignoriert
-// (Set-Dedup + Filter gegen die echten pairIds) — robust gegen manipulierte
-// Antworten.
-function evalMemory(block: MemoryBlock, answer: MemoryAnswer): number {
-  if (block.pairs.length === 0) return 0;
-  const valid = new Set(block.pairs.map((p) => p.id));
-  const matched = new Set(answer.filter((id) => valid.has(id)));
-  return matched.size / block.pairs.length;
+// Anteil gefundener Einträge an einer ID-Liste — geteilt von memory (gefundene
+// Paare / alle Paare) und word_search (gefundene Wörter / alle Wörter).
+// Fremd-/Doppel-IDs werden ignoriert (Set-Dedup + Filter gegen die echten IDs)
+// — robust gegen manipulierte Antworten.
+function foundRatio(items: { id: string }[], answer: string[]): number {
+  if (items.length === 0) return 0;
+  const valid = new Set(items.map((it) => it.id));
+  return new Set(answer.filter((id) => valid.has(id))).size / items.length;
 }
 
 // Erweiterbarkeit — neuen Block-Typ ins Scoring aufnehmen: (1) Schema + Antwort-
@@ -204,9 +204,10 @@ const PARTIAL_GRADERS: Record<string, (block: Block, answer: BlockAnswer | undef
   order: (b, a) => evalOrder(b as OrderBlock, (a as OrderAnswer) ?? []),
   hotspot: (b, a) => evalHotspot(b as HotspotBlock, (a as HotspotAnswer) ?? []),
   label_image: (b, a) => evalLabelImage(b as LabelImageBlock, (a as LabelImageAnswer) ?? {}),
-  memory: (b, a) => evalMemory(b as MemoryBlock, (a as MemoryAnswer) ?? []),
+  memory: (b, a) => foundRatio((b as MemoryBlock).pairs, (a as MemoryAnswer) ?? []),
   // Zell-Logik + Formel leben in crossword-grid.ts (geteilt mit Renderer/Editor).
   crossword: (b, a) => gradeCrosswordCells(b as CrosswordBlock, (a as CrosswordAnswer) ?? {}),
+  word_search: (b, a) => foundRatio((b as WordSearchBlock).words, (a as WordSearchAnswer) ?? []),
 };
 
 export function gradeBlock(block: Block, answer: BlockAnswer | undefined): number {

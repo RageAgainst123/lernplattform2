@@ -125,6 +125,7 @@ warum kein Phasen-Umbau): festgehalten in der Plan-Datei zur Präsentations-Road
 
 ## 7. Querverweise
 
+- [`docs/CONTENT-PRODUKTION.md`](CONTENT-PRODUKTION.md) — Soll-Katalog (welche Themen pro Bereich×Stufe), Status-Matrix + Batch-Workflow
 - [`docs/AUTOR-WORKFLOW.md`](AUTOR-WORKFLOW.md) — technische Schritt-für-Schritt-Erstellung + KI-Prompt-Templates
 - [`docs/MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md) — verbindliches Block-Format + Bewertung
 - [`docs/INHALTSKONZEPT.md`](INHALTSKONZEPT.md) — Material vs. Modul, Navigations-Hierarchie, Status-Logik

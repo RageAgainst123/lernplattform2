@@ -42,6 +42,9 @@ Tests automatisch aus.
 
 ## Module bauen (Block-JSON mit Lösungen)
 
+**Welche Inhalte** produziert werden sollen (Soll-Katalog pro Bereich×Stufe,
+Status-Matrix 💡⬜🤖🧪✅, Batch-Regeln) steht in `docs/CONTENT-PRODUKTION.md` —
+die KI produziert nur ⬜-Themen und bewegt die Matrix ausschließlich ⬜→🤖.
 Ein ganzes **Thema** (didaktisches Standard-Stundenbild: Hook → Theorie → Übung
 → Reflexion → optional Arbeitsblatt) folgt `docs/THEMA-WORKFLOW.md` (Ebene über
 dem technischen Erstellungs-Prozess). Neue Lernmodule erstellt man nach

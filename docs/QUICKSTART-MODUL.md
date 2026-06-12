@@ -7,7 +7,9 @@
 >
 > Tiefere Referenzen: Feld-für-Feld-Spec → [`MODUL-SPEZIFIKATION.md`](MODUL-SPEZIFIKATION.md),
 > didaktischer Aufbau → [`THEMA-WORKFLOW.md`](THEMA-WORKFLOW.md), KI-Prompts →
-> [`AUTOR-WORKFLOW.md`](AUTOR-WORKFLOW.md).
+> [`AUTOR-WORKFLOW.md`](AUTOR-WORKFLOW.md). **Was** überhaupt produziert werden
+> soll (Soll-Katalog, Status-Matrix, Batch-Regeln) →
+> [`CONTENT-PRODUKTION.md`](CONTENT-PRODUKTION.md).
 
 ---
 
@@ -182,6 +184,7 @@ pnpm dev                                   # lokaler Server (Port 3000) zum Test
 
 | Ich will …                    | Datei / Ort                                                |
 | ----------------------------- | ---------------------------------------------------------- |
+| Was soll produziert werden?   | `docs/CONTENT-PRODUKTION.md` §3 (Status-Matrix)            |
 | Welche Block-Typen + Felder   | `docs/MODUL-SPEZIFIKATION.md` §2/§3                        |
 | KI-Prompt-Vorlagen            | `docs/AUTOR-WORKFLOW.md` §4 (Worksheet), §7 (Live)         |
 | Didaktischer Stundenaufbau    | `docs/THEMA-WORKFLOW.md` §2                                |

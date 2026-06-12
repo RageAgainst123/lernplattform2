@@ -10,6 +10,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 **Wenn du gebeten wirst, ein Lernmodul / Quiz / Arbeitsblatt-Inhalt zu erzeugen:**
 
+0. **Bei mehreren Themen / einem Batch:** zuerst `docs/CONTENT-PRODUKTION.md`
+   lesen (Soll-Katalog, Status-Matrix, Batch-Regeln). **Nur Themen mit Status ⬜
+   produzieren** — 💡 sind unbestätigte Vorschläge; die Matrix bewegst du
+   ausschließlich ⬜→🤖.
 1. **Lies zuerst** `docs/QUICKSTART-MODUL.md` — der durchgehende Ablauf
    (generieren → validieren → testen → freigeben).
 2. **Format + Felder** stehen in `docs/MODUL-SPEZIFIKATION.md` (20 Block-Typen,

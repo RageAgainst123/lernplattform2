@@ -30,7 +30,15 @@ gewählten Bausteine schließen genau diese Lücke.
 
 ---
 
-## §1 Baustein B1 — Auto-Schema-Export (größter Hebel)
+## §1 Baustein B1 — Auto-Schema-Export (größter Hebel) ✅ GEBAUT (2026-06-13)
+
+> **Status: umgesetzt.** `scripts/export-schema.mjs` + `pnpm export:schema`
+> erzeugen `docs/generated/module-schema.json` (Draft 2020-12) und
+> `docs/generated/block-fields.md` aus den Zod-Schemas. CI-Step
+> `pnpm export:schema --check` + `lib/schemas/schema-export.test.ts` sichern
+> gegen Drift; `docs/generated/` ist in `.prettierignore`, damit der
+> `--check` nicht mit Prettier kollidiert. QUICKSTART + MODUL-SPEZIFIKATION
+> verlinken die Artefakte.
 
 ### Problem
 

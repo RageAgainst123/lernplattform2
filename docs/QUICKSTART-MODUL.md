@@ -66,6 +66,14 @@ Gib NUR das JSON zurück.
 > Die KI hat in `docs/MODUL-SPEZIFIKATION.md` §3 für **jeden** Typ eine
 > Feld-Tabelle + ein valides Beispiel-JSON. Das reicht, um korrektes JSON zu
 > erzeugen — kein Quellcode nötig.
+>
+> **Für striktes/maschinelles Arbeiten:** `docs/generated/module-schema.json`
+> ist ein auto-generiertes JSON-Schema (Draft 2020-12) direkt aus den
+> Zod-Schemas — garantiert code-treu, ideal für IDE-Autocomplete oder
+> programmatische Validierung. `docs/generated/block-fields.md` listet die
+> Felder pro Typ. Beide werden von `pnpm export:schema` erzeugt und von CI
+> aktuell gehalten. (Sie decken die **Struktur**; fachliche Regeln prüft
+> `validate:module`.)
 
 **Bild-Aufgaben (`hotspot`, `label_image`)** kann eine KS ohne Bild nicht sinnvoll
 positionieren (sie müsste Pixel-Koordinaten raten). Die baust du in **Schritt 3b**

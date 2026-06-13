@@ -5,3 +5,7 @@ out/
 build/
 pnpm-lock.yaml
 next-env.d.ts
+
+# Auto-generiert von scripts/export-schema.mjs (exakt wie das Skript schreibt,
+# damit `pnpm export:schema --check` in CI nicht mit Prettier kollidiert).
+docs/generated/

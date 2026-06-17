@@ -96,9 +96,12 @@ Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
 > Zod-Schemas, immer code-treu) liegt in
 > [`generated/block-fields.md`](generated/block-fields.md); das volle
 > JSON-Schema in [`generated/module-schema.json`](generated/module-schema.json).
-> Beide via `pnpm export:schema`, von CI aktuell gehalten. Die Tabellen unten
-> bleiben für die **Prosa-Erklärungen + Beispiel-JSON** — bei Widerspruch
-> gewinnt das generierte Schema (= der Code).
+> Beide via `pnpm export:schema`, von CI aktuell gehalten.
+> [`generated/block-fields.md`](generated/block-fields.md) enthält pro Typ
+> zusätzlich **KI-Hinweise + ein geprüftes Beispiel** aus der Registry
+> `lib/blocks/block-docs.ts` (B2) — diese werden NICHT mehr hier von Hand
+> gepflegt. Die Tabellen unten bleiben für die **ausführlichen Prosa-
+> Erklärungen** — bei Widerspruch gewinnt das generierte Schema (= der Code).
 
 Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
 Modul) und `type` (einer der 23 Werte aus der Tabelle in §2).

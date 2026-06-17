@@ -77,7 +77,19 @@ export:schema`". So **kann** die generierte Referenz nie veralten.
 
 ---
 
-## §2 Baustein B2 — Block-Self-Doc-Registry
+## §2 Baustein B2 — Block-Self-Doc-Registry ✅ GEBAUT (2026-06-17)
+
+> **Status: umgesetzt (additive Variante).** `lib/blocks/block-docs.ts` (+
+> Themen-Splits `block-docs-static/quiz/game/image/live.ts`) trägt pro Block-Typ
+> KI-Hinweise, Antwort-Format und ein **vollständiges, schema-geprüftes
+> Beispiel**. `block-docs.test.ts` erzwingt Vollständigkeit (jeder Typ ein
+> Eintrag) + Konsistenz (`group` == Editor-Katalog-Gruppe, `graded` ==
+> `evaluate.blockGradedness`, jedes `example` besteht `blockSchema` +
+> `moduleContentStrictSchema` + Publish-Gate). Der B1-Export
+> (`scripts/export-schema.mjs`) rendert die Hinweise + Beispiele jetzt in
+> `docs/generated/block-fields.md` → die KI-Referenz ist reicher und bleibt
+> code-treu. **Additiv:** label/Beschreibung bleiben im Katalog, Bewertung in
+> `evaluate.ts` — der laufende Editor ist unberührt.
 
 ### Problem
 

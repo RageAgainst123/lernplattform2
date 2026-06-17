@@ -28,6 +28,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { blockSchema, moduleContentSchema } from '../lib/schemas/blocks.ts';
+import { BLOCK_DOCS } from '../lib/blocks/block-docs.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = join(ROOT, 'docs', 'generated');
@@ -79,6 +80,21 @@ function describeType(node) {
   return bits.length ? `${t} (${bits.join(', ')})` : (t ?? '—');
 }
 
+// Doku-Layer pro Typ aus der B2-Registry (lib/blocks/block-docs.ts): KI-Hinweise,
+// Antwort-Format und ein vollständiges, schema-geprüftes Beispiel. So bekommt die
+// KI nicht nur die Struktur, sondern die typischen Fallen + eine Vorlage.
+function renderDoc(type) {
+  const doc = BLOCK_DOCS[type];
+  if (!doc) return [];
+  const out = [''];
+  out.push(`**Gruppe:** ${doc.group} · **Bewertung:** ${doc.graded}`);
+  if (doc.editorOnly) out.push('> ⚠️ Nur im Editor mit Bild bauen — NICHT per KI-JSON.');
+  out.push('', '**🤖 KI-Hinweise:**', ...doc.aiHints.map((h) => `- ${h}`));
+  out.push('', `**Antwort-Format:** ${doc.answerFormat}`);
+  out.push('', '**Beispiel:**', '', '```json', JSON.stringify(doc.example, null, 2), '```');
+  return out;
+}
+
 function renderVariant(variant) {
   const props = variant.properties ?? {};
   const type = props.type?.const ?? '?';
@@ -96,6 +112,7 @@ function renderVariant(variant) {
     '| Feld | Typ / Regeln | Pflicht |',
     '| --- | --- | --- |',
     ...rows,
+    ...renderDoc(type),
     '',
   ].join('\n');
 }
@@ -115,8 +132,9 @@ const fieldsText =
     'immer code-treu. Sie deckt die **Struktur** ab (welche Felder, welche Typen,',
     'was Pflicht ist). **Fachliche Regeln** (z. B. „MC braucht ≥1 richtige',
     'Option", Kreuzungs-Konflikte im Gitter) leben in `superRefine` und erscheinen',
-    'hier NICHT — die prüft `pnpm validate:module`. Prosa-Erklärungen + Beispiel-',
-    'JSON pro Typ stehen in [`MODUL-SPEZIFIKATION.md`](../MODUL-SPEZIFIKATION.md) §3.',
+    'hier NICHT — die prüft `pnpm validate:module`. Pro Typ stehen unten zusätzlich',
+    '**KI-Hinweise + ein geprüftes Beispiel** (aus der Registry `lib/blocks/block-docs.ts`).',
+    'Ausführliche Prosa-Erklärungen: [`MODUL-SPEZIFIKATION.md`](../MODUL-SPEZIFIKATION.md) §3.',
     '',
     `**Gemeinsam:** jeder Block hat \`id\` (string, eindeutig) + \`type\`.`,
     `${typesSorted.length} Block-Typen total.`,

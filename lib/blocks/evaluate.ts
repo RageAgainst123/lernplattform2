@@ -42,6 +42,13 @@ export function isGraded(block: Block): boolean {
   return !NON_GRADED.has(block.type);
 }
 
+// Bewertungs-Klassifikation pro Typ — Single Source für die Doku-Registry
+// (block-docs.ts) + Konsistenz-Test: 'binary' = CHECKERS, 'partial' = PARTIAL_GRADERS.
+export type Gradedness = 'none' | 'binary' | 'partial';
+export function blockGradedness(type: Block['type']): Gradedness {
+  return PARTIAL_GRADERS[type] ? 'partial' : CHECKERS[type] ? 'binary' : 'none';
+}
+
 function normalize(word: string): string {
   return word.trim().toLowerCase();
 }

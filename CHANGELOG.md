@@ -8,6 +8,34 @@ Conventional-Commit-Hashes als Anker. Daten im Format YYYY-MM-DD.
 
 ---
 
+## KI-Autoren-DX — Block-Referenz code-treu machen (B1 + B2)
+
+**2026-06-17** · siehe `docs/AI-AUTHORING-DX.md`
+
+### B2 — Block-Self-Doc-Registry (`lib/blocks/block-docs.ts`)
+
+- Eine Registry pro Block-Typ bündelt den menschen- + KI-lesbaren Doku-Layer:
+  **KI-Hinweise** (die typischen Fallen, die das Schema nicht ausdrückt),
+  Antwort-Format und ein **vollständiges, schema-geprüftes Beispiel**. Aufgeteilt
+  in Themen-Splits (`block-docs-static/quiz/game/image/live.ts`), Zeilen-Limit.
+- `block-docs.test.ts` erzwingt **Vollständigkeit** (jeder der 23 Typen ein
+  Eintrag) + **Konsistenz**: `group` == Editor-Katalog-Gruppe, `graded` ==
+  `evaluate.blockGradedness`, jedes Beispiel besteht `blockSchema` +
+  `moduleContentStrictSchema` + Publish-Gate. Drift damit unmöglich.
+- Der B1-Export rendert die Hinweise + Beispiele jetzt in
+  `docs/generated/block-fields.md` → die KI-Referenz pro Typ ist reicher.
+- **Additiv:** label/Beschreibung bleiben im Katalog, Bewertung in `evaluate.ts`
+  — der laufende Editor ist unberührt.
+
+### B1 — Auto-Schema-Export (`pnpm export:schema`)
+
+- `scripts/export-schema.mjs` leitet aus den Zod-Schemas
+  `docs/generated/module-schema.json` (JSON-Schema, Draft 2020-12) +
+  `docs/generated/block-fields.md` ab. CI-Step `export:schema --check` +
+  `schema-export.test.ts` sichern gegen Drift.
+
+---
+
 ## Phase M/CW — Spiel-Blöcke `memory` + `crossword` & „Als Schüler:in testen"-Tab
 
 **2026-06-12** · Tags `block-memory`, `block-crossword` · Commits `66a1e8c`…`3e0a55f`

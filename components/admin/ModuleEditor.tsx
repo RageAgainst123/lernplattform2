@@ -2,38 +2,67 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { moduleContentSchema, type Block } from '@/lib/schemas/blocks';
-import { Button } from '@/components/ui/button';
+import { moduleContentStrictSchema, type Block } from '@/lib/schemas/blocks';
+import { publishGateIssues } from '@/lib/schemas/blocks-refine';
 import { createModule, updateModule } from '@/lib/db/module-actions';
-import { ModuleMetadataForm, type ModuleMetadata } from './ModuleMetadataForm';
-import { BlockList } from './BlockList';
-import { ImportJsonDialog } from './ImportJsonDialog';
-import { LivePreview } from './LivePreview';
+import { ACTIVITY_INFO } from '@/lib/activities';
+import { type ModuleMetadata } from './ModuleMetadataForm';
+import { ContentPanel, EditorHeader, MetadataPanel, type EditorTab } from './ModuleEditorPanels';
 
-// Modul-Editor mit drei Spalten auf Desktop: Metadaten | Blöcke (+Import) | Vorschau.
-// Auf Mobile gestapelt. Keine eigene State-Library — useState + Server-Actions reichen.
+// Aktivitäts-bewusster Editor mit Tab-Layout (Phase F).
+//
+// Vorher 3 gleich breite Spalten — Vorschau leer = Platzverschwendung, Header
+// drängelten in mehrere Zeilen. Jetzt:
+//   - Sticky Header oben mit Save-Button (immer erreichbar beim Scrollen)
+//   - 2-Spalten-Hauptbereich: Metadaten (~35%) | Inhalt mit Tabs „Blöcke ↔ Vorschau" (~65%)
+//   - mehr vertikales Spacing, klarere Sektion-Trennung
+//
+// Aktivitäts-Unterschiede (lernmodul vs praesentation):
+//   - Header-Titel + Subtitel
+//   - AddBlockDialog filtert auf passende Block-Typen (siehe lib/activities.ts)
+//   - Routing nach „Speichern": zur passenden Aktivitäts-Liste
+//   - ModuleMetadataForm zeigt das Display-Mode-Select nur für Lernmodule
 
 type Props = {
   moduleId?: string;
   initialMeta: ModuleMetadata;
   initialBlocks: Block[];
+  // V5: Anzahl Schüler:innen mit Fortschritt in diesem Modul. > 0 → amber
+  // Warn-Banner (nur Hinweis, blockiert nichts) — inhaltliche Änderungen
+  // können gespeicherte Antworten/Scores inkonsistent machen.
+  progressCount?: number;
 };
 
-export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
+export function ModuleEditor({ moduleId, initialMeta, initialBlocks, progressCount }: Props) {
   const router = useRouter();
   const [meta, setMeta] = useState<ModuleMetadata>(initialMeta);
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<EditorTab>('blocks');
   const [pending, startTransition] = useTransition();
+
+  const info = ACTIVITY_INFO[meta.activityKind];
+  const headerLabel = moduleId
+    ? `${info.label} bearbeiten`
+    : `${info.label.endsWith('e') ? 'Neue' : 'Neues'} ${info.label}`;
 
   function handleSave() {
     setError(null);
-    const contentParsed = moduleContentSchema.safeParse({ blocks });
+    const contentParsed = moduleContentStrictSchema.safeParse({ blocks });
     if (!contentParsed.success) {
       setError(
         'Block-Inhalt ungültig: ' + contentParsed.error.issues.map((i) => i.message).join('; ')
       );
       return;
+    }
+    // Publish-Gate: Entwurf-legitime Lücken (z. B. hotspot ohne Zonen) blocken
+    // nur das Veröffentlichen, nicht das Speichern als Entwurf.
+    if (meta.isPublished) {
+      const gate = publishGateIssues(contentParsed.data.blocks);
+      if (gate.length) {
+        setError('Veröffentlichen nicht möglich: ' + gate.join(' '));
+        return;
+      }
     }
     const payload = {
       title: meta.title,
@@ -44,6 +73,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
       content: contentParsed.data,
       estimatedMinutes: meta.estimatedMinutes ?? undefined,
       isPublished: meta.isPublished,
+      activityKind: meta.activityKind,
       displayMode: meta.displayMode,
     };
     startTransition(async () => {
@@ -52,7 +82,7 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
           await updateModule(moduleId, payload);
         } else {
           const { id } = await createModule(payload);
-          router.push(`/admin/module/${id}`);
+          router.push(`/admin/${info.urlSegment}/${id}`);
           return;
         }
         router.refresh();
@@ -64,54 +94,38 @@ export function ModuleEditor({ moduleId, initialMeta, initialBlocks }: Props) {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {moduleId ? 'Modul bearbeiten' : 'Neues Modul'}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Tippe Metadaten und Blöcke. Live-Vorschau zeigt, wie Schüler:innen es sehen.
-          </p>
+      <EditorHeader
+        label={headerLabel}
+        emoji={info.iconEmoji}
+        pending={pending}
+        onSave={handleSave}
+      />
+      {progressCount !== undefined && progressCount > 0 && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          ⚠ {progressCount} Schüler:in{progressCount === 1 ? ' hat' : 'nen haben'} dieses Modul
+          bereits begonnen oder abgeschlossen. Inhaltliche Änderungen (Blöcke löschen, Lösungen
+          ändern) können gespeicherte Antworten und Bewertungen inkonsistent machen — besser das
+          Modul duplizieren und die Kopie bearbeiten.
         </div>
-        <Button onClick={handleSave} disabled={pending}>
-          {pending ? 'Speichere…' : 'Speichern'}
-        </Button>
-      </header>
-
+      )}
       {error && (
         <div role="alert" className="text-destructive bg-destructive/10 rounded-md p-3 text-sm">
           {error}
         </div>
       )}
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr_1fr]">
-        <section aria-labelledby="meta-h">
-          <h2 id="meta-h" className="mb-3 text-sm font-semibold tracking-wide uppercase">
-            Metadaten
-          </h2>
-          <ModuleMetadataForm value={meta} onChange={setMeta} />
-        </section>
-
-        <section aria-labelledby="blocks-h" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 id="blocks-h" className="text-sm font-semibold tracking-wide uppercase">
-              Blöcke ({blocks.length})
-            </h2>
-            <ImportJsonDialog
-              onImport={(imported, mode) => {
-                setBlocks((prev) => (mode === 'replace' ? imported : [...prev, ...imported]));
-              }}
-            />
-          </div>
-          <BlockList blocks={blocks} onChange={setBlocks} />
-        </section>
-
-        <section aria-labelledby="preview-h">
-          <h2 id="preview-h" className="mb-3 text-sm font-semibold tracking-wide uppercase">
-            Vorschau
-          </h2>
-          <LivePreview blocks={blocks} />
-        </section>
+      <div className="grid gap-6 lg:grid-cols-[minmax(260px,_340px)_minmax(0,_1fr)]">
+        <MetadataPanel meta={meta} setMeta={setMeta} />
+        <ContentPanel
+          tab={tab}
+          setTab={setTab}
+          blocks={blocks}
+          setBlocks={setBlocks}
+          activityKind={meta.activityKind}
+          displayMode={meta.displayMode}
+        />
       </div>
     </div>
   );

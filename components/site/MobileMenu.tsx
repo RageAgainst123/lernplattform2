@@ -6,6 +6,7 @@ import { MenuIcon, XIcon } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { signOut } from '@/lib/auth/actions';
 import { studentLogout } from '@/lib/auth/student-actions';
+import { leaveClass } from '@/lib/db/student-leave-action';
 
 // Aufklappbares Mobile-Menü (< md). Bewusst kein Sheet — minimal,
 // Touch-tauglich (48px). Schließt sich beim Klick auf einen Eintrag
@@ -26,6 +27,20 @@ function MobileLogoutForm({ kind, onClose }: { kind: 'teacher' | 'student'; onCl
     <form action={action} onSubmit={onClose}>
       <button type="submit" className="hover:bg-muted w-full rounded-md border px-3 py-3 text-base">
         Abmelden
+      </button>
+    </form>
+  );
+}
+
+// Schüler:innen-only: Klasse verlassen direkt im Mobile-Menü.
+function MobileLeaveClassForm({ onClose }: { onClose: () => void }) {
+  return (
+    <form action={leaveClass} onSubmit={onClose}>
+      <button
+        type="submit"
+        className="text-destructive hover:bg-destructive/10 w-full rounded-md border px-3 py-3 text-left text-base"
+      >
+        🚪 Klasse verlassen
       </button>
     </form>
   );
@@ -57,6 +72,7 @@ function MobileAuthBlock({
             Admin
           </Link>
         )}
+        {userKind === 'student' && <MobileLeaveClassForm onClose={onClose} />}
         <MobileLogoutForm kind={userKind} onClose={onClose} />
       </div>
     );

@@ -2,7 +2,7 @@ import 'server-only';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { moduleContentSchema, type ModuleContent } from '@/lib/schemas/blocks';
 import type { BlockAnswer } from '@/lib/blocks/evaluate';
-import type { DisplayMode } from '@/lib/schemas/entities';
+import type { ActivityKind, DisplayMode } from '@/lib/schemas/entities';
 import { progressStatusMap, type ModuleStatus, type ProgressRow } from './student-modules-status';
 
 // Re-export der reinen Status-Helper, damit Aufrufer wie Komponenten nur eine
@@ -14,6 +14,8 @@ export type StudentModule = {
   title: string;
   content: ModuleContent;
   displayMode: DisplayMode;
+  activityKind: ActivityKind;
+  topicId: string | null;
 };
 
 export type ModuleProgress = {
@@ -24,20 +26,56 @@ export type ModuleProgress = {
   teacherFeedback: string | null;
 };
 
-// Prüft, ob ein Modul der Klasse der Schüler:in zugewiesen ist (class_modules).
-async function isAssigned(moduleId: string, classId: string): Promise<boolean> {
+// Prüft, ob ein Modul der Klasse der Schüler:in zugewiesen ist.
+//
+// Phase V (2026-06): prüft ZWEI Quellen:
+//   1. class_modules (direkte Zuweisung — Bestand + Override-Pfad)
+//   2. class_topics + modules.topic_id (Phase-V-Source-of-Truth)
+//
+// Ohne (2) würden Module, die nur via Topic-Zuweisung der Klasse
+// zugeordnet sind, mit 404 antworten — Pre-Phase-V-Code prüfte nur (1).
+//
+// Exportiert (Pre-Launch-Audit HIGH-6, 2026-06-04) damit progress-action.ts
+// vor jedem upsert prüfen kann, ob der vom Client geschickte moduleId
+// überhaupt zur eigenen Klasse gehört — sonst IDOR-Risiko (Schüler:in könnte
+// preemptiv Score für später zugewiesene Module schreiben).
+export async function isAssigned(moduleId: string, classId: string): Promise<boolean> {
   const supabase = createServiceClient();
-  const { data } = await supabase
+  // (1) Direkte Zuweisung in class_modules
+  const { data: directMatch } = await supabase
     .from('class_modules')
     .select('id')
     .eq('module_id', moduleId)
     .eq('class_id', classId)
     .maybeSingle();
-  return !!data;
+  if (directMatch) return true;
+  // (2) Topic-basierte Zuweisung (Phase V): modul → topic → class_topics
+  const { data: modRow } = await supabase
+    .from('modules')
+    .select('topic_id')
+    .eq('id', moduleId)
+    .maybeSingle();
+  const topicId = (modRow as { topic_id: string | null } | null)?.topic_id ?? null;
+  if (!topicId) return false;
+  const { data: topicMatch } = await supabase
+    .from('class_topics')
+    .select('class_id')
+    .eq('topic_id', topicId)
+    .eq('class_id', classId)
+    .maybeSingle();
+  return !!topicMatch;
 }
 
 // Lädt ein der Klasse zugewiesenes, veröffentlichtes Modul. Null, wenn nicht
 // zugewiesen (Zugriffsschutz für Schüler:innen).
+//
+// Phase E: Präsentationen werden NICHT geliefert — sie sind für den Beamer
+// gedacht. Phase G5: Lernmodul + Quiz + Abschlusstest sind alle für die
+// Schüler:in zugänglich (Abschlusstest mit zusätzlichem Voraussetzungs-
+// Check in der Page-Schicht, nicht hier — sonst kommt der page-Schutz nicht
+// mehr zum Zug). Präsentationen weiterhin null → notFound().
+const STUDENT_MODULE_KINDS: ActivityKind[] = ['lernmodul', 'quiz', 'abschlusstest'];
+
 export async function getStudentModule(
   moduleId: string,
   classId: string
@@ -48,8 +86,9 @@ export async function getStudentModule(
   const supabase = createServiceClient();
   const { data } = await supabase
     .from('modules')
-    .select('id, title, content, is_published, display_mode')
+    .select('id, title, content, is_published, activity_kind, display_mode, topic_id')
     .eq('id', moduleId)
+    .in('activity_kind', STUDENT_MODULE_KINDS)
     .maybeSingle();
   if (!data || !data.is_published) {
     return null;
@@ -60,6 +99,8 @@ export async function getStudentModule(
     title: data.title,
     content: parsed.success ? parsed.data : { blocks: [] },
     displayMode: (data.display_mode as DisplayMode | null) ?? 'quiz',
+    activityKind: data.activity_kind as ActivityKind,
+    topicId: (data.topic_id as string | null) ?? null,
   };
 }
 
@@ -70,10 +111,18 @@ export type AssignedModule = {
   status: ModuleStatus;
 };
 
-type ModuleRef = { id: string; title: string; description: string | null; is_published: boolean };
+type ModuleRef = {
+  id: string;
+  title: string;
+  description: string | null;
+  is_published: boolean;
+  activity_kind: string;
+};
 
-// Lädt die der Klasse zugewiesenen, veröffentlichten Module + 3-Stufen-Status
-// der Schüler:in (fürs Dashboard).
+// Lädt die der Klasse zugewiesenen, veröffentlichten LERNMODULE + 3-Stufen-Status
+// der Schüler:in (fürs Dashboard). Phase E: Präsentationen filtern wir hier raus —
+// sie sind für den Beamer gedacht und erscheinen für Schüler:innen nur als
+// LiveOverlay während einer laufenden live_session, nicht als eigene Modul-Karte.
 export async function getAssignedModules(
   classId: string,
   studentCodeId: string
@@ -81,7 +130,7 @@ export async function getAssignedModules(
   const supabase = createServiceClient();
   const { data: assignments } = await supabase
     .from('class_modules')
-    .select('modules(id, title, description, is_published)')
+    .select('modules(id, title, description, is_published, activity_kind)')
     .eq('class_id', classId);
   if (!assignments) {
     return [];
@@ -95,7 +144,7 @@ export async function getAssignedModules(
 
   return assignments
     .map((a) => a.modules as unknown as ModuleRef)
-    .filter((m) => m && m.is_published)
+    .filter((m) => m && m.is_published && m.activity_kind === 'lernmodul')
     .map((m) => ({
       id: m.id,
       title: m.title,

@@ -15,26 +15,75 @@
 > pnpm validate:module pfad/zu/modul.json
 > ```
 >
-> Stand: 2026-05-30.
+> Stand: 2026-06-12.
 
 ## 1. Das große Ganze in drei Sätzen
 
 Ein Modul ist ein JSON-Objekt `{ "blocks": [ … ] }`. Jeder Block hat eine
 **eindeutige `id`** und einen **`type`**; der Typ bestimmt die übrigen Felder
-(diskriminierte Union). Vier Typen sind **automatisch bewertbar** (zählen zur
-Prozent-Note), drei sind **nicht bewertbar** (reiner Inhalt bzw. freie Antwort).
+(diskriminierte Union). 23 Block-Typen total — verteilt auf **drei Gruppen**:
+Theorie/Folie (nicht bewertet), Worksheet-Aufgaben (14 davon auto-bewertbar),
+und Live-Interaktionen (auf Schüler:innen-Geräten während einer Präsentation,
+nicht bewertet — Stimmen leben in `live_votes`, nicht in `student_progress`).
+
+### Begriffsklärung „Modul" (Phase E)
+
+„Modul" ist DB-/Code-Sprache (`modules`-Tabelle). Im UI sieht der User aber
+**zwei** verschiedene Dinge die beide aus dieser Tabelle stammen:
+
+| User-Wort        | DB                                      | Wo erstellt                  |
+| ---------------- | --------------------------------------- | ---------------------------- |
+| **Lernmodul**    | `modules.activity_kind='lernmodul'`     | `/admin/lernmodule/neu`      |
+| **Präsentation** | `modules.activity_kind='praesentation'` | `/admin/praesentationen/neu` |
+
+Plus die dritte Aktivität **Arbeitsblatt** (PDF-Upload), die in der
+`materials`-Tabelle lebt — komplett anderes Datenmodell, nicht Teil dieser
+Spezifikation hier.
+
+Diese Spezifikation beschreibt das Block-JSON-Format, das für BEIDE
+Aktivitäts-Typen (Lernmodul + Präsentation) gleich ist. Was sich pro
+Aktivität unterscheidet: welche Block-Typen erlaubt sind — Filter in
+`lib/activities.ts` (`isBlockAllowedFor`).
 
 ## 2. Block-Typen auf einen Blick
 
-| `type`            | Zweck                       | Auto-bewertbar? | Wo die Lösung steht                          |
-| ----------------- | --------------------------- | --------------- | -------------------------------------------- |
-| `text`            | Erklärtext                  | ❌ nein         | — (kein Eingabefeld)                         |
-| `infobox`         | „Merke"-Kasten              | ❌ nein         | — (kein Eingabefeld)                         |
-| `multiple_choice` | Mehrfachauswahl             | ✅ ja           | `options[].correct: true`                    |
-| `true_false`      | Wahr/Falsch                 | ✅ ja           | `answer: true \| false`                      |
-| `fill_blank`      | Lückentext                  | ✅ ja           | `solutions[]` (Reihenfolge der `{0}`,`{1}`…) |
-| `match`           | Zuordnung Begriff→Kategorie | ✅ ja           | `pairs[].category`                           |
-| `reflection`      | Freie offene Antwort        | ❌ nein         | — (manuell von Lehrer:in beurteilt)          |
+**Gruppe A — Theorie/Folie** (statische Anzeige, kein Eingabefeld, nicht bewertet):
+
+| `type`    | Zweck                       | Modus                                 |
+| --------- | --------------------------- | ------------------------------------- |
+| `text`    | Erklärtext, optional Bild   | Worksheet + Presentation              |
+| `infobox` | „Merke"-Kasten              | Worksheet + Presentation              |
+| `slide`   | Präsentationsfolie (Beamer) | **Nur** `display_mode='presentation'` |
+
+**Gruppe B — Worksheet-Aufgaben** (Eingabefelder, automatisch bewertet außer `reflection`):
+
+| `type`            | Zweck                             | Auto-bewertbar?    | Wo die Lösung steht                          |
+| ----------------- | --------------------------------- | ------------------ | -------------------------------------------- |
+| `multiple_choice` | Mehrfachauswahl                   | ✅ ja              | `options[].correct: true`                    |
+| `true_false`      | Wahr/Falsch                       | ✅ ja              | `answer: true \| false`                      |
+| `fill_blank`      | Lückentext                        | ✅ ja              | `solutions[]` (Reihenfolge der `{0}`,`{1}`…) |
+| `match`           | Zuordnung Begriff→Kategorie       | ✅ ja              | `pairs[].category`                           |
+| `categorize`      | Items in Behälter einsortieren    | ✅ ja (Teilpunkte) | `items[].bucketId`                           |
+| `mark_words`      | Wörter im Text markieren          | ✅ ja (Teilpunkte) | `correctIndices[]` (wordIndex)               |
+| `order`           | Items in Reihenfolge bringen      | ✅ ja (Teilpunkte) | `items[]` in korrekter Reihenfolge           |
+| `hotspot`         | Richtige Stellen im Bild antippen | ✅ ja (Teilpunkte) | `areas[].isCorrect`                          |
+| `label_image`     | Stellen im Bild beschriften       | ✅ ja (Teilpunkte) | `zones[].label` (Soll-Begriff pro Zone)      |
+| `memory`          | Paare-Spiel (Karten aufdecken)    | ✅ ja (Teilpunkte) | `pairs[]` (a + b bilden das Paar)            |
+| `crossword`       | Kreuzworträtsel ausfüllen         | ✅ ja (Teilpunkte) | `words[].answer` + Startzelle/Richtung       |
+| `word_search`     | Wortsuchrätsel (Suchsel)          | ✅ ja (Teilpunkte) | `words[].word` + Startzelle/Richtung         |
+| `scramble`        | Buchstabensalat zusammensetzen    | ✅ ja (Teilpunkte) | `words[].word` (Buchstaben werden gemischt)  |
+| `hangman`         | Galgenmännchen (Wort raten)       | ✅ ja (Teilpunkte) | `words[].word` + Pflicht-`hint`              |
+| `reflection`      | Freie offene Antwort              | ❌ nein            | — (manuell von Lehrer:in beurteilt)          |
+
+**Gruppe C — Live-Interaktionen** (nur `display_mode='presentation'`, Stimmen in `live_votes`, **nicht bewertet** — zählen nicht zu `max_score`):
+
+| `type`          | Zweck                              | Eingabe am Schüler-Gerät  | Stimmen-Speicher              |
+| --------------- | ---------------------------------- | ------------------------- | ----------------------------- |
+| `live_poll`     | Unbenotetes Meinungsbild           | Buttons mit Optionen      | `live_votes.option_id`        |
+| `quiz_poll`     | Quiz mit richtiger Antwort         | Buttons mit Optionen      | `live_votes.option_id`        |
+| `word_cloud`    | Freitext-Wortwolke                 | Textfeld (max 40 Zeichen) | `live_votes.free_text`        |
+| `scale`         | Skala 1–N (z. B. Selbsteinschätz.) | Buttons mit Zahlen        | `live_votes.option_id` ('1'…) |
+| `understanding` | Verständnis-Ampel (rot/gelb/grün)  | 3 feste Ampel-Buttons     | `live_votes.option_id`        |
 
 > **Merksatz für die Bewertung:** `max_score` = **Anzahl der auto-bewertbaren
 > Blöcke** (jeder zählt 1 Punkt). `score` = Summe der korrekt gelösten. Hat ein
@@ -43,8 +92,29 @@ Prozent-Note), drei sind **nicht bewertbar** (reiner Inhalt bzw. freie Antwort).
 
 ## 3. Felder pro Block-Typ
 
+> **Maschinenlesbar:** Eine auto-generierte Felder-Tabelle (direkt aus den
+> Zod-Schemas, immer code-treu) liegt in
+> [`generated/block-fields.md`](generated/block-fields.md); das volle
+> JSON-Schema in [`generated/module-schema.json`](generated/module-schema.json).
+> Beide via `pnpm export:schema`, von CI aktuell gehalten.
+> [`generated/block-fields.md`](generated/block-fields.md) enthält pro Typ
+> zusätzlich **KI-Hinweise + ein geprüftes Beispiel** aus der Registry
+> `lib/blocks/block-docs.ts` (B2) — diese werden NICHT mehr hier von Hand
+> gepflegt. Die Tabellen unten bleiben für die **ausführlichen Prosa-
+> Erklärungen** — bei Widerspruch gewinnt das generierte Schema (= der Code).
+
 Allgemein gilt für **jeden** Block: `id` (nicht-leerer String, **eindeutig** im
-Modul) und `type` (einer der sieben Werte).
+Modul) und `type` (einer der 23 Werte aus der Tabelle in §2).
+
+> **Didaktik-Felder auf jedem bewertbaren Block (optional).** Alle
+> auto-bewertbaren Worksheet-Typen (`multiple_choice` … `hangman`) tragen
+> zusätzlich drei optionale Felder (Phase W):
+>
+> | Feld          | Typ                                    | Wirkung                                                                                  |
+> | ------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
+> | `hint`        | string                                 | Erscheint nach dem 1. Fehlversuch in einer HintBox unter dem Block.                      |
+> | `maxAttempts` | int 1–5                                | Erlaubte Versuche. `undefined` = 1 Versuch. Jeder weitere Versuch zieht −25 % Punkte ab. |
+> | `category`    | `'theorie' \| 'uebung' \| 'reflexion'` | Didaktische Gruppierung in der Editor-Block-Liste. Rein organisatorisch.                 |
 
 ### 3.1 `text` — Erklärtext (nicht bewertet)
 
@@ -174,7 +244,300 @@ Modul) und `type` (einer der sieben Werte).
 }
 ```
 
-### 3.7 `reflection` — Freie Antwort (nicht auto-bewertet)
+### 3.7 `hotspot` — Bild-Hotspots (bewertet, Teilpunkte)
+
+Ein Bild mit anklickbaren **Zonen** (Kreise oder Rechtecke). Die Schüler:in
+tippt die **richtigen** Stellen an. Teilpunkte: `(richtig getippt − falsch
+getippt) / Anzahl richtiger Zonen`, geclamped auf 0–1. Zonen-Geometrie in
+`lib/schemas/blocks-hotspot.ts`.
+
+**Block-Felder:**
+
+| Feld          | Typ      | Pflicht  | Hinweis                                                                                                         |
+| ------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| `instruction` | string   | ✅       | Aufgabenstellung („Tippe alle Eingabegeräte an.").                                                              |
+| `imageUrl`    | string   | ✅       | Gültige Bild-URL (Upload-Bucket oder Pexels).                                                                   |
+| `imageAlt`    | string   | optional | Alt-Text fürs Bild.                                                                                             |
+| `areas`       | Area[]   | ✅       | Die Zonen. Darf im Editor leer angelegt werden; ein FERTIGER Block braucht ≥ 1 richtige Zone (Validate-Script). |
+| `groups`      | Group[]  | optional | **Gruppen-Modus** (max 6). Ohne `groups` = Einfach-Modus (eine Frage).                                          |
+| `revealZones` | boolean  | optional | Default `true`. `false` = Zonen-Rahmen versteckt → Schüler:in klickt **frei** aufs Bild („Finde das Objekt").   |
+| `maxClicks`   | int 1–20 | optional | Nur versteckter Modus: begrenzt die Klicks (sinnvoll = Anzahl richtiger Zonen). `undefined` = unbegrenzt.       |
+| `zoomable`    | boolean  | optional | Default `false`. `true` = Bild zoom-/verschiebbar (für detailreiche Bilder).                                    |
+
+**Area (Zone):** `id` (eindeutig), `x`,`y` (Mittelpunkt 0–1), `shape`
+(`'circle'` Default | `'rect'`), `r` (Kreis-Radius 0.02–0.5, rel. zur Breite),
+`width`+`height` (Rechteck 0.04–1, rel. zur Breite bzw. Höhe), `rotation`
+(0–359, Default 0), **`isCorrect`** (boolean, die Lösung), `groupId`
+(nur Gruppen-Modus), `label`+`feedback` (optional; `feedback` erscheint nach dem
+Prüfen unter dem Bild).
+
+- **Versteckter Modus (`revealZones:false`):** kein Live-Feedback pro Klick —
+  jeder Klick setzt einen **neutralen** Marker, erst beim „Prüfen" wird grün/rot/
+  gelb aufgelöst (Anti-Raten-Design).
+- **Gruppen-Modus:** die Schüler:in löst nacheinander pro Gruppe; jede Gruppe
+  braucht ≥ 1 richtige Zone.
+
+```json
+{
+  "id": "hs1",
+  "type": "hotspot",
+  "instruction": "Tippe die beiden Eingabegeräte im Bild an.",
+  "imageUrl": "https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg",
+  "imageAlt": "Ein Arbeitsplatz",
+  "revealZones": true,
+  "zoomable": false,
+  "areas": [
+    { "id": "a1", "label": "Tastatur", "x": 0.5, "y": 0.78, "r": 0.18, "isCorrect": true },
+    { "id": "a2", "label": "Maus", "x": 0.85, "y": 0.7, "r": 0.1, "isCorrect": true },
+    { "id": "a3", "label": "Bildschirm", "x": 0.5, "y": 0.32, "r": 0.16, "isCorrect": false }
+  ]
+}
+```
+
+### 3.8 `label_image` — Bild-Beschriften (bewertet, Teilpunkte)
+
+Ein Bild mit **Zonen**, denen die Schüler:in den **richtigen Begriff** zuordnet
+(„Beschrifte das Diagramm"). Interaktion: Zone antippen → passenden Begriff-Chip
+wählen → er landet auf der Zone (kein Drag&Drop — robust auf Touch + Desktop).
+Teilpunkte: `Anzahl korrekt beschrifteter Zonen / Anzahl Zonen`. Zonen-Schema in
+`lib/schemas/blocks-label-image.ts`.
+
+**Block-Felder:**
+
+| Feld          | Typ     | Pflicht  | Hinweis                                                                         |
+| ------------- | ------- | -------- | ------------------------------------------------------------------------------- |
+| `instruction` | string  | ✅       | Aufgabenstellung („Beschrifte die Teile des Computers.").                       |
+| `imageUrl`    | string  | ✅       | Gültige Bild-URL.                                                               |
+| `imageAlt`    | string  | optional | Alt-Text.                                                                       |
+| `zones`       | Zone[]  | ✅       | **2–20 Zonen**. Jede trägt einen **Pflicht-`label`** (= Soll-Begriff).          |
+| `revealZones` | boolean | optional | Default `true`. `false` = keine Marker → Schüler:in sucht die Stelle erst frei. |
+| `zoomable`    | boolean | optional | Default `false`. Bild zoom-/verschiebbar.                                       |
+
+**Zone:** `id` (eindeutig), **`label`** (Pflicht, der richtige Begriff für diese
+Zone), `x`,`y` (Mittelpunkt 0–1), `shape` (`'circle'` Default | `'rect'`), `r`
+bzw. `width`+`height`, `rotation` (0–359). Kein `isCorrect`/`groupId` — jede Zone
+hat genau einen richtigen Begriff.
+
+- **Begriffe müssen eindeutig sein** (Validate-Script erzwingt es): die Begriffe
+  liegen einmalig im Pool, doppelte Labels wären für die Schüler:in mehrdeutig.
+- **Bewertung pro Zone:** `answer[zoneId] === zone.label`.
+
+```json
+{
+  "id": "li1",
+  "type": "label_image",
+  "instruction": "Beschrifte die Teile des Computers.",
+  "imageUrl": "https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg",
+  "imageAlt": "Ein Arbeitsplatz",
+  "revealZones": true,
+  "zoomable": false,
+  "zones": [
+    {
+      "id": "z1",
+      "label": "Tastatur",
+      "x": 0.5,
+      "y": 0.78,
+      "shape": "circle",
+      "r": 0.18,
+      "rotation": 0
+    },
+    {
+      "id": "z2",
+      "label": "Maus",
+      "x": 0.85,
+      "y": 0.7,
+      "shape": "circle",
+      "r": 0.1,
+      "rotation": 0
+    },
+    {
+      "id": "z3",
+      "label": "Bildschirm",
+      "x": 0.5,
+      "y": 0.32,
+      "shape": "circle",
+      "r": 0.16,
+      "rotation": 0
+    }
+  ]
+}
+```
+
+### 3.9 `memory` — Memory / Paare-Spiel (bewertet, Teilpunkte)
+
+Schüler:in deckt zwei Karten auf; bilden sie ein definiertes Paar, bleiben sie
+offen, sonst klappen sie zurück. Eine Karte trägt **genau** `text` ODER
+`imageUrl` — so gehen Begriff–Begriff, Begriff–Definition und Begriff–Bild.
+
+| Feld          | Typ                             | Pflicht | Regeln                                |
+| ------------- | ------------------------------- | ------- | ------------------------------------- |
+| `instruction` | string                          | ✅      | Aufgabenstellung                      |
+| `pairs`       | Array (3–8)                     | ✅      | `id` eindeutig                        |
+| `pairs[].a`   | `{ text? }` od. `{ imageUrl? }` | ✅      | **genau eines** von `text`/`imageUrl` |
+| `pairs[].b`   | wie `a`                         | ✅      | zweite Karte des Paares               |
+
+**Bewertung:** Teilpunkte = gefundene Paare / Anzahl Paare. Falsche Flips
+kosten nichts (Spiel-Charakter) — der Score spiegelt den Stand beim Abgeben.
+
+```json
+{
+  "id": "mem1",
+  "type": "memory",
+  "instruction": "Finde die passenden Paare.",
+  "pairs": [
+    { "id": "p1", "a": { "text": "Maus" }, "b": { "text": "Eingabegerät" } },
+    { "id": "p2", "a": { "text": "Bildschirm" }, "b": { "text": "Ausgabegerät" } },
+    { "id": "p3", "a": { "text": "CPU" }, "b": { "text": "Rechenwerk" } }
+  ]
+}
+```
+
+### 3.10 `crossword` — Kreuzworträtsel (bewertet, Teilpunkte)
+
+Autor:in legt Wörter mit Frage, Richtung und Startzelle auf ein festes Gitter;
+die füllbaren Zellen werden daraus **abgeleitet**. Schüler:in tippt eine Zelle
+an und gibt Buchstaben ein (Auto-Advance entlang des Worts; Re-Tap auf einer
+Kreuzungszelle wechselt die Richtung).
+
+| Feld                | Typ                  | Pflicht | Regeln                                                   |
+| ------------------- | -------------------- | ------- | -------------------------------------------------------- |
+| `instruction`       | string               | ✅      | Aufgabenstellung                                         |
+| `rows`/`cols`       | int 2–15             | ✅      | Gitter-Größe                                             |
+| `words`             | Array (2–10)         | ✅      | `id` eindeutig                                           |
+| `words[].answer`    | string (≥ 2)         | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].clue`      | string               | ✅      | Frage/Hinweis                                            |
+| `words[].direction` | `'across' \| 'down'` | ✅      | waagrecht / senkrecht                                    |
+| `words[].row`/`col` | int ≥ 0              | ✅      | Startzelle (0-basiert); Wort muss ins Gitter passen      |
+
+**Kreuzungen:** teilen sich zwei Wörter eine Zelle, **muss der Buchstabe
+übereinstimmen** — sonst lehnen Schema + `validate:module` den Block ab.
+KI-Hinweis: Koordinaten sorgfältig rechnen (across belegt `(row, col+i)`,
+down `(row+i, col)`); im Zweifel Wörter ohne Kreuzung nebeneinander legen.
+
+**Bewertung:** Teilpunkte = richtige Zellen / füllbare Zellen (Kreuzungszellen
+zählen einmal; Eingabe case-insensitiv).
+
+```json
+{
+  "id": "cw1",
+  "type": "crossword",
+  "instruction": "Fülle das Kreuzworträtsel aus.",
+  "rows": 7,
+  "cols": 5,
+  "words": [
+    {
+      "id": "w1",
+      "answer": "MAUS",
+      "clue": "Eingabegerät zum Klicken",
+      "direction": "across",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "w2",
+      "answer": "MONITOR",
+      "clue": "Zeigt das Bild an",
+      "direction": "down",
+      "row": 0,
+      "col": 0
+    }
+  ]
+}
+```
+
+### 3.11 `word_search` — Wortsuchrätsel / Suchsel (bewertet, Teilpunkte)
+
+Autor:in legt Wörter mit Richtung und Startzelle auf ein festes Gitter; die
+Schüler:in markiert ein Wort durch Antippen von Anfangs- und End-Buchstabe.
+Leere Zellen füllen sich automatisch mit deterministischen Füllbuchstaben.
+
+| Feld                | Typ                            | Pflicht | Regeln                                                   |
+| ------------------- | ------------------------------ | ------- | -------------------------------------------------------- |
+| `instruction`       | string                         | ✅      | Aufgabenstellung                                         |
+| `rows`/`cols`       | int 5–15                       | ✅      | Gitter-Größe                                             |
+| `words`             | Array (3–12)                   | ✅      | `id` eindeutig, **Wort-Texte eindeutig**                 |
+| `words[].word`      | string (≥ 2)                   | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].direction` | `'across' \| 'down' \| 'diag'` | ✅      | waagrecht / senkrecht / diagonal nach rechts unten       |
+| `words[].row`/`col` | int ≥ 0                        | ✅      | Startzelle (0-basiert); Wort muss ins Gitter passen      |
+
+**Kreuzungen** sind erlaubt, wenn der geteilte Buchstabe übereinstimmt
+(gleiche Rechenregel wie beim Kreuzworträtsel: across belegt `(row, col+i)`,
+down `(row+i, col)`, diag `(row+i, col+i)`).
+
+**Bewertung:** Teilpunkte = gefundene Wörter / alle Wörter.
+
+```json
+{
+  "id": "wsr1",
+  "type": "word_search",
+  "instruction": "Finde alle versteckten Wörter.",
+  "rows": 8,
+  "cols": 8,
+  "words": [
+    { "id": "w1", "word": "MAUS", "direction": "across", "row": 0, "col": 0 },
+    { "id": "w2", "word": "MONITOR", "direction": "down", "row": 0, "col": 0 },
+    { "id": "w3", "word": "TABLET", "direction": "diag", "row": 1, "col": 1 }
+  ]
+}
+```
+
+### 3.12 `scramble` — Buchstabensalat / Anagramm (bewertet, Teilpunkte)
+
+Pro Wort werden die Buchstaben gemischt angezeigt; die Schüler:in tippt sie in
+der richtigen Reihenfolge an. Optionaler Hinweis pro Wort.
+
+| Feld           | Typ               | Pflicht | Regeln                                                   |
+| -------------- | ----------------- | ------- | -------------------------------------------------------- |
+| `instruction`  | string            | ✅      | Aufgabenstellung                                         |
+| `words`        | Array (1–8)       | ✅      | `id` eindeutig                                           |
+| `words[].word` | string (2–14)     | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].hint` | string (optional) | —       | Denkanstoß, z. B. „Eingabegerät mit Tasten"              |
+
+**Bewertung:** Teilpunkte = richtig zusammengesetzte Wörter / alle Wörter.
+
+```json
+{
+  "id": "sal1",
+  "type": "scramble",
+  "instruction": "Bringe die Buchstaben in die richtige Reihenfolge.",
+  "words": [
+    { "id": "w1", "word": "TASTATUR", "hint": "Eingabegerät mit Tasten" },
+    { "id": "w2", "word": "BILDSCHIRM", "hint": "Ausgabegerät" }
+  ]
+}
+```
+
+### 3.13 `hangman` — Galgenmännchen (bewertet, Teilpunkte)
+
+Wort Buchstabe für Buchstabe über eine Bildschirm-Tastatur erraten, mit
+begrenzten Fehlversuchen (Herzen statt Galgen). Wörter werden nacheinander
+gespielt. Der `hint` ist **Pflicht** — ohne Hinweis ist Raten frustrierend.
+
+| Feld           | Typ           | Pflicht | Regeln                                                   |
+| -------------- | ------------- | ------- | -------------------------------------------------------- |
+| `instruction`  | string        | ✅      | Aufgabenstellung                                         |
+| `maxWrong`     | int 3–10      | —       | Erlaubte Fehlversuche pro Wort (Default 6)               |
+| `words`        | Array (1–6)   | ✅      | `id` eindeutig                                           |
+| `words[].word` | string (2–14) | ✅      | **NUR Großbuchstaben** `A–Z Ä Ö Ü`; ß als „SS" schreiben |
+| `words[].hint` | string        | ✅      | **Pflicht**: Hinweis-Text pro Wort                       |
+
+**Bewertung:** Teilpunkte = erratene Wörter / alle Wörter (verlorene Wörter
+zählen 0, kein Malus).
+
+```json
+{
+  "id": "gal1",
+  "type": "hangman",
+  "instruction": "Errate die gesuchten Begriffe.",
+  "maxWrong": 6,
+  "words": [
+    { "id": "w1", "word": "MONITOR", "hint": "Zeigt das Bild an" },
+    { "id": "w2", "word": "DRUCKER", "hint": "Bringt Dokumente aufs Papier" }
+  ]
+}
+```
+
+### 3.14 `reflection` — Freie Antwort (nicht auto-bewertet)
 
 | Feld          | Typ    | Pflicht  | Hinweis                                 |
 | ------------- | ------ | -------- | --------------------------------------- |
@@ -195,21 +558,170 @@ Modul) und `type` (einer der sieben Werte).
 }
 ```
 
+### 3.15 `slide` — Präsentationsfolie (nicht bewertet, Presentation-Modus)
+
+Großformatige Folie am Beamer. **Nur** in Modulen mit `display_mode='presentation'`
+sinnvoll — im Worksheet-Modus wirkt sie sperrig.
+
+| Feld       | Typ    | Pflicht  | Hinweis                                     |
+| ---------- | ------ | -------- | ------------------------------------------- |
+| `title`    | string | ✅       | Großer Titel (eine Zeile).                  |
+| `body`     | string | optional | Erläuternder Text unter dem Titel.          |
+| `imageUrl` | string | optional | Gültige URL eines Bildes (max. ca. 800 px). |
+
+```json
+{
+  "id": "s1",
+  "type": "slide",
+  "title": "Was passiert beim Speichern?",
+  "body": "Wenn du Strg+S drückst, wird die Datei auf die Festplatte geschrieben."
+}
+```
+
+### 3.16 `live_poll` — Live-Abstimmung (nicht bewertet, Presentation-Modus)
+
+Unbenoteter Meinungsbild-Block. Schüler:innen sehen Optionen auf ihrem Gerät,
+am Beamer erscheinen die Stimmen als Balken (erst nach „Ergebnis zeigen").
+
+| Feld       | Typ      | Pflicht | Hinweis                                 |
+| ---------- | -------- | ------- | --------------------------------------- |
+| `question` | string   | ✅      | Die Frage am Beamer.                    |
+| `options`  | Option[] | ✅      | **Mindestens 2**. Jede: `{ id, text }`. |
+
+- **Option:** `id` (nicht-leer, **eindeutig** im Block), `text` (string).
+- **Kein `correct`-Feld** — `live_poll` ist ein Meinungsbild. Wenn du eine
+  richtige Antwort willst, nimm `quiz_poll`.
+
+```json
+{
+  "id": "p1",
+  "type": "live_poll",
+  "question": "Wie fühlst du dich nach der Pause?",
+  "options": [
+    { "id": "o1", "text": "Wach" },
+    { "id": "o2", "text": "Geht so" },
+    { "id": "o3", "text": "Müde" }
+  ]
+}
+```
+
+### 3.17 `quiz_poll` — Quiz-Live-Abstimmung mit richtiger Antwort (nicht bewertet, Presentation-Modus)
+
+Wie `live_poll`, aber mit **richtiger Antwort**. Schüler:innen sehen die Antwort
+**nicht** vorab (das `correct`-Flag wird serverseitig entfernt, bevor es ans
+Gerät geht). Erst beim Klick auf „Auflösen" markiert der Beamer die richtige(n)
+Option(en) grün.
+
+| Feld       | Typ      | Pflicht | Hinweis                                          |
+| ---------- | -------- | ------- | ------------------------------------------------ |
+| `question` | string   | ✅      | Die Frage am Beamer.                             |
+| `options`  | Option[] | ✅      | **Mindestens 2**. Jede: `{ id, text, correct }`. |
+
+- **Option:** `id`, `text`, `correct` (boolean). Mindestens eine `correct: true`.
+- **Sicherheit:** Das `correct`-Flag wird **niemals** an Schüler:innen-Geräte
+  gesendet. Im Network-Tab eines Kind-Browsers tauchen die Optionen ohne
+  `correct` auf.
+
+```json
+{
+  "id": "q1",
+  "type": "quiz_poll",
+  "question": "Welches ist ein Eingabegerät?",
+  "options": [
+    { "id": "a", "text": "Drucker", "correct": false },
+    { "id": "b", "text": "Maus", "correct": true },
+    { "id": "c", "text": "Lautsprecher", "correct": false },
+    { "id": "d", "text": "Bildschirm", "correct": false }
+  ]
+}
+```
+
+### 3.18 `word_cloud` — Freitext-Wortwolke (nicht bewertet, Presentation-Modus)
+
+Schüler:innen tippen ein Wort oder einen kurzen Satz (max 40 Zeichen). Am Beamer
+erscheinen die Beiträge als Wortwolke — häufige Wörter werden größer
+dargestellt (lowercase + getrimmter Vergleich für Duplikat-Zählung).
+
+| Feld       | Typ    | Pflicht | Hinweis                                           |
+| ---------- | ------ | ------- | ------------------------------------------------- |
+| `question` | string | ✅      | Der Prompt am Beamer („Was fällt dir ein zu …?"). |
+
+```json
+{
+  "id": "w1",
+  "type": "word_cloud",
+  "question": "Was fällt dir zum Wort „Internet“ ein?"
+}
+```
+
+### 3.19 `scale` — Skala 1–N (nicht bewertet, Presentation-Modus)
+
+Schüler:innen klicken einen Wert auf einer Skala (Default 1–5). Am Beamer werden
+Durchschnitt und Verteilung als Balkendiagramm angezeigt. Gut für
+Selbsteinschätzung oder Stimmungsbilder mit Abstufung.
+
+| Feld       | Typ    | Pflicht  | Hinweis                                          |
+| ---------- | ------ | -------- | ------------------------------------------------ |
+| `question` | string | ✅       | Die Frage am Beamer.                             |
+| `min`      | number | optional | Untere Grenze, Default `1`.                      |
+| `max`      | number | optional | Obere Grenze, Default `5`. Üblich: 3–7 Schritte. |
+| `minLabel` | string | optional | Beschriftung unter dem `min`-Wert.               |
+| `maxLabel` | string | optional | Beschriftung unter dem `max`-Wert.               |
+
+```json
+{
+  "id": "sc1",
+  "type": "scale",
+  "question": "Wie sicher fühlst du dich mit der Tastatur?",
+  "min": 1,
+  "max": 5,
+  "minLabel": "gar nicht",
+  "maxLabel": "sehr sicher"
+}
+```
+
+### 3.20 `understanding` — Verständnis-Ampel (nicht bewertet, Presentation-Modus)
+
+Schnelles Drei-Tasten-Signal: 🟢 verstanden / 🟡 unsicher / 🔴 noch nicht. Keine
+freien Optionen — die drei Werte sind im Code fest verdrahtet, der Beamer zeigt
+sie als drei Ampel-Balken mit Prozenten.
+
+| Feld       | Typ    | Pflicht  | Hinweis                                                              |
+| ---------- | ------ | -------- | -------------------------------------------------------------------- |
+| `question` | string | optional | Default: „Wie gut hast du das verstanden?". Kann übersteuert werden. |
+
+```json
+{
+  "id": "u1",
+  "type": "understanding",
+  "question": "Hast du das EVA-Prinzip verstanden?"
+}
+```
+
 ## 4. Wie die automatische Bewertung rechnet
 
 Die gesamte Logik lebt in **`lib/blocks/evaluate.ts`** (und ist unit-getestet).
 Sie ist **typ-agnostisch**: jede Auswertung läuft über `gradeBlock()` +
 `isGraded()`, nie über eine fest verdrahtete Typ-Liste außerhalb dieser Datei.
 
-| Funktion                          | Was sie liefert                                                          |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `isGraded(block)`                 | `true` für die 4 bewertbaren Typen, `false` für text/infobox/reflection. |
-| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0** (heute binär: 0 oder 1).                        |
-| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.     |
-| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                 |
-| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                      |
-| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.      |
-| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).            |
+> **Live-Blöcke fließen nicht in die Bewertung ein.** `live_poll`, `quiz_poll`,
+> `word_cloud`, `scale`, `understanding` und `slide` sind in `NON_GRADED` —
+> sie zählen nicht zu `max_score`, ihre Stimmen leben in `live_votes`
+> (nicht in `student_progress.answers`), und sie tauchen weder in der
+> Lehrer:innen-Fortschritts-Matrix noch in der Prozent-Note auf. Das ist
+> bewusst: Live-Interaktion ist Klassen-Stimmungsbild, keine Leistungsmessung.
+> Für eine bewertbare Quiz-Frage nimm `multiple_choice` oder `true_false` im
+> Worksheet-Modus.
+
+| Funktion                          | Was sie liefert                                                                                                                                                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isGraded(block)`                 | `true` für die bewertbaren Worksheet-Typen, `false` für alle anderen.                                                                                                                                                |
+| `gradeBlock(block, answer)`       | **Teilergebnis 0.0–1.0**. `categorize`/`mark_words`/`order`/`hotspot`/`label_image`/`memory`/`crossword`/`word_search`/`scramble`/`hangman` liefern echte Teilpunkte (via `PARTIAL_GRADERS`), die übrigen binär 0/1. |
+| `scoreModule(blocks, answers)`    | Summe der `gradeBlock`-Werte über alle bewertbaren Blöcke = `score`.                                                                                                                                                 |
+| `maxScore(blocks)`                | Anzahl bewertbarer Blöcke = `max_score`.                                                                                                                                                                             |
+| `percentScore(score, max)`        | Gerundete Prozent, **oder `null`** wenn `max <= 0`.                                                                                                                                                                  |
+| `isPassed(score, max, threshold)` | `true`/`false`, **oder `null`** wenn keine Schwelle ODER `max = 0`.                                                                                                                                                  |
+| `blockResult(block, answer)`      | `'correct' \| 'wrong' \| 'ungraded'` (für die Detailansicht).                                                                                                                                                        |
 
 **Bestehens-Schwelle** (`pass_threshold`) lebt **pro Klassen-Zuweisung**, nicht
 pro Modul (siehe ADR-0011). Ein Modul mit `max_score = 0` kann nie „bestanden"
@@ -220,48 +732,96 @@ oder „nicht bestanden" sein — die Anzeige bleibt neutral.
 Wichtig, falls du Seed-Daten oder Tests von Hand schreibst. Die Antworten liegen
 als `Record<blockId, answer>` in `student_progress.answers`:
 
-| Block-Typ         | Antwort-Format          | Beispiel                                  |
-| ----------------- | ----------------------- | ----------------------------------------- |
-| `multiple_choice` | `string[]` (Option-IDs) | `["o1"]` bzw. `["o1","o3"]`               |
-| `true_false`      | `boolean`               | `false`                                   |
-| `fill_blank`      | `(string\|null)[]`      | `["Crawler","Index"]` (Reihenfolge `{i}`) |
-| `match`           | `Record<pairId,cat>`    | `{ "p1":"Technik", "p3":"Vorsicht" }`     |
-| `reflection`      | `string`                | `"Ich nutze sie für …"`                   |
+| Block-Typ         | Antwort-Format                  | Beispiel                                  |
+| ----------------- | ------------------------------- | ----------------------------------------- |
+| `multiple_choice` | `string[]` (Option-IDs)         | `["o1"]` bzw. `["o1","o3"]`               |
+| `true_false`      | `boolean`                       | `false`                                   |
+| `fill_blank`      | `(string\|null)[]`              | `["Crawler","Index"]` (Reihenfolge `{i}`) |
+| `match`           | `Record<pairId,cat>`            | `{ "p1":"Technik", "p3":"Vorsicht" }`     |
+| `categorize`      | `Record<itemId,bucketId>`       | `{ "ci1":"b-ein", "ci4":"b-aus" }`        |
+| `mark_words`      | `number[]` (wordIndex)          | `[2, 5, 22]`                              |
+| `order`           | `string[]` (itemId-Reihenfolge) | `["oe1","oe2","oe3"]`                     |
+| `hotspot`         | `string[]` (areaId)             | `["hs-tastatur","hs-maus"]`               |
+| `label_image`     | `Record<zoneId,label>`          | `{ "z1":"Tastatur", "z2":"Maus" }`        |
+| `memory`          | `string[]` (gematchte pairIds)  | `["p1","p3"]`                             |
+| `crossword`       | `Record<"r,c",Buchstabe>`       | `{ "0,0":"M", "0,1":"A" }`                |
+| `word_search`     | `string[]` (gefundene wordIds)  | `["w1","w3"]`                             |
+| `scramble`        | `Record<wordId,string>`         | `{ "w1":"TASTATUR" }`                     |
+| `hangman`         | `string[]` (gelöste wordIds)    | `["w1"]`                                  |
+| `reflection`      | `string`                        | `"Ich nutze sie für …"`                   |
 
 ## 5. Pflicht-Checkliste vor dem Import
+
+**Allgemein:**
 
 - [ ] Top-Level ist `{ "blocks": [ … ] }` (das Array allein geht auch durch das
       Validierungs-Script, der Editor erwartet aber das Objekt).
 - [ ] Jede Block-`id` ist **eindeutig**.
+- [ ] `pnpm validate:module modul.json` läuft **grün**.
+
+**Worksheet-Module** (`display_mode='worksheet'`, Standard):
+
 - [ ] Jeder `multiple_choice` hat **≥ 1** Option mit `correct: true`; Options-`id`s eindeutig.
 - [ ] Jeder `fill_blank`: **Anzahl `solutions` == höchster `{n}`-Index + 1**.
 - [ ] Jeder `match`: **≥ 2 unterschiedliche** `category`-Werte; `pair`-`id`s eindeutig.
+- [ ] Jeder `categorize`: `bucket`-/`item`-`id`s eindeutig; jedes `item.bucketId` zeigt auf einen existierenden Behälter.
+- [ ] Jeder `mark_words`: `correctIndices` liegen im Wortbereich, keine Duplikate.
+- [ ] Jeder `order`: `item`-`id`s eindeutig, kein leerer `item.text`.
+- [ ] Jeder `hotspot`: **≥ 1** Zone mit `isCorrect: true`; `area`-`id`s eindeutig; Koords ∈ [0,1]; Kreis → `r`, Rechteck → `width`+`height`; im Gruppen-Modus hat jede Gruppe ≥ 1 richtige Zone.
+- [ ] Jeder `label_image`: **≥ 2** Zonen; `zone`-`id`s eindeutig; jede Zone hat ein nicht-leeres `label`; **Labels eindeutig**; Koords ∈ [0,1]; Kreis → `r`, Rechteck → `width`+`height`.
+- [ ] Jeder `memory`: 3–8 Paare; `pair`-`id`s eindeutig; jede Karte hat **genau** `text` ODER `imageUrl`.
+- [ ] Jeder `crossword`: 2–10 Wörter; `word`-`id`s eindeutig; `answer` nur Großbuchstaben; jedes Wort **passt ins Gitter**; **Kreuzungen stimmen im Buchstaben überein**.
 - [ ] Mindestens **ein** auto-bewertbarer Block, falls eine Prozent-Note erwünscht ist.
-- [ ] `pnpm validate:module modul.json` läuft **grün**.
+- [ ] **Keine** Live-Blöcke (`live_poll`, `quiz_poll`, `word_cloud`, `scale`,
+      `understanding`, `slide`) — die brauchen `display_mode='presentation'`.
+
+**Presentation-Module** (`display_mode='presentation'`, geführter Beamer-Verlauf):
+
+- [ ] Jeder `live_poll` / `quiz_poll`: **≥ 2** Optionen, Options-`id`s eindeutig.
+- [ ] Jeder `quiz_poll`: **≥ 1** Option mit `correct: true` (sonst leuchtet beim
+      Auflösen nichts grün).
+- [ ] Jeder `scale`: wenn `min`/`max` gesetzt, dann `max > min` und Spanne ≤ 10
+      (sonst werden die Buttons zu klein für Handys).
+- [ ] Reihenfolge folgt einer didaktischen Dramaturgie (siehe
+      `docs/AUTOR-WORKFLOW.md` §9: Einstieg → Theorie-Folien → Aktivierung →
+      Sicherung → Reflexion).
+- [ ] **Keine** Worksheet-Aufgaben (`multiple_choice`, `true_false`, `fill_blank`,
+      `match`) — die haben keine Beamer-Renderer und würden im Presentation-Modus
+      stumm bleiben. Für Quizfragen im Live-Modus: `quiz_poll`.
 
 ## 6. Einen NEUEN Block-Typ einführen (für Entwickler:innen)
 
-Der Pfad ist bewusst auf **genau drei Stellen** beschränkt — der Rest der
-Pipeline (Scoring, Prozent, Bestehen, Lehrer:innen-Matrix) läuft danach
-**ohne Änderung** weiter:
+Der **bewertungsrelevante** Kern läuft über `gradeBlock`/`isGraded` — Scoring,
+Prozent, Bestehen und Lehrer:innen-Matrix bleiben danach **ohne Änderung**. Für
+einen Block, der auch im Editor anlegbar ist und vom Validate-Script geprüft
+wird, sind diese Stellen zu berühren (zuletzt so umgesetzt für `categorize`,
+`hotspot`, `label_image`):
 
-1. **`lib/schemas/blocks.ts`** — neues Zod-Schema definieren und in die
-   `blockSchema`-Union aufnehmen (+ Antwort-Format dokumentieren).
-2. **`lib/blocks/evaluate.ts`** — falls auto-bewertbar: einen Eintrag in
-   `CHECKERS` ergänzen (Korrektheits-Prüfung). Für **Teilpunkte** den Eintrag
-   einen Bruchwert 0.0–1.0 zurückgeben lassen — `gradeBlock` reicht ihn durch,
-   alles Übrige bleibt unverändert.
-3. **`components/blocks/`** — Renderer (Anzeige + Eingabe) bauen und in
-   `BlockView.tsx` einhängen.
+1. **Schema** — `lib/schemas/blocks.ts` Zod-Schema + `blockSchema`-Union +
+   `export type`. Komplexe Block-Typen lagern ihr Sub-Schema in eine eigene
+   Datei aus (`blocks-hotspot.ts`, `blocks-label-image.ts`) und nutzen geteilte
+   Bausteine aus `blocks-shared.ts` (`blockId`, `gradedBlockExtensions`).
+2. **Grading** — `lib/blocks/evaluate.ts`: Answer-Typ + `BlockAnswer`-Union;
+   bei Auto-Bewertung einen Eintrag in **`PARTIAL_GRADERS`** (Rückgabe 0.0–1.0
+   für Teilpunkte) bzw. die binäre Checker-Map.
+3. **Schüler-Renderer** — `components/blocks/` (Anzeige + Eingabe) und
+   Dispatch in `block-assignment-renderers.tsx` + `BlockView.tsx`.
+4. **Admin-Editor** — `components/admin/forms/<Typ>Form.tsx` + Dispatch in
+   `BlockForm.tsx`; Default-Stub in `block-stubs.ts` (+ ID-Präfix); Katalog-
+   Eintrag in `block-catalog.ts`.
+5. **Validate-Script** — `scripts/validate-module.mjs`: `GRADED.add(...)` +
+   fachliche Checks (eindeutige IDs, Pflichtfelder, Wertebereiche).
 
-Danach: **diese Datei** (§2/§3/§4-Tabellen) und das Prompt-Template in
-`docs/AUTOR-WORKFLOW.md` §4 nachziehen, einen Test in `evaluate.test.ts`
-ergänzen, fertig.
+Danach: **diese Datei** (§2/§3/§4/§5) und das Prompt-Template in
+`docs/AUTOR-WORKFLOW.md` §4 nachziehen, Tests in `evaluate.test.ts` +
+`<Typ>Block.test.tsx` + `block-catalog.test.ts` ergänzen, fertig.
 
 ## 7. Querverweise
 
-- [`lib/schemas/blocks.ts`](../lib/schemas/blocks.ts) — Zod-Schema (Struktur-Wahrheit)
-- [`lib/blocks/evaluate.ts`](../lib/blocks/evaluate.ts) — Bewertung (Bewertungs-Wahrheit)
+- [`docs/QUICKSTART-MODUL.md`](QUICKSTART-MODUL.md) — durchgehender Ablauf: KI generiert → validieren → testen → freigeben
+- [`lib/schemas/blocks.ts`](../lib/schemas/blocks.ts) — Zod-Schema (Struktur-Wahrheit), Sub-Schemas in `blocks-hotspot.ts` / `blocks-label-image.ts` / `blocks-live.ts` / `blocks-shared.ts`
+- [`lib/blocks/evaluate.ts`](../lib/blocks/evaluate.ts) — Bewertung (Bewertungs-Wahrheit), `PARTIAL_GRADERS` für Teilpunkte
+- [`components/admin/block-catalog.ts`](../components/admin/block-catalog.ts) — kuratierte Block-Liste mit Lehrer:innen-Beschreibungen (im „Block hinzufügen"-Dialog)
 - [`scripts/validate-module.mjs`](../scripts/validate-module.mjs) — Validierung vor dem Import
 - [`docs/AUTOR-WORKFLOW.md`](AUTOR-WORKFLOW.md) — Schritt-für-Schritt-Modulerstellung mit KI
 - [`supabase/seeds/0002_modul_suchen.sql`](../supabase/seeds/0002_modul_suchen.sql) — vollständiges Referenz-Modul

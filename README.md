@@ -17,7 +17,7 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 - **Next.js 16** (App Router, Server Components, Turbopack) · **React 19.2** · **TypeScript** strict
 - **Tailwind CSS v4** (`@theme` in CSS) · **shadcn/ui** (Base UI, **nicht** Radix)
 - **Supabase** (Frankfurt): Auth + PostgreSQL mit Row-Level Security + Storage, via `@supabase/ssr`
-- **jose** (Schüler:innen-JWT, HS256, 8 h, HTTP-Only-Cookie) ·
+- **jose** (Schüler:innen-JWT, HS256, 1 Jahr, HTTP-Only-Cookie) ·
   **bcryptjs** (PIN-Hash, SALT_ROUNDS=10)
 - **@react-pdf/renderer** (Lehrer:innen-PDF-Export, dynamischer Import)
 - **lucide-react** (Icons) · **react-hook-form + Zod** (Formulare/Validierung)
@@ -26,23 +26,77 @@ Lernplattform für die österreichische Digitale Grundbildung (Sekundarstufe I,
 
 ### Lerninhalte
 
-Module bestehen aus Blöcken (Block-Engine, 7 Typen):
+Module bestehen aus Blöcken (Block-Engine, **23 Typen**). Vollständige
+Spezifikation in [`docs/MODUL-SPEZIFIKATION.md`](docs/MODUL-SPEZIFIKATION.md).
 
-| Typ               | Verwendung                                        |
-| ----------------- | ------------------------------------------------- |
-| `text`            | Erklärtext, Theorie-Block                         |
-| `infobox`         | Hervorgehobener Tipp / Merksatz                   |
-| `multiple_choice` | Eine oder mehrere Antworten aus Auswahl           |
-| `true_false`      | Wahr/Falsch-Aussage                               |
-| `fill_blank`      | Lückentext mit Wort-Pool (Tippen statt Drag-Drop) |
-| `match`           | Begriff → Kategorie zuordnen                      |
-| `reflection`      | Freitext-Antwort der Schüler:in                   |
+**Theorie/Folie** (nicht bewertet): `text`, `infobox`, `slide`.
+
+**Worksheet-Aufgaben** (auto-bewertet außer reflection; ⊕ = Teilpunkte):
+
+| Typ               | Verwendung                                                 |
+| ----------------- | ---------------------------------------------------------- |
+| `multiple_choice` | Eine oder mehrere Antworten aus Auswahl                    |
+| `true_false`      | Wahr/Falsch-Aussage                                        |
+| `fill_blank`      | Lückentext mit Wort-Pool (Tippen statt Drag-Drop)          |
+| `match`           | Begriff → Kategorie zuordnen                               |
+| `categorize` ⊕    | Items in 2–4 benannte Behälter einsortieren                |
+| `mark_words` ⊕    | Wörter im Fließtext markieren                              |
+| `order` ⊕         | Items in die richtige Reihenfolge bringen                  |
+| `hotspot` ⊕       | Richtige Stellen im Bild antippen (Zonen, Gruppen, Zoom)   |
+| `label_image` ⊕   | Stellen im Bild beschriften (Zone tippen → Begriff wählen) |
+| `memory` ⊕        | Paare-Spiel: Karten aufdecken, Paare finden (Text/Bild)    |
+| `crossword` ⊕     | Kreuzworträtsel: Zelle tippen, Buchstaben eingeben         |
+| `reflection`      | Freitext-Antwort der Schüler:in (manuell bewertet)         |
+
+**Live-Interaktionen** (nur Presentation-Modus): `live_poll`, `quiz_poll`,
+`word_cloud`, `scale`, `understanding`.
 
 Module haben zwei **Anzeige-Modi** (Spalte `modules.display_mode`):
 
 - `quiz` (Default) — Block-für-Block, Sofort-Feedback. `ModuleRunner.tsx`.
 - `worksheet` — alle Aufgaben auf einer scrollbaren Seite, Auto-Save (800 ms),
   definitive Abgabe via „Abgeben"-Button. `WorksheetRunner.tsx`.
+
+### Weitere Features (Phasen E – Q)
+
+- **Reiche Aufgabentypen mit Teilpunkten** (Phasen P0/A/W): `categorize`,
+  `order`, `mark_words`, `hotspot` (Bild-Hotspots mit Zonen/Gruppen/Zoom/
+  Frei-Klick), `label_image` (Bild beschriften), `memory` (Paare-Spiel) und
+  `crossword` (Kreuzworträtsel mit Live-Editor-Vorschau). Numerische Scores
+  (Migration 0024, `PARTIAL_GRADERS`), plus optionale Didaktik-Felder auf
+  **jedem** bewertbaren Block (`hint`, `maxAttempts`, `category`). Anlegbar
+  direkt im Admin-Editor; dort testet der Tab **„🎒 Als Schüler:in testen"**
+  jedes Lernmodul ohne zweiten Browser exakt in der Schüler-Sicht.
+- **Themen-Lernpfade** (Phase G): Themen als first-class Entity mit Modul-
+  Sortierung, Abschlusstest-Voraussetzungs-Check. Migration 0013.
+- **Schulheft** für Code+PIN-Schüler:innen (Phase H+): Tiptap-Editor mit
+  Word-ähnlichen Features (Tabellen, Schriften, Farben, Listen),
+  Pexels-Bild-Picker, Bild-Resize. Migration 0014.
+- **Live-Präsentation** am Beamer (Phasen 17–22): live_sessions + live_votes,
+  5 Live-Block-Typen (live_poll, quiz_poll, word_cloud, scale, understanding),
+  Reveal/Lock-Steuerung, Heartbeat-Tod. Migrationen 0008–0011.
+- **O365-SSO** (Phase O): Multi-Tenant Azure-App, Schüler:innen + Lehrer:innen
+  können mit ihrem Schul-Microsoft-Konto anmelden. Tinkercad-Pattern für
+  Klassen-Beitritt (Code am Beamer zeigen → Schüler:in tippt nach SSO ein).
+  Migrationen 0015–0017. ADR-0014.
+- **Word-Schulübungsheft** (Phase Q): SSO-Schüler:innen verlinken ein Word-
+  Heft aus dem eigenen OneDrive. Wir speichern nur die URL, kein Graph-API,
+  kein eigener Storage. Lehrer:innen sehen alle Hefte einer Klasse.
+  Migrationen 0018+0019. ADR-0015.
+- **Live-Klassen-Quiz** (Sprint S): Kahoot-Style-Quiz im Klassenzimmer.
+  Lehrer:in am Beamer steuert (Frage starten, auflösen, weiter), Schüler:innen
+  antworten am eigenen Gerät, Leaderboard zwischen Fragen, Top-3-Podest am
+  Ende. Live-Modus + Hausaufgabenmodus geplant. Migration 0020.
+  `docs/QUIZ-MODI-SPEZIFIKATION.md`.
+- **Hybrid Realtime-Broadcast** (Phase T): Supabase Realtime als Push-Layer
+  über bestehendes Polling — Latenz im Hot-Path 0,5–2,5s → <300ms (75-115ms
+  gemessen), Polling 5s als Fallback bleibt zwingend. Senkt Vercel-Function-
+  Last für Live-Phasen um ~80%. Public Channels mit UUID-Namen (kein RLS für
+  Schüler:innen-Push). ADR-0016.
+- **Pre-Launch-Härtung** (Phase C + U1): /api/health, Global-Kill-Switch
+  (Env-Vars), Quiz-Tagespensum-Quota, Status-Page, IP-Rate-Limits + Login-
+  Brute-Force-Schutz, Cache-Header, k6-Lasttest. `docs/PRE-LAUNCH-AUDIT.md`
+  dokumentiert verbleibende U2-U3-Tasks vor SEO-Launch.
 
 ## Setup
 
@@ -60,9 +114,12 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 ```
 
 Datenbank-Schema einspielen: **alle** SQL-Dateien aus `supabase/migrations/`
-der Reihe nach (`0001_initial_schema.sql` bis `0007_submissions_feedback.sql`)
-im Supabase SQL-Editor ausführen. Für E-Mail-Versand (Magic Link) ist ein
-SMTP-Provider (z. B. Resend) in den Supabase-Auth-Einstellungen zu hinterlegen.
+der Reihe nach (`0001_initial_schema.sql` bis `0019_word_heft_one_per_student.sql`,
+insgesamt 19 Migrationen) im Supabase SQL-Editor ausführen. Für E-Mail-
+Versand (Magic Link) ist ein SMTP-Provider (z. B. Resend) in den
+Supabase-Auth-Einstellungen zu hinterlegen. Für O365-SSO (Phase O) zusätzlich
+den Azure-Provider in den Supabase-Auth-Settings aktivieren — siehe
+`docs/adr/0014-o365-sso-fuer-schueler-innen.md`.
 
 ## Befehle
 
@@ -93,7 +150,7 @@ app/              Next.js Routes (App Router)
 components/
   ui/             shadcn/ui (via CLI verwaltet, nicht manuell)
   site/           Globaler Header/Footer/Shell (SiteHeader, HeaderAuth, MobileMenu)
-  blocks/         Block-Engine (7 Renderer + ModuleRunner + WorksheetRunner)
+  blocks/         Block-Engine (Renderer für 20 Block-Typen + ModuleRunner + WorksheetRunner)
   student/        ModuleCard, StatusSummary, StudentLoginForm
   teacher/        Code-Liste, CodeListPdf (PDF-Export, dynamischer Import)
   admin/          Modul-Editor (BlockList, BlockEditor, ImportJsonDialog)
@@ -111,7 +168,7 @@ supabase/
 docs/
   INHALTSKONZEPT.md  Inhalts-Begriffe (Material vs. Modul, Navigations-Hierarchie)
   ROLES.md           Rollen, Auth-Mechanismen, Zugriffsrechte
-  adr/               Architecture Decision Records (0001–0012)
+  adr/               Architecture Decision Records (0001–0016)
 proxy.ts          Auth-Token-Refresh + Routenschutz (Next-16-Konvention)
 CLAUDE.md         Session-Notizen für AI-Pair (Stolperfallen, Konventionen, Phasen)
 CHANGELOG.md      Phasen-Verlauf (reverse-chronologisch)

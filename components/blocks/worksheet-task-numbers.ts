@@ -9,6 +9,10 @@ const INTERACTIVE_TYPES: ReadonlySet<BlockType> = new Set([
   'true_false',
   'fill_blank',
   'match',
+  'categorize',
+  'mark_words',
+  'order',
+  'hotspot',
   'reflection',
 ]);
 

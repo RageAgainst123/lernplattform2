@@ -1,0 +1,83 @@
+{
+  "blocks": [
+    {
+      "id": "b1",
+      "type": "text",
+      "content": "Heute testest du zwei neue Aufgaben: ein Memory-Spiel und ein Kreuzworträtsel. Beide drehen sich um Computer-Geräte, die du jeden Tag benutzt."
+    },
+    {
+      "id": "mem1",
+      "type": "memory",
+      "instruction": "Finde die Paare: Welches Gerät gehört zu welcher Aufgabe?",
+      "hint": "Denk daran, was du mit dem Gerät in der Hand machst.",
+      "maxAttempts": 3,
+      "pairs": [
+        { "id": "p1", "a": { "text": "Maus" }, "b": { "text": "Zeigen und Klicken" } },
+        { "id": "p2", "a": { "text": "Monitor" }, "b": { "text": "Zeigt Bilder an" } },
+        { "id": "p3", "a": { "text": "Drucker" }, "b": { "text": "Bringt Text aufs Papier" } },
+        {
+          "id": "p4",
+          "a": { "text": "USB-Stick" },
+          "b": { "text": "Speichert Daten zum Mitnehmen" }
+        }
+      ]
+    },
+    {
+      "id": "b2",
+      "type": "infobox",
+      "title": "Merke",
+      "content": "Eingabegeräte (Maus, Tastatur, Scanner) schicken Daten IN den Computer. Ausgabegeräte (Monitor, Drucker) bringen Ergebnisse HERAUS."
+    },
+    {
+      "id": "cw1",
+      "type": "crossword",
+      "instruction": "Fülle das Kreuzworträtsel aus. Tippe eine Zelle an und gib den Buchstaben ein.",
+      "hint": "Alle Lösungen sind Computer-Geräte aus dieser Stunde.",
+      "maxAttempts": 3,
+      "rows": 7,
+      "cols": 8,
+      "words": [
+        {
+          "id": "w1",
+          "answer": "TASTATUR",
+          "clue": "Damit tippst du Buchstaben und Zahlen",
+          "direction": "across",
+          "row": 0,
+          "col": 0
+        },
+        {
+          "id": "w2",
+          "answer": "SCANNER",
+          "clue": "Liest Papier-Bilder in den Computer ein",
+          "direction": "down",
+          "row": 0,
+          "col": 2
+        },
+        {
+          "id": "w3",
+          "answer": "USB",
+          "clue": "Stecker-Anschluss für Sticks und Mäuse (Abkürzung)",
+          "direction": "down",
+          "row": 0,
+          "col": 6
+        },
+        {
+          "id": "w4",
+          "answer": "MAUS",
+          "clue": "Damit zeigst und klickst du",
+          "direction": "across",
+          "row": 2,
+          "col": 1
+        },
+        {
+          "id": "w5",
+          "answer": "ROUTER",
+          "clue": "Verbindet dein Zuhause mit dem Internet",
+          "direction": "across",
+          "row": 6,
+          "col": 2
+        }
+      ]
+    }
+  ]
+}

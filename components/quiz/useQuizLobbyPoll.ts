@@ -1,0 +1,160 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { QuizLobbyState, TeacherLobbyState } from '@/app/api/quiz/lobby/route';
+import { useRealtimeWithFallback } from '@/components/realtime/useRealtimeWithFallback';
+import { channels, events } from '@/lib/realtime/channels';
+
+// Pollt /api/quiz/lobby und liefert den aktuellen Lobby-Zustand für
+// Schüler:innen-Banner (auf /s) ODER Lehrer:innen-Teilnehmer-Liste (auf
+// /lehrer/.../run).
+//
+// Phase T4 (ADR-0016): Lehrer-Modus läuft jetzt über Realtime-Broadcast.
+// Wenn ein:e Schüler:in der Lobby beitritt, sieht Lehrer:in es <300ms
+// statt nach Polling-Tick. Schüler-Modus bleibt klassisches Polling
+// (5s reicht — Schüler:in wartet eh aufs Quiz, kein Lehrer-Live-Signal
+// nötig + Schüler-Banner pollt OHNE bekannte sessionId und kann deshalb
+// auch nicht auf einen Channel subscriben).
+
+const STUDENT_ACTIVE_MS = 1500;
+// Pre-Launch-Scale-Audit QW-3 (2026-06-05): IDLE-Polling von 5s auf 30s
+// erhöht. Wenn kein Quiz für die Klasse läuft (Banner = null), pollt der
+// Schüler-Tab nur alle 30s. Das spart bei 100 Schulen × 25 idle Schüler:innen
+// = 2500 Tabs ca. 25000 Requests/Min. Realtime-Broadcast greift sofort
+// sobald ein Quiz startet (T2 publish'ed question_started), Polling ist
+// nur das Sicherheitsnetz wenn Realtime aussetzt.
+const STUDENT_IDLE_MS = 30000;
+const TEACHER_POLL_FALLBACK_MS = 5000;
+const LOBBY_EVENTS = [
+  events.quiz.participantJoined,
+  events.quiz.questionStarted,
+  events.quiz.questionRevealed,
+  events.quiz.nextQuestion,
+  events.quiz.quizEnded,
+] as const;
+
+type Options = { classId?: string };
+
+export function useQuizLobbyPoll(initial: QuizLobbyState, opts: Options = {}): QuizLobbyState {
+  const isTeacher = opts.classId !== undefined;
+  // Beide Hooks werden IMMER aufgerufen (React-Hooks-Regel: konsistente
+  // Reihenfolge pro Render). Per Mode wird einer der Returns genommen.
+  const teacherState = useTeacherLobbyHybrid(initial, opts.classId, isTeacher);
+  const studentState = useStudentLobbyPoll(initial, !isTeacher);
+  return isTeacher ? teacherState : studentState;
+}
+
+// Lehrer-Modus: Realtime + 5-s-Polling-Fallback. Channel kommt aus dem
+// aktuellen State (session.id) — bei kind='none' Idle-Channel.
+// enabled=false → fetcher liefert initial-Zustand, kein Polling/Realtime.
+function useTeacherLobbyHybrid(
+  initial: QuizLobbyState,
+  classId: string | undefined,
+  enabled: boolean
+): QuizLobbyState {
+  const fetcher = useCallback(async (): Promise<QuizLobbyState> => {
+    if (!enabled || !classId) return initial;
+    const url = `/api/quiz/lobby?classId=${encodeURIComponent(classId)}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+    return (await res.json()) as QuizLobbyState;
+  }, [classId, enabled, initial]);
+
+  // Pre-Launch-Audit MED-2: sessionId aus aktuellem State tracken, damit
+  // beim Quiz-Start (none → teacher.session existiert) Realtime sofort
+  // greift. Wrap fetcher um sessionId-State zu updaten.
+  const [sessionId, setSessionId] = useState<string | null>(
+    teacherSessionId(initial as TeacherLobbyState | StudentLobbyState)
+  );
+  const wrappedFetcher = useCallback(async (): Promise<QuizLobbyState> => {
+    const next = await fetcher();
+    const nextSid = teacherSessionId(next as TeacherLobbyState | StudentLobbyState);
+    if (nextSid !== sessionId) setSessionId(nextSid);
+    return next;
+  }, [fetcher, sessionId]);
+
+  const { state } = useRealtimeWithFallback<QuizLobbyState>({
+    channelName: sessionId ? channels.quizSession(sessionId) : '',
+    events: LOBBY_EVENTS,
+    fetcher: wrappedFetcher,
+    initial,
+    pollIntervalMs: TEACHER_POLL_FALLBACK_MS,
+    // Pre-Launch-Audit MED-1+MED-2: enabled=false (z.B. Schüler-Modus oder
+    // disabled-Pfad) → kein Channel, kein Polling. Bei enabled=true aber
+    // sessionId=null → KEIN Channel (channelName leer), aber Polling läuft
+    // weiter und holt die session-id sobald sie da ist; danach re-subscribed
+    // der Hook automatisch (channelName-Change als useEffect-dep).
+    enabled,
+  });
+  return state;
+}
+
+// Pure Helper: zieht die sessionId aus einem teacher-state. Null wenn
+// noch keine aktive Session läuft.
+type StudentLobbyState = Exclude<QuizLobbyState, TeacherLobbyState>;
+function teacherSessionId(state: TeacherLobbyState | StudentLobbyState): string | null {
+  if (state.kind === 'teacher' && state.session) return state.session.id;
+  return null;
+}
+
+// Schüler-Modus: 1.5s-aktiv-Polling, 5s-idle. enabled=false → kein
+// Polling, return initial.
+function useStudentLobbyPoll(initial: QuizLobbyState, enabled: boolean): QuizLobbyState {
+  const [state, setState] = useState<QuizLobbyState>(initial);
+  const activeRef = useRef(hasStudentBanner(initial));
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const stopper = { cancelled: false, timer: null as ReturnType<typeof setTimeout> | null };
+    const poll = makeStudentPoller(stopper, activeRef, setState);
+    function onVisibility() {
+      if (document.hidden) return;
+      if (stopper.timer) clearTimeout(stopper.timer);
+      void poll();
+    }
+    void poll();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stopper.cancelled = true;
+      if (stopper.timer) clearTimeout(stopper.timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [enabled]);
+
+  return state;
+}
+
+type Stopper = { cancelled: boolean; timer: ReturnType<typeof setTimeout> | null };
+
+function makeStudentPoller(
+  stopper: Stopper,
+  activeRef: React.MutableRefObject<boolean>,
+  setState: (s: QuizLobbyState) => void
+): () => Promise<void> {
+  async function poll(): Promise<void> {
+    if (!document.hidden) {
+      try {
+        const res = await fetch('/api/quiz/lobby', { cache: 'no-store' });
+        if (res.ok) {
+          const next = (await res.json()) as QuizLobbyState;
+          if (!stopper.cancelled) {
+            activeRef.current = hasStudentBanner(next);
+            setState(next);
+          }
+        }
+      } catch {
+        // Netz-/Abbruchfehler ignorieren — nächster Tick versucht es erneut.
+      }
+    }
+    if (!stopper.cancelled) {
+      stopper.timer = setTimeout(poll, activeRef.current ? STUDENT_ACTIVE_MS : STUDENT_IDLE_MS);
+    }
+  }
+  return poll;
+}
+
+// Pure Helper: hat dieser Schüler-State ein sichtbares Banner? Bestimmt
+// das Polling-Intervall (schneller polling wenn was los ist).
+function hasStudentBanner(state: QuizLobbyState): boolean {
+  return state.kind === 'student' && state.banner !== null;
+}

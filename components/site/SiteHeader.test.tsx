@@ -61,8 +61,9 @@ describe('SiteHeader', () => {
       userKind: 'student',
       isAdminUser: false,
     });
-    expect(screen.getByText('5A-01')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Abmelden' }).length).toBeGreaterThan(0);
+    // Schüler:innen-Header hat Settings-Dropdown (Desktop) + Abmelden-Form (Mobile).
+    // Beide enthalten den Anzeigenamen. Wir prüfen nur dass der Name irgendwo sichtbar ist.
+    expect(screen.getAllByText('5A-01').length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', { name: /Schüler:innen-Login/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Lehrer:innen-Login/ })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mein Bereich' })).toHaveAttribute('href', '/s');

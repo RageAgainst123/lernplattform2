@@ -1,7 +1,7 @@
 'use client';
 
 import type { Block } from '@/lib/schemas/blocks';
-import { blockResult, isGraded, type BlockAnswer } from '@/lib/blocks/evaluate';
+import { blockResult, blockScore, isGraded, type BlockAnswer } from '@/lib/blocks/evaluate';
 import { BlockView } from '@/components/blocks/BlockView';
 import { BlockResultBadge } from '@/components/teacher/BlockResultBadge';
 import { buildTaskNumberMap } from '@/components/blocks/worksheet-task-numbers';
@@ -57,6 +57,7 @@ function SubmissionBlock({
   onToggleMark: (blockId: string, accepted: boolean) => void;
 }) {
   const result = blockResult(block, answer);
+  const score = blockScore(block, answer);
   return (
     <div className="space-y-2 border-b pb-5 last:border-b-0">
       <div className="flex items-center justify-between gap-2">
@@ -65,7 +66,7 @@ function SubmissionBlock({
         ) : (
           <span />
         )}
-        <BlockResultBadge result={result} />
+        <BlockResultBadge result={result} score={score} />
       </div>
       <BlockView block={block} answer={answer} checked readOnly onAnswer={noop} />
       {block.type === 'reflection' && (

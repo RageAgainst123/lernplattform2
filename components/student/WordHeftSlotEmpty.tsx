@@ -1,0 +1,152 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import { saveWordHeftLink } from '@/lib/db/word-heft-actions';
+import { validateOneDriveLink } from '@/lib/onedrive/validate-link';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { WordHeftInstructionsModal } from './WordHeftInstructionsModal';
+
+// Sub-Komponente von WordHeftSlot: gezeigt wenn (a) noch kein Heft angelegt
+// ist ODER (b) der User explizit "Link aktualisieren" geklickt hat.
+
+function NoLinkActions({
+  onShowInstructions,
+  onToggleInput,
+  showInput,
+}: {
+  onShowInstructions: () => void;
+  onToggleInput: () => void;
+  showInput: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <a
+        href="https://www.office.com/launch/word?auth=2"
+        target="_blank"
+        rel="noopener"
+        className={buttonVariants({ variant: 'default' })}
+      >
+        ➜ Word in neuem Tab öffnen
+      </a>
+      <Button type="button" variant="outline" onClick={onShowInstructions}>
+        ❓ Anleitung
+      </Button>
+      <Button type="button" variant="outline" onClick={onToggleInput}>
+        {showInput ? 'Eingabe schließen' : '🔗 Ich habe schon einen Link'}
+      </Button>
+    </div>
+  );
+}
+
+function LinkInputBlock({
+  url,
+  setUrl,
+  error,
+  pending,
+  onSave,
+}: {
+  url: string;
+  setUrl: (v: string) => void;
+  error: string | null;
+  pending: boolean;
+  onSave: () => void;
+}) {
+  // V8: live erkennen, ob der Link von einem PRIVATEN Microsoft-Konto kommt
+  // (onedrive.live.com / 1drv.ms). Speichern bleibt erlaubt — nur Warnung,
+  // weil die Lehrer:in solche Links mit dem Schul-Konto oft nicht öffnen kann.
+  const check = validateOneDriveLink(url);
+  const personalAccount = check.ok && check.personalAccount;
+  return (
+    <div className="flex flex-col gap-2 border-t pt-3">
+      <label htmlFor="word-link-input" className="text-sm font-medium">
+        Freigabe-Link aus Word einfügen:
+      </label>
+      <Input
+        id="word-link-input"
+        type="url"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="https://nms-pitten-my.sharepoint.com/..."
+        disabled={pending}
+      />
+      {personalAccount && (
+        <p
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900"
+        >
+          ⚠ Das sieht nach einem privaten Microsoft-Konto aus. Verwende möglichst dein Schul-Konto —
+          sonst kann deine Lehrer:in das Heft eventuell nicht öffnen. Speichern geht trotzdem.
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
+      <Button type="button" onClick={onSave} disabled={pending || url.trim().length === 0}>
+        {pending ? 'Wird geprüft …' : 'Link speichern'}
+      </Button>
+    </div>
+  );
+}
+
+function useSaveLink(onSaved: () => void) {
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function save() {
+    setError(null);
+    startTransition(async () => {
+      const result = await saveWordHeftLink({
+        oneDriveUrl: url,
+        displayName: 'Mein Schulübungsheft',
+      });
+      if (result.ok) {
+        setUrl('');
+        onSaved();
+      } else {
+        setError(result.error ?? 'Speichern fehlgeschlagen.');
+      }
+    });
+  }
+
+  return { url, setUrl, error, pending, save };
+}
+
+function EmptyHeader() {
+  return (
+    <div>
+      <p className="font-medium">📓 Mein Schulübungsheft (Word)</p>
+      <p className="text-muted-foreground mt-1 text-sm">
+        Lege einmalig ein Word-Heft in deinem OneDrive an. Du kannst es bei allen Themen verwenden —
+        als Notiz, Übung oder Vorbereitung auf den Abschlusstest.
+      </p>
+    </div>
+  );
+}
+
+export function WordHeftSlotEmpty({ onSaved }: { onSaved: () => void }) {
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [showInput, setShowInput] = useState(false);
+  const { url, setUrl, error, pending, save } = useSaveLink(() => {
+    setShowInput(false);
+    onSaved();
+  });
+
+  return (
+    <div className="bg-muted/50 flex flex-col gap-3 rounded-md border p-4">
+      <EmptyHeader />
+      <NoLinkActions
+        onShowInstructions={() => setShowInstructions(true)}
+        onToggleInput={() => setShowInput((v) => !v)}
+        showInput={showInput}
+      />
+      {showInput && (
+        <LinkInputBlock url={url} setUrl={setUrl} error={error} pending={pending} onSave={save} />
+      )}
+      {showInstructions && <WordHeftInstructionsModal onClose={() => setShowInstructions(false)} />}
+    </div>
+  );
+}

@@ -34,6 +34,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Schema-Export aktuell?
+        run: pnpm export:schema --check
+
       - name: Test
         run: pnpm test
 

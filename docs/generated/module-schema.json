@@ -1,0 +1,1415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "blocks": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "text"
+              },
+              "content": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "content"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "infobox"
+              },
+              "title": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "content"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "multiple_choice"
+              },
+              "question": {
+                "type": "string"
+              },
+              "options": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "correct": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text",
+                    "correct"
+                  ]
+                }
+              },
+              "feedbackCorrect": {
+                "type": "string"
+              },
+              "feedbackWrong": {
+                "type": "string"
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "question",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "true_false"
+              },
+              "question": {
+                "type": "string"
+              },
+              "answer": {
+                "type": "boolean"
+              },
+              "feedbackCorrect": {
+                "type": "string"
+              },
+              "feedbackWrong": {
+                "type": "string"
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "question",
+              "answer"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "fill_blank"
+              },
+              "text": {
+                "type": "string"
+              },
+              "solutions": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "distractors": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "strict": {
+                "type": "boolean"
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "text",
+              "solutions"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "match"
+              },
+              "question": {
+                "type": "string"
+              },
+              "pairs": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "term": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "term",
+                    "category"
+                  ]
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "pairs"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "categorize"
+              },
+              "question": {
+                "type": "string"
+              },
+              "buckets": {
+                "minItems": 2,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ]
+                }
+              },
+              "items": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "bucketId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text",
+                    "bucketId"
+                  ]
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "buckets",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "mark_words"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "correctIndices": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "text",
+              "correctIndices"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "order"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "items": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text"
+                  ]
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "hotspot"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "imageAlt": {
+                "type": "string"
+              },
+              "groups": {
+                "maxItems": 6,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ]
+                }
+              },
+              "areas": {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "feedback": {
+                      "type": "string"
+                    },
+                    "x": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shape": {
+                      "default": "circle",
+                      "type": "string",
+                      "enum": [
+                        "circle",
+                        "rect"
+                      ]
+                    },
+                    "r": {
+                      "type": "number",
+                      "minimum": 0.02,
+                      "maximum": 0.5
+                    },
+                    "width": {
+                      "type": "number",
+                      "minimum": 0.04,
+                      "maximum": 1
+                    },
+                    "height": {
+                      "type": "number",
+                      "minimum": 0.04,
+                      "maximum": 1
+                    },
+                    "rotation": {
+                      "default": 0,
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 359
+                    },
+                    "isCorrect": {
+                      "type": "boolean"
+                    },
+                    "groupId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "x",
+                    "y",
+                    "isCorrect"
+                  ]
+                }
+              },
+              "revealZones": {
+                "default": true,
+                "type": "boolean"
+              },
+              "maxClicks": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "zoomable": {
+                "default": false,
+                "type": "boolean"
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "imageUrl",
+              "areas"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "label_image"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "imageAlt": {
+                "type": "string"
+              },
+              "zones": {
+                "minItems": 2,
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "x": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "shape": {
+                      "default": "circle",
+                      "type": "string",
+                      "enum": [
+                        "circle",
+                        "rect"
+                      ]
+                    },
+                    "r": {
+                      "type": "number",
+                      "minimum": 0.02,
+                      "maximum": 0.5
+                    },
+                    "width": {
+                      "type": "number",
+                      "minimum": 0.04,
+                      "maximum": 1
+                    },
+                    "height": {
+                      "type": "number",
+                      "minimum": 0.04,
+                      "maximum": 1
+                    },
+                    "rotation": {
+                      "default": 0,
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 359
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label",
+                    "x",
+                    "y"
+                  ]
+                }
+              },
+              "revealZones": {
+                "default": true,
+                "type": "boolean"
+              },
+              "zoomable": {
+                "default": false,
+                "type": "boolean"
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "imageUrl",
+              "zones"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "memory"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "pairs": {
+                "minItems": 3,
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "a": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        }
+                      }
+                    },
+                    "b": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "imageUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "a",
+                    "b"
+                  ]
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "pairs"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "crossword"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 15
+              },
+              "cols": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 15
+              },
+              "words": {
+                "minItems": 2,
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "answer": {
+                      "type": "string",
+                      "minLength": 2,
+                      "pattern": "^[A-ZÄÖÜ]+$"
+                    },
+                    "clue": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "across",
+                        "down"
+                      ]
+                    },
+                    "row": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "col": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "answer",
+                    "clue",
+                    "direction",
+                    "row",
+                    "col"
+                  ]
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "rows",
+              "cols",
+              "words"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "word_search"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 15
+              },
+              "cols": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 15
+              },
+              "words": {
+                "minItems": 3,
+                "maxItems": 12,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "word": {
+                      "type": "string",
+                      "minLength": 2,
+                      "pattern": "^[A-ZÄÖÜ]+$"
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "across",
+                        "down",
+                        "diag"
+                      ]
+                    },
+                    "row": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "col": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "word",
+                    "direction",
+                    "row",
+                    "col"
+                  ]
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "rows",
+              "cols",
+              "words"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "scramble"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "words": {
+                "minItems": 1,
+                "maxItems": 8,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "word": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 14,
+                      "pattern": "^[A-ZÄÖÜ]+$"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "word"
+                  ]
+                }
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "words"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "hangman"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "words": {
+                "minItems": 1,
+                "maxItems": 6,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "word": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 14,
+                      "pattern": "^[A-ZÄÖÜ]+$"
+                    },
+                    "hint": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "word",
+                    "hint"
+                  ]
+                }
+              },
+              "maxWrong": {
+                "default": 6,
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 10
+              },
+              "hint": {
+                "type": "string"
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "instruction",
+              "words"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "reflection"
+              },
+              "prompt": {
+                "type": "string"
+              },
+              "placeholder": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "theorie",
+                  "uebung",
+                  "reflexion"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "prompt"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "slide"
+              },
+              "title": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string"
+              },
+              "imageUrl": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "title"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "live_poll"
+              },
+              "question": {
+                "type": "string"
+              },
+              "options": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "question",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "quiz_poll"
+              },
+              "question": {
+                "type": "string"
+              },
+              "options": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "correct": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "text",
+                    "correct"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "question",
+              "options"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "word_cloud"
+              },
+              "question": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "question"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "scale"
+              },
+              "question": {
+                "type": "string"
+              },
+              "min": {
+                "default": 1,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "max": {
+                "default": 5,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "minLabel": {
+                "type": "string"
+              },
+              "maxLabel": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "question"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "const": "understanding"
+              },
+              "question": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "blocks"
+  ]
+}

@@ -42,7 +42,13 @@ Tests automatisch aus.
 
 ## Module bauen (Block-JSON mit Lösungen)
 
-Neue Lernmodule erstellt man nach `docs/AUTOR-WORKFLOW.md`. Die **verbindliche
+**Welche Inhalte** produziert werden sollen (Soll-Katalog pro Bereich×Stufe,
+Status-Matrix 💡⬜🤖🧪✅, Batch-Regeln) steht in `docs/CONTENT-PRODUKTION.md` —
+die KI produziert nur ⬜-Themen und bewegt die Matrix ausschließlich ⬜→🤖.
+Ein ganzes **Thema** (didaktisches Standard-Stundenbild: Hook → Theorie → Übung
+→ Reflexion → optional Arbeitsblatt) folgt `docs/THEMA-WORKFLOW.md` (Ebene über
+dem technischen Erstellungs-Prozess). Neue Lernmodule erstellt man nach
+`docs/AUTOR-WORKFLOW.md`. Die **verbindliche
 Block-Spezifikation** — jedes Feld, wo die Lösung steht, Bewertungsregel pro Typ,
 geprüftes Referenz-Modul — steht in `docs/MODUL-SPEZIFIKATION.md`. Jedes
 Modul-JSON **vor dem Import** mit `pnpm validate:module <datei.json>` prüfen
@@ -55,8 +61,10 @@ die ganze Bewertungs-Pipeline (Score, %, Schwelle, Matrix) automatisch weiter.
 
 Next.js 16.2 (App Router, Turbopack) · React 19.2 · TypeScript strict · Tailwind
 v4 (CSS-based `@theme`) · shadcn/ui (Base UI, **nicht** Radix) · Supabase
-(Frankfurt eu-central-1) via `@supabase/ssr` · jose (Schüler:innen-JWT) ·
-bcryptjs (PIN-Hash, rounds=10) · @react-pdf/renderer (Lehrer:innen-PDF-Export) ·
+(Frankfurt eu-central-1) via `@supabase/ssr` · **Supabase Realtime Broadcast**
+(Phase T, ADR-0016, Public-Channels mit UUID-Namen) · jose (Schüler:innen-JWT) ·
+bcryptjs (PIN-Hash, rounds=10) · @react-pdf/renderer (Lehrer:innen-PDF-Export,
+lazy via dynamic import) · Tiptap (12 Pakete, nur in `/s/heft/[id]`) ·
 Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
 
 ## Architektur (eine Zeile pro Modul)
@@ -99,20 +107,62 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   - `evaluate.ts` — `BlockAnswer`-Typen + `isGraded`/`gradeBlock` (0–1, teilpunkt-fähig)
     - `scoreModule`/`maxScore`/`percentScore`/`isPassed`/`blockResult` (Phase 16)
   - `fill-blank.ts` — `shuffle<T>()` Fisher-Yates für FillBlank-Pool
+  - `points.ts` — Sprint-R Punkte-Formel (Time × Streak)
+- **`lib/realtime/`** — Phase T Hybrid-Broadcast (ADR-0016)
+  - `broadcast.ts` — `publishBroadcast(channelName, event, payload)` server-only,
+    fire-and-forget. Wird in Quiz-/Live-Server-Actions NACH erfolgreichem
+    DB-Write aufgerufen.
+  - `channels.ts` — `channels.quizSession(id)` / `liveSession(classId)` /
+    `classProgress(classId)` + `events.quiz.*` / `events.live.*` /
+    `events.classProgress.*` Konstanten. Single Source of Truth für
+    Channel-Namen und Event-Strings.
+- **`lib/rate-limit.ts`** — In-Memory-Bucket-Rate-Limit pro IP (Pre-Launch C6).
+  Zwei Bucket-Typen: `checkRate` (100/min, allgemein) + `checkLoginRate`
+  (5/15min, PIN-Brute-Force-Schutz). `rateLimitGate(req, prefix)` als
+  Convenience-Wrapper für API-Routen.
+- **`lib/feature-flags.ts`** — Global-Kill-Switch (Pre-Launch C3): Env-Vars
+  `QUIZ_DISABLED`/`LIVE_DISABLED`/`STUDENT_LOGIN_DISABLED` + freundliche
+  Maintenance-Messages.
 - **`lib/schemas/`** — Zod-Schemas (Blöcke, Entities)
 
 ### UI (`components/`)
 
 - **`components/ui/`** — shadcn/ui-Primitives (NICHT manuell anfassen; via CLI)
+- **`components/realtime/`** — Phase T (ADR-0016)
+  - `useRealtimeWithFallback.ts` — generischer Hybrid-Hook: subscribed auf
+    Supabase-Broadcast-Channel + parallel Polling 5s als Fallback. Liefert
+    `{state, refetch}` — `refetch` ist für den schreibenden Tab (sofortiger
+    Refetch nach Server-Action, spart Roundtrip).
+- **`components/quiz/`** — Quiz-Hooks als Wrapper über `useRealtimeWithFallback`
+  - `useQuizQuestionPoll.ts` (Schüler) / `useQuizBeamerPoll.ts` (Lehrer-Beamer,
+    mit `refetch` für `onActionDone`) / `useQuizLobbyPoll.ts` (Hybrid:
+    Lehrer-Modus Realtime, Schüler-Modus klassisches Polling 1.5s/5s da
+    sessionId vor Quiz-Start nicht bekannt).
+- **`components/student/useLiveSync.ts`** — Live-Präsentations-Hook, classId
+  vom Server-Layout (`app/s/layout.tsx`).
+- **`components/teacher/ProgressMatrixLive.tsx`** — Wrapper um Server-Component
+  Fortschrittsmatrix, triggert `router.refresh()` bei Realtime-Event.
 - **`components/site/`** — globaler Header/Footer/Shell
   - `SiteHeader.tsx` — **async Server-Komp.**; rollenabhängiger Nav-Link via `roleNavLink()`
   - `HeaderAuth.tsx` — Server-Slot für „Angemeldet als …" + Abmelden
   - `MobileMenu.tsx` — Client; Auth-Block + Logout-Form als Sub-Komp.
   - `SiteFooter.tsx`, `SiteShell.tsx`, `Logo.tsx`
 - **`components/blocks/`** — Block-Renderer + Modul-Runner
-  - 7 Block-Typen: `TextBlock`, `InfoboxBlock`, `MultipleChoiceBlock`,
-    `TrueFalseBlock`, `FillBlankBlock`, `MatchBlock`, `ReflectionBlock`
-  - `BlockView.tsx` — Switch-Dispatcher
+  - **23 Block-Typen** (Single Source: `lib/schemas/blocks.ts`). Gruppe A
+    Theorie: `text`, `infobox`, `slide`. Gruppe B Worksheet (auto-bewertbar
+    außer reflection): `multiple_choice`, `true_false`, `fill_blank`, `match`,
+    `categorize`, `mark_words`, `order`, `hotspot`, `label_image`, `memory`,
+    `crossword`, `reflection`. Gruppe C Live (Presentation): `live_poll`,
+    `quiz_poll`, `word_cloud`, `scale`, `understanding`. Vollständige Spec:
+    `docs/MODUL-SPEZIFIKATION.md`.
+  - `BlockView.tsx` — Switch-Dispatcher; Zuordnungs-/Bild-/Spiel-Aufgaben über
+    `block-assignment-renderers.tsx`. Bild-Block-Renderer: `HotspotBlock` +
+    `hotspot-overlay/-hidden/-groups/-zoom/-feedback`, `LabelImageBlock` +
+    `label-image-marker/-pool/-stages` + `use-label-image`. Spiel-Renderer:
+    `MemoryBlock` + `memory-cards` + `use-memory-game` (Flip-State-Machine),
+    `CrosswordBlock` + `crossword-grid.tsx` + `use-crossword` (Gitter-Ableitung
+    geteilt in `lib/blocks/crossword-grid.ts` — Schema/Grading/Editor-Vorschau/
+    Validate nutzen EINE Quelle).
   - `ModuleRunner.tsx` (Quiz-Modus, Block-für-Block) + `useModuleRunner.ts`
   - `WorksheetRunner.tsx` (Worksheet-Modus, alle Aufgaben auf einer Seite)
     - `useWorksheetState.ts` + `WorksheetStatusBanner.tsx` + `WorksheetTaskBlock.tsx`
@@ -123,7 +173,9 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   `StatusSummary.tsx` (Zähler-Pille), `StudentLoginForm.tsx`
 - **`components/teacher/`** — PDF-Export der Code-Liste, Code-Generator-UI
 - **`components/admin/`** — Modul-Editor (BlockList, BlockEditor), Material-Upload,
-  ImportJsonDialog
+  ImportJsonDialog. Editor-Tabs: Blöcke / Vorschau / **„🎒 Als Schüler:in
+  testen"** (`StudentTestPanel` + `student-test-quiz` — spielt das Modul exakt
+  in der Schüler-Sicht durch, ohne DB/Routing/zweiten Browser; nur Lernmodule)
 
 ### Zugang/Schutz
 
@@ -149,6 +201,11 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   `useShuffled<T>()` aus `components/blocks/useShuffled.ts` (initial Original-
   Reihenfolge, Mix in `useEffect` nach Mount). Sonst weicht Server- und
   Client-Render ab → React verwirft Tree.
+- **`useShuffled` braucht eine STABILE Array-Referenz!** Niemals ein inline
+  erzeugtes Array (`block.items.map(…)`/`flatMap`) direkt übergeben — der
+  Effect feuert dann bei jedem Render neu → **Endlos-Re-Render-Loop**, Tests
+  hängen für immer. Eingabe vorher mit `useMemo` stabilisieren (Beispiele:
+  `FillBlankBlock.tsx`, `use-memory-game.ts` — dort war genau das der Bug).
 
 ### Supabase + Auth
 
@@ -160,8 +217,10 @@ Vitest + Testing Library · Husky + lint-staged + CommitLint (lowercase!).
   `lib/supabase/server.ts`. Wenn du dort etwas anfasst, prüfe die Cookie-
   Refresh-Logik in `proxy.ts` mit.
 - **Schüler:innen-Session ist jose-JWT in HTTP-Only-Cookie** (Name siehe
-  `STUDENT_COOKIE` in `lib/auth/student-session.ts`, HS256, 8 h). Hat
-  NICHTS mit Supabase Auth zu tun.
+  `STUDENT_COOKIE` in `lib/auth/student-session.ts`, HS256,
+  `SESSION_DURATION_SECONDS` = 1 Jahr — feste/eigene Geräte, kein tägliches
+  Neu-Einloggen; Cookie-maxAge nutzt dieselbe Konstante). Hat NICHTS mit
+  Supabase Auth zu tun.
 - **DSGVO:** keine PII von Schüler:innen — Codenamen wie `5A-01`, keine echten
   Namen. Hosting auf Supabase Frankfurt-Region ist verbindlich.
 
@@ -276,7 +335,7 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
 - **Niemals** `package.json`-Hauptversionen ohne Auftrag anheben — der
   Stack ist bewusst stabil (Next 16 hat schon genug Breaking Changes).
 
-## Phasen-Status (Stand 2026-05-30)
+## Phasen-Status (Stand 2026-06-12)
 
 - ✅ **Phase 1:** Scaffold (Next 16, Tailwind v4, ESLint strict, Vitest)
 - ✅ **Phase 2:** shadcn/ui-Setup, Demo-Verifikation
@@ -310,7 +369,146 @@ beliebige Email die du selbst empfangen kannst) wird automatisch zu einem
   (`pass_threshold`, `teacher_feedback`, `returned_at`, `manual_marks` +
   RLS-UPDATE-Policy), ADR-0011 + ADR-0012, `docs/MODUL-SPEZIFIKATION.md` +
   `pnpm validate:module`.
-- 🔜 **Phase 17:** Lernpfad-Entscheidung, Lösch-Funktion für Klassen/Codes,
-  Phase-2-Block-Typen, PWA/Offline
+- ✅ **Phase 17–22 (Live-Präsentation):** Beamer-Route, live_sessions,
+  live_votes, Reveal/Lock, Heartbeat-Tod, „Beenden"-Button, 4 weitere
+  Live-Block-Typen (quiz_poll, word_cloud, scale, understanding) plus
+  Polling-API-Routes statt Server-Actions. Migrationen 0008–0011.
+- ✅ **Phase E (E1):** Drei first-class Aktivitäten statt einem generischen
+  „Modul". Migration 0012 (`modules.activity_kind` = `lernmodul`
+  | `praesentation`), drei getrennte Admin-Routen
+  (`/admin/lernmodule`, `/admin/praesentationen`, `/admin/arbeitsblaetter`),
+  Admin-Dashboard mit drei großen Aktivitäts-Karten, `lib/activities.ts`
+  als Single Source of Truth, AddBlockDialog filtert Block-Typen pro
+  Aktivität. Alte URLs (`/admin/module/*`, `/admin/material/*`) redirecten
+  weiterhin. Lehrer-Sicht: zugewiesene Module nach Aktivität gruppiert.
+  Schüler-Dispatcher filtert Präsentationen aus (latenter Bug gefixt).
+- ✅ **Phase E (E2 – Editor-Komfort):** Typ-spezifische Form-Builder pro
+  Block-Typ statt JSON-Paste (commit `3ab275d`).
+- ✅ **Phase G (G1–G5):** Themen-Lernpfade als first-class Entity.
+  Migration 0013 (`topics` + `class_topics` + `modules.topic_id` +
+  `modules.sort_order`), Admin-Themen-Verwaltung, Lehrer-Sicht mit
+  Themen-Karten, Schüler:innen-Themen-Dashboard, Abschlusstest-
+  Voraussetzungs-Check. Bugfix: Quiz + Abschlusstest brauchen eigene
+  Admin-Routen.
+- ✅ **Phase H + H+ (Schulheft mit Tiptap):** Migration 0014
+  (`portfolio_entries` + `topic_writing_prompts`), Tiptap-Editor mit Word-
+  ähnlichen Features (Color, Align, Underline, Strike, Link, Tabellen,
+  FontFamily, FontSize, Emoji, Ribbon-UI), Pexels-Bild-Picker, Bild-Resize
+  via Drag-Handles. ADR-0013. Commits `114cc66` → `94acc09`.
+- ✅ **Phase O (O1–O6 — O365-SSO):** Multi-Tenant Azure-App, SSO für
+  Schüler:innen UND Lehrer:innen, Tinkercad-Pattern für Klassen-Beitritt
+  (`/k/join`). Migrationen 0015 (student_codes O365-Spalten) + 0016
+  (codename-Reparatur) + 0017 (Domain-Allowlist). 5 Bug-Fix-Runden:
+  Anzeigename, Klasse verlassen/löschen, Beamer-Code-Screen, Hydration-
+  Bug, Settings-Dropdown, Klassenname. ADR-0014. Admin georg.schlegel@
+  nms-pitten.ac.at hinzugefügt. Lehrer-SSO via Microsoft-Button auf
+  `/login`. Commits `36512e0` → `964286b`.
+- ✅ **Phase Q (Q1–Q6 — Word-Schulübungsheft):** OneDrive-Sharing-Link-
+  basiertes Heft für SSO-Schüler:innen (KEIN Graph-API wegen Microsofts
+  Juli-2025-Consent-Policy). EIN generelles Heft pro Schüler:in (nicht pro
+  Thema), wird in allen Themen-Lernpfaden als zusätzliches Werkzeug
+  angeboten. Migration 0018 (word_heft_links-Tabelle) + 0019
+  (unique-Constraint-Korrektur). 7-Schritt-Anleitung passend zur deutschen
+  Word-Web-UI. Lehrer-Klassen-Heft-Matrix mit Magic-Link-Hinweis. Header-
+  Knopf „📓 Mein Heft" für SSO-Schüler:innen. Ehrliche HEAD-Probe-Logik
+  (Login-Redirect → unverified statt broken). ADR-0015. Commits `220a77c`
+  → `ba5400e`.
+- ✅ **Sprint R (Solo-Quiz-Polish):** R1.1 Quiz-Endseite mit Score-Hero +
+  Antwort-Übersicht, R1.2 Punkte-Formel als pure Helper
+  (`lib/blocks/points.ts`), R1.3 Zeit + Streak server-seitig, R1.4
+  „Falsche Fragen wiederholen", R1.5 Tippfehlertoleranz für Lückentext
+  (Levenshtein ≤1). Commits `b83a95d` → `a1d43b8`.
+- ✅ **Sprint S + Phase C (Live-Klassen-Quiz + Pre-Launch-Härtung):**
+  Migration 0020 (quiz_sessions/\_participants/\_answers + RPC). S1 Lobby
+  - Beitritt, S2 Live-Frage-Flow, S3 Leaderboard zwischen Fragen, S4
+    Quiz-Ende-Podium. + C2-C8: /api/health, Global-Kill-Switch (Env-Vars),
+    Quiz-Tagespensum 20/Tag (`lib/db/quiz-quota.ts`), `/status`-Page,
+    Rate-Limit pro IP (`lib/rate-limit.ts`), Cache-Header, k6-Lasttest.
+    `docs/QUIZ-MODI-SPEZIFIKATION.md`, `docs/SCALE-PLAN.md`,
+    `docs/COST-CONTROLS.md`, `docs/PRE-LAUNCH-CHECKLIST.md`. Commits
+    `9a3fc97` → `62fd2e6`.
+- ✅ **Phase T (T0–T6 — Hybrid Realtime-Broadcast):** Supabase-Realtime
+  als Push-Layer + Polling-Fallback 5s. ADR-0016. Channel-Pattern
+  `quiz_session:{uuid}` / `live_session:{classId}` / `class_progress:
+{classId}` (Public Channels, UUID-basiert). T0 Spike (75-115ms
+  gemessen), T1 Helper + Hook (`lib/realtime/broadcast.ts`,
+  `lib/realtime/channels.ts`, `components/realtime/useRealtimeWithFallback.ts`),
+  T2 alle 6 Quiz-Server-Actions publishen, T3 Quiz-Hooks
+  (useQuizQuestionPoll/useQuizBeamerPoll), T4 Lobby-Lehrer-Realtime,
+  T5 Live-Präsentation (useLiveSync), T6 Fortschrittsmatrix
+  (ProgressMatrixLive). Bugfixes: `self:true` damit publizierender Tab
+  eigene Broadcasts empfängt, `{state, refetch}`-Return damit Lehrer-
+  Buttons direkt refetchen. Tags `pre-phase-t-savepoint`,
+  `phase-t-quiz-savepoint`, `phase-t-live-savepoint`. Commits `b398735`
+  → `5d8940d`. **Architektur-Erkenntnis:** Realtime ideal für passive
+  Empfänger, direkter Refetch ideal für schreibende Tabs.
+- ✅ **Phase U1 (Pre-Launch Security-Blocker):** 5 parallele Audit-Agents
+  (`docs/PRE-LAUNCH-AUDIT.md`) haben 30+ Befunde aufgedeckt. U1 deckt 5
+  Launch-Blocker: CRIT-1 anonymer DoS auf `/api/live/end` (jetzt
+  requireUser + classId-owner-check), CRIT-2 PIN-Brute-Force (jetzt
+  `checkLoginRate` 5/15min pro IP+codename), CRIT-3 `touchQuizPresence`
+  Heartbeat-Spoofing (toter Code, gelöscht), HIGH-1 Race in
+  `commitAdvance` (WHERE-Klausel um `current_question_index` ergänzt),
+  HIGH-4 Rate-Limits auf `/api/live/{end,results,wordcloud}`. Commit
+  `9ec4626`.
+- ✅ **Phase V (Lernpfade-Source-of-Truth):** `class_topics` als kanonische
+  Zuweisungs-Quelle (Migration 0023), `getAssignedModulesForClass` vereinigt
+  `class_modules` + `class_topics`.
+- ✅ **Phase W (Didaktik-Felder):** Jeder bewertbare Block trägt optional
+  `hint` (HintBox nach 1. Fehlversuch), `maxAttempts` (1–5, je −25 %) und
+  `category` (Editor-Gruppierung). `lib/blocks/points.ts` mit Versuchs-Penalty.
+- ✅ **Phase P0 + A (Reiche Aufgabentypen mit Teilpunkten):** Migration 0024
+  (`score`/`max_score` → numeric), `PARTIAL_GRADERS`-Map in `evaluate.ts`.
+  Neue auto-bewertbare Block-Typen mit echten Teilpunkten: **`categorize`**
+  (A1), **`order`** (A2), **`mark_words`** (A4), **`hotspot`** (A3) und
+  **`label_image`** (A3.8). Hotspot-Ausbau A3.1–A3.7: Rechteck-Zonen +
+  Rotation, Gruppen-Modus, `revealZones` (versteckte Zonen + Frei-Klick,
+  Anti-Raten), `maxClicks`, `zoomable`, Pro-Zone-Feedback, testbare
+  LivePreview-„Prüfen". `label_image` = Bild beschriften (Zone tippen →
+  Begriff wählen). Showcase-Lernmodul (Seed 0007, 18 Blöcke). Marker-Kontrast
+  - transparentere Bewertungs-Overlays (Audit-Politur). Tags
+    `phase-a1-savepoint` … `phase-a3-12-savepoint`. Spec:
+    `docs/MODUL-SPEZIFIKATION.md` (23 Block-Typen).
+- ✅ **Test-Tab „🎒 Als Schüler:in testen"** (Commit `66a1e8c`): dritter
+  Editor-Tab spielt jedes Lernmodul exakt in der Schüler-Sicht durch (Quiz
+  Block-für-Block / Worksheet mit Abgeben), simulierte %-Auswertung, ohne
+  DB/zweiten Browser. `StudentTestPanel` + `student-test-quiz`.
+- ✅ **Phase M/CW (Spiel-Blöcke `memory` + `crossword`):** Tags `block-memory`
+  - `block-crossword`. `memory` = Paare-Spiel (3–8 Paare, Karten Text ODER
+    Bild, Teilpunkte = gefundene/Anzahl). `crossword` = Kreuzworträtsel
+    (Wörter + Startzelle/Richtung aufs Gitter, Zellen abgeleitet via geteiltem
+    `lib/blocks/crossword-grid.ts`, Live-Editor-Vorschau mit Konflikt-Warnung,
+    Teilpunkte = richtige Zellen/füllbare, Optik wie gedrucktes Rätsel).
+    Nebenbei gefixt: `LERNMODUL_BLOCKS`-Allowlist (label_image/memory/crossword
+    fehlten im Block-Dialog) und `hint`/`maxAttempts` generisch für ALLE
+    bewertbaren Typen (vorher las der Runner sie nur für mc/tf/fill_blank/match).
+    Test-Draft `supabase/seeds/_drafts/test-memory-crossword.json`.
+- 🔜 **Phase U2 (Pre-Launch HIGH/MED):** ProgressMatrixLive Polling-
+  Fallback, Broadcast-Timeout senken, `isAssigned`-Check in
+  submitWorksheet, `enabled`-Option im Hook, Suspense-Boundaries,
+  Security-Header. Geschätzt ~5h.
+- 🔜 **Phase U3 (Pre-Launch Performance):** Beamer-Polling-RPC (10→2
+  DB-Queries pro Tick), k6-Lasttest mit echtem Realtime (T7-Rest).
+- 🔜 **Phase F (UI-Politur):** Editor-Layout-Redesign (Vorschau als Tab),
+  Spacing/Typography-Pass, Mobile-Optimierung. (Aufgeschoben — Phase O+Q
+  hatten Priorität.)
+- 🔜 **Phase I (Lernmodul-Erweiterungen):** Diagnose-Modus, Selbsteinschätzung,
+  Bonus-Blöcke, Übungsmodus. ~2 Tage.
+- 🔜 **Phase J (Wissens-Anker):** Karteikarten + Glossar + Streak mit SM-2-
+  Algorithmus. ~4 Tage.
+- 🔜 **Phase K (Recherche-Auftrag):** Neuer Block-Typ als DGB-Kernkompetenz.
+  ~2 Tage.
+
+**Begriffs-Trio (Phase E, bindend):**
+
+- **Arbeitsblatt** = PDF-Upload zum Drucken/Download. Lebt in `materials`.
+- **Lernmodul** = online für eingeloggte Schüler:innen. `modules` mit
+  `activity_kind='lernmodul'`, Unter-Variante `display_mode='quiz'|'worksheet'`.
+- **Präsentation** = live am Beamer mit Schüler:innen-Geräten. `modules` mit
+  `activity_kind='praesentation'`. `display_mode` für Präsentationen irrelevant.
+
+Diese Trennung gilt ÜBERALL: Sprache, Routen, Editoren, Lehrer-Listen.
+Das Wort „Modul" ist DB-/Code-Sprache; im UI sieht man entweder „Lernmodul"
+oder „Präsentation". Single Source of Truth: `lib/activities.ts`.
 
 (Detaillierter Phasen-Verlauf siehe `CHANGELOG.md`.)

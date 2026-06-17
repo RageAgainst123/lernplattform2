@@ -41,6 +41,43 @@ export async function getCodenameById(studentCodeId: string): Promise<string | n
   return data ? (data.codename as string) : null;
 }
 
+// Holt die vollständigen Anzeige-Felder (für studentDisplayName-Helper).
+// Bei SSO-Schüler:innen sind given_name/surname/o365_email gesetzt, bei
+// Code+PIN-Schüler:innen nur codename.
+export type StudentIdentityFields = {
+  codename: string | null;
+  givenName: string | null;
+  surname: string | null;
+  o365Email: string | null;
+};
+
+export async function getStudentIdentityById(
+  studentCodeId: string
+): Promise<StudentIdentityFields | null> {
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from('student_codes')
+    .select('codename, given_name, surname, o365_email')
+    .eq('id', studentCodeId)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    codename: (data.codename as string | null) ?? null,
+    givenName: (data.given_name as string | null) ?? null,
+    surname: (data.surname as string | null) ?? null,
+    o365Email: (data.o365_email as string | null) ?? null,
+  };
+}
+
+// Holt den Klassennamen zu einer class-id über den Service-Role-Client.
+// Wird im Schüler:innen-Header + Dashboard genutzt — Schüler:innen haben
+// kein auth.uid() und können classes nicht via RLS lesen.
+export async function getClassNameForStudent(classId: string): Promise<string | null> {
+  const supabase = createServiceClient();
+  const { data } = await supabase.from('classes').select('name').eq('id', classId).maybeSingle();
+  return data ? (data.name as string) : null;
+}
+
 // Holt id + pin_hash eines Codenamens innerhalb einer Klasse (für die PIN-Prüfung).
 export async function getStudentCodeForLogin(
   classId: string,

@@ -9,12 +9,31 @@
 //
 // Akzeptiert entweder { "blocks": [...] } oder direkt [...] (Block-Array).
 // Exit-Code 0 = gültig, 1 = ungültig/Fehler. Single Source of Truth ist
-// moduleContentSchema — kein dupliziertes Schema hier.
+// moduleContentStrictSchema (Struktur + fachliche IMMER-Regeln aus
+// blocks-refine.ts) — kein dupliziertes Schema hier. Zusätzlich laufen die
+// Publish-Gate-Checks als FEHLER: was dieses Script prüft, ist für den
+// Import + die Veröffentlichung gedacht, nicht für halbe Editor-Entwürfe.
 
 import { readFileSync } from 'node:fs';
-import { moduleContentSchema } from '../lib/schemas/blocks.ts';
+import { moduleContentStrictSchema } from '../lib/schemas/blocks.ts';
+import { publishGateIssues } from '../lib/schemas/blocks-refine.ts';
 
-const GRADED = new Set(['multiple_choice', 'true_false', 'fill_blank', 'match']);
+const GRADED = new Set([
+  'multiple_choice',
+  'true_false',
+  'fill_blank',
+  'match',
+  'categorize',
+  'mark_words',
+  'order',
+  'hotspot',
+  'label_image',
+  'memory',
+  'crossword',
+  'word_search',
+  'scramble',
+  'hangman',
+]);
 
 function readInput() {
   const file = process.argv[2];
@@ -47,7 +66,7 @@ try {
 // Beide Formen erlauben: { blocks: [...] } oder direkt [...]
 const content = Array.isArray(json) ? { blocks: json } : json;
 
-const result = moduleContentSchema.safeParse(content);
+const result = moduleContentStrictSchema.safeParse(content);
 
 if (!result.success) {
   console.error('\n❌  Modul-JSON ist UNGÜLTIG. Probleme:\n');
@@ -59,63 +78,50 @@ if (!result.success) {
   process.exit(1);
 }
 
-// Zusätzliche fachliche Checks, die das Zod-Schema NICHT abdeckt, aber die
-// für korrekte Bewertung/Anzeige nötig sind (siehe MODUL-SPEZIFIKATION.md).
 const blocks = result.data.blocks;
+
+// Publish-Gate als Fehler: ein Modul-JSON, das durch dieses Script geht, soll
+// ohne Nacharbeit veröffentlichbar sein (hotspot-Zonen, label_image-Begriffe).
+const errors = publishGateIssues(blocks);
 const warnings = [];
-const errors = [];
 
-const ids = blocks.map((b) => b.id);
-const dupIds = ids.filter((id, i) => ids.indexOf(id) !== i);
-if (dupIds.length) {
-  errors.push(
-    `Doppelte Block-id(s): ${[...new Set(dupIds)].join(', ')} — ids müssen eindeutig sein.`
-  );
-}
+const gradedCount = blocks.filter((b) => GRADED.has(b.type)).length;
 
-let gradedCount = 0;
-for (const b of blocks) {
-  if (GRADED.has(b.type)) gradedCount++;
-
-  if (b.type === 'multiple_choice') {
-    const correct = b.options.filter((o) => o.correct).length;
-    if (correct === 0) {
-      errors.push(`${b.id} (multiple_choice): keine Option mit "correct": true — mind. 1 nötig.`);
-    }
-    const optIds = b.options.map((o) => o.id);
-    if (new Set(optIds).size !== optIds.length) {
-      errors.push(`${b.id} (multiple_choice): doppelte Options-id.`);
-    }
-  }
-
-  if (b.type === 'fill_blank') {
-    // Platzhalter {0},{1},… im Text müssen zur Anzahl der solutions passen.
-    const placeholders = [...b.text.matchAll(/\{(\d+)\}/g)].map((m) => Number(m[1]));
-    const maxIdx = placeholders.length ? Math.max(...placeholders) : -1;
-    if (maxIdx + 1 !== b.solutions.length) {
-      errors.push(
-        `${b.id} (fill_blank): Text hat Platzhalter bis {${maxIdx}}, aber ${b.solutions.length} solutions — Anzahl muss exakt übereinstimmen.`
-      );
-    }
-  }
-
-  if (b.type === 'match') {
-    const cats = new Set(b.pairs.map((p) => p.category));
-    if (cats.size < 2) {
-      errors.push(
-        `${b.id} (match): nur ${cats.size} Kategorie(n) — mind. 2 unterschiedliche nötig.`
-      );
-    }
-    const pairIds = b.pairs.map((p) => p.id);
-    if (new Set(pairIds).size !== pairIds.length) {
-      errors.push(`${b.id} (match): doppelte pair-id.`);
-    }
-  }
-}
+// Presentation-Heuristik: wenn ALLE Blöcke Live-/Folien-Typen sind, ist das
+// vermutlich ein bewusstes Live-Modul (display_mode='presentation'). Dann ist
+// „keine Bewertung" das gewollte Verhalten und keine Warnung nötig — stattdessen
+// ein Hinweis dass dieses Modul mit display_mode='presentation' importiert werden
+// soll. Wenn aber Theorie-Blöcke (text/infobox/reflection) ohne Aufgaben gemixt
+// sind, bleibt es ein degeneriertes Worksheet → klassische Warnung.
+const LIVE_TYPES = new Set([
+  'slide',
+  'live_poll',
+  'quiz_poll',
+  'word_cloud',
+  'scale',
+  'understanding',
+]);
+const allLive = blocks.length > 0 && blocks.every((b) => LIVE_TYPES.has(b.type));
 
 if (gradedCount === 0) {
+  if (allLive) {
+    warnings.push(
+      'Live-Modul erkannt (alle Blöcke sind slide/live_poll/quiz_poll/word_cloud/scale/understanding). Beim Import unbedingt display_mode auf „presentation" setzen — Worksheet-Modus rendert diese Block-Typen nicht.'
+    );
+  } else {
+    warnings.push(
+      'Keine auto-bewertbaren Blöcke (multiple_choice/true_false/fill_blank/match) — das Modul kann nicht prozentual bewertet werden (max_score wäre 0).'
+    );
+  }
+}
+
+// Mix-Warnung: Live-Blöcke + Worksheet-Aufgaben gemischt funktioniert weder im
+// Worksheet- noch im Presentation-Modus sauber. Lieber in zwei Module trennen.
+const hasLive = blocks.some((b) => LIVE_TYPES.has(b.type));
+const hasWorksheetTask = blocks.some((b) => GRADED.has(b.type));
+if (hasLive && hasWorksheetTask) {
   warnings.push(
-    'Keine auto-bewertbaren Blöcke (multiple_choice/true_false/fill_blank/match) — das Modul kann nicht prozentual bewertet werden (max_score wäre 0).'
+    'Mix erkannt: das Modul enthält Live-Blöcke UND Worksheet-Aufgaben. Im Worksheet-Modus werden Live-Blöcke nicht angezeigt; im Presentation-Modus werden Worksheet-Aufgaben nicht angezeigt. Bitte in zwei Module trennen.'
   );
 }
 

@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { z } from 'zod';
-import { blockSchema, type Block } from '@/lib/schemas/blocks';
+import { blockSchema, moduleContentStrictSchema, type Block } from '@/lib/schemas/blocks';
 import { Button } from '@/components/ui/button';
 
 // JSON-Import: nimmt entweder ein Block-Array ODER ein { blocks: [...] }-Objekt.
-// Validiert via Zod, gibt aussagekräftige Fehler zurück.
+// Validiert via Zod (inkl. fachlicher IMMER-Regeln aus blocks-refine.ts),
+// gibt aussagekräftige Fehler zurück.
 
 const importPayloadSchema = z.union([
   z.array(blockSchema),
@@ -15,7 +16,12 @@ const importPayloadSchema = z.union([
 
 function parseImport(json: string): Block[] {
   const data = JSON.parse(json);
-  return importPayloadSchema.parse(data);
+  const blocks = importPayloadSchema.parse(data);
+  const strict = moduleContentStrictSchema.safeParse({ blocks });
+  if (!strict.success) {
+    throw new Error(strict.error.issues.map((i) => i.message).join('; '));
+  }
+  return strict.data.blocks;
 }
 
 export function ImportJsonDialog({

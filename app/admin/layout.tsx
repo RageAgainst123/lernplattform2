@@ -1,52 +1,56 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth/admin-auth';
-import { BRAND } from '@/lib/brand';
+import { ACTIVITY_INFO, MATERIAL_AS_ACTIVITY } from '@/lib/activities';
+import { AdminShell } from '@/components/admin/AdminShell';
 
 export const metadata: Metadata = {
   title: 'Admin',
   robots: { index: false, follow: false },
 };
 
+// Vier Nav-Einträge: Übersicht + 3 Aktivitäts-Listen. Labels + URLs + Emojis
+// kommen aus lib/activities.ts (Single Source of Truth). Aktive Route bekommt
+// im Client (AdminNav) eine visuelle Hervorhebung — usePathname() funktioniert
+// nur in Client Components.
 const NAV = [
-  { href: '/admin', label: 'Übersicht' },
-  { href: '/admin/module', label: 'Module' },
-  { href: '/admin/material', label: 'Materialien' },
+  { href: '/admin', label: 'Übersicht', emoji: '🏠' },
+  // Themen sind ab Phase G der empfohlene Einstiegspunkt — sie bündeln
+  // Lernmodule + Präsentationen + Quiz + Abschlusstest zu einem Lernpfad.
+  { href: '/admin/themen', label: 'Themen', emoji: '📚' },
+  {
+    href: '/admin/lernmodule',
+    label: ACTIVITY_INFO.lernmodul.plural,
+    emoji: ACTIVITY_INFO.lernmodul.iconEmoji,
+  },
+  {
+    href: '/admin/quizze',
+    label: ACTIVITY_INFO.quiz.plural,
+    emoji: ACTIVITY_INFO.quiz.iconEmoji,
+  },
+  {
+    href: '/admin/abschlusstests',
+    label: ACTIVITY_INFO.abschlusstest.plural,
+    emoji: ACTIVITY_INFO.abschlusstest.iconEmoji,
+  },
+  {
+    href: '/admin/praesentationen',
+    label: ACTIVITY_INFO.praesentation.plural,
+    emoji: ACTIVITY_INFO.praesentation.iconEmoji,
+  },
+  {
+    href: '/admin/material',
+    label: MATERIAL_AS_ACTIVITY.plural,
+    emoji: MATERIAL_AS_ACTIVITY.iconEmoji,
+  },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin();
+  // Layout-Hülle (Breite + Sidebar an/aus je nach Route) lebt im Client-Wrapper
+  // AdminShell — requireAdmin + NAV-Daten bleiben hier Server-seitig.
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:flex md:gap-8">
-      <aside className="md:w-56 md:shrink-0">
-        <div className="mb-4">
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">Admin</p>
-          <p className="text-sm font-medium">{user.email}</p>
-        </div>
-        <nav
-          className="flex flex-row gap-2 overflow-x-auto md:flex-col"
-          aria-label="Admin-Navigation"
-        >
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="hover:bg-muted shrink-0 rounded-md px-3 py-2 text-sm"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="text-muted-foreground mt-6 hidden text-xs md:block">
-          <p>Du bist als Admin von {BRAND.name} angemeldet.</p>
-          <p className="mt-2">
-            <Link href="/lehrer" className="hover:underline">
-              ← Zurück zum Lehrer:innen-Bereich
-            </Link>
-          </p>
-        </div>
-      </aside>
-      <div className="mt-6 flex-1 md:mt-0">{children}</div>
-    </div>
+    <AdminShell nav={NAV} email={user.email ?? ''}>
+      {children}
+    </AdminShell>
   );
 }

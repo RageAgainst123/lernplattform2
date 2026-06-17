@@ -1,0 +1,72 @@
+'use client';
+
+import { useCallback, useState } from 'react';
+import type { QuizBeamerState } from '@/app/api/quiz/beamer/route';
+import { useRealtimeWithFallback } from '@/components/realtime/useRealtimeWithFallback';
+import { channels, events } from '@/lib/realtime/channels';
+
+// Pollt /api/quiz/beamer für die Beamer-Frage-/Reveal-Sicht (Phase S2.C +
+// Phase T3).
+//
+// Phase T3 (ADR-0016): Hook ist jetzt ein Wrapper über useRealtimeWithFallback.
+// Bei jeder Quiz-Mutation (start, reveal, next, end, answer_received,
+// participant_joined) triggert der Broadcast einen Refetch — Counter
+// „N/M geantwortet" und Reveal-Wechsel passieren <300ms. Polling-Tick
+// 5s ist Sicherheitsnetz.
+//
+// Channel: quiz_session:{sessionId}. Bei kind='none' (kein aktives Quiz)
+// abonnieren wir einen Idle-Channel; Polling reicht.
+
+const POLL_FALLBACK_MS = 5000;
+const BEAMER_EVENTS = [
+  events.quiz.questionStarted,
+  events.quiz.questionRevealed,
+  events.quiz.nextQuestion,
+  events.quiz.quizEnded,
+  events.quiz.answerReceived,
+  events.quiz.participantJoined,
+] as const;
+
+function sessionIdOf(state: QuizBeamerState): string | null {
+  return state.kind === 'none' ? null : state.sessionId;
+}
+
+export type UseQuizBeamerPollResult = {
+  state: QuizBeamerState;
+  /** Sofortiger refetch fuer schreibende Lehrer-Buttons (T3-bugfix). */
+  refetch: () => Promise<void>;
+};
+
+export function useQuizBeamerPoll(
+  classId: string,
+  initial: QuizBeamerState
+): UseQuizBeamerPollResult {
+  const fetcher = useCallback(async (): Promise<QuizBeamerState> => {
+    const url = `/api/quiz/beamer?classId=${encodeURIComponent(classId)}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+    return (await res.json()) as QuizBeamerState;
+  }, [classId]);
+
+  // Pre-Launch-Audit MED-2: channelName aus aktuellem State berechnen.
+  // Lehrer-Beamer-Page läuft typischerweise mit kind='lobby' beim Mount,
+  // wechselt dann zu 'active' — Channel muss mitwechseln damit Realtime
+  // greift.
+  const [sessionId, setSessionId] = useState<string | null>(sessionIdOf(initial));
+  const wrappedFetcher = useCallback(async (): Promise<QuizBeamerState> => {
+    const next = await fetcher();
+    const nextSid = sessionIdOf(next);
+    if (nextSid !== sessionId) setSessionId(nextSid);
+    return next;
+  }, [fetcher, sessionId]);
+
+  // channelName leer wenn keine sessionId — kein Channel, aber Polling läuft
+  // weiter und re-subscribed sobald sessionId da ist.
+  return useRealtimeWithFallback<QuizBeamerState>({
+    channelName: sessionId ? channels.quizSession(sessionId) : '',
+    events: BEAMER_EVENTS,
+    fetcher: wrappedFetcher,
+    initial,
+    pollIntervalMs: POLL_FALLBACK_MS,
+  });
+}

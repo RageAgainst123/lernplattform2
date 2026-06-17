@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { getUser } from '@/lib/auth/teacher-auth';
 import { getStudentSession } from '@/lib/auth/student-auth';
 import { isAdmin } from '@/lib/auth/admin-auth';
-import { getCodenameById } from '@/lib/db/student-login';
+import { getStudentIdentityById } from '@/lib/db/student-login';
+import { studentDisplayName } from '@/lib/db/student-display-name';
 import { signOut } from '@/lib/auth/actions';
-import { studentLogout } from '@/lib/auth/student-actions';
 import { buttonVariants } from '@/components/ui/button';
+import { StudentSettingsMenu } from '@/components/student/StudentSettingsMenu';
 
 // Server-Komponente: ermittelt den aktuellen Login-Status (Lehrer:in,
 // Schüler:in oder ausgeloggt) und rendert den rechten Bereich des Headers
@@ -15,6 +16,10 @@ export type AuthSlotInfo = {
   userLabel: string | null;
   userKind: 'teacher' | 'student' | null;
   isAdminUser: boolean;
+  // Phase Q: true wenn der eingeloggte Schüler:in via O365-SSO eingeloggt ist
+  // (hat Word-Heft-Funktion). Bei Code+PIN-Schüler:innen + Lehrer:innen + Anon: false.
+  // Optional damit bestehende Test-Fixtures nicht alle gleichzeitig brechen.
+  isSsoStudent?: boolean;
 };
 
 // Helper: Email auf max 24 Zeichen kürzen (mit „…").
@@ -30,24 +35,25 @@ export async function fetchAuthSlot(): Promise<AuthSlotInfo> {
       userLabel: user.email ? shortEmail(user.email) : 'Lehrer:in',
       userKind: 'teacher',
       isAdminUser: isAdmin(user.email),
+      isSsoStudent: false,
     };
   }
   if (session) {
-    const codename = await getCodenameById(session.studentCodeId);
+    const identity = await getStudentIdentityById(session.studentCodeId);
     return {
-      userLabel: codename ?? 'Schüler:in',
+      userLabel: identity ? studentDisplayName(identity) : 'Schüler:in',
       userKind: 'student',
       isAdminUser: false,
+      isSsoStudent: Boolean(identity?.o365Email),
     };
   }
-  return { userLabel: null, userKind: null, isAdminUser: false };
+  return { userLabel: null, userKind: null, isAdminUser: false, isSsoStudent: false };
 }
 
-// Logout-Form (mit Server-Action). Klein, sekundärer Button.
-function LogoutForm({ kind }: { kind: 'teacher' | 'student' }) {
-  const action = kind === 'teacher' ? signOut : studentLogout;
+// Logout-Form für Lehrer:innen. Schüler:innen nutzen das Settings-Menü.
+function TeacherLogoutForm() {
   return (
-    <form action={action}>
+    <form action={signOut}>
       <button type="submit" className="hover:bg-muted rounded-md border px-3 py-1.5 text-sm">
         Abmelden
       </button>
@@ -55,9 +61,16 @@ function LogoutForm({ kind }: { kind: 'teacher' | 'student' }) {
   );
 }
 
-// Eingeloggter Zustand für Desktop. Zeigt Status + Abmelden, bei Admins
-// zusätzlich einen kleinen „Admin"-Link.
+// Eingeloggter Zustand für Desktop. Lehrer:innen sehen Status + Abmelden,
+// Schüler:innen ein Settings-Dropdown (Klasse verlassen / Abmelden).
 function LoggedInSlot({ info }: { info: AuthSlotInfo }) {
+  if (info.userKind === 'student') {
+    return (
+      <div className="hidden items-center gap-3 md:flex">
+        <StudentSettingsMenu displayName={info.userLabel ?? 'Schüler:in'} />
+      </div>
+    );
+  }
   return (
     <div className="hidden items-center gap-3 md:flex">
       {info.isAdminUser && (
@@ -66,10 +79,9 @@ function LoggedInSlot({ info }: { info: AuthSlotInfo }) {
         </Link>
       )}
       <span className="text-muted-foreground text-sm">
-        {info.userKind === 'student' ? 'Angemeldet als ' : ''}
         <strong className="text-foreground">{info.userLabel}</strong>
       </span>
-      <LogoutForm kind={info.userKind!} />
+      <TeacherLogoutForm />
     </div>
   );
 }

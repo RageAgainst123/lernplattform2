@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/admin-auth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { moduleInsertSchema } from '@/lib/schemas/entities';
+import { publishGateIssues } from '@/lib/schemas/blocks-refine';
 
 // Server Actions für Modul-CRUD im Admin-Bereich. Jede Aktion ruft requireAdmin()
 // und nutzt dann den Service-Role-Client (umgeht RLS bewusst — Sicherheit wird
@@ -15,6 +16,17 @@ import { moduleInsertSchema } from '@/lib/schemas/entities';
 // Formular → Modul-Insert/Update-Input. FormData wird in der Page in ein
 // strukturiertes Objekt übersetzt; hier validieren wir nur via Zod.
 const moduleFormSchema = moduleInsertSchema;
+
+// Publish-Gate serverseitig (Defense in Depth zum Check in ModuleEditor):
+// Entwurf-legitime Lücken (hotspot ohne Zonen, doppelte label_image-Begriffe)
+// dürfen nie veröffentlicht in die DB gelangen.
+function assertPublishable(parsed: z.infer<typeof moduleFormSchema>): void {
+  if (!parsed.isPublished) return;
+  const gate = publishGateIssues(parsed.content.blocks);
+  if (gate.length) {
+    throw new Error('Veröffentlichen nicht möglich: ' + gate.join(' '));
+  }
+}
 
 export type ActionState = { error: string | null; ok?: boolean };
 
@@ -25,9 +37,12 @@ function rowFromInsert(input: z.infer<typeof moduleFormSchema>, createdBy: strin
     schulstufe: input.schulstufe ?? null,
     kompetenzbereich: input.kompetenzbereich ?? null,
     topic: input.topic ?? null,
+    topic_id: input.topicId ?? null,
+    sort_order: input.sortOrder ?? 0,
     content: input.content,
     estimated_minutes: input.estimatedMinutes ?? null,
     is_published: input.isPublished,
+    activity_kind: input.activityKind,
     display_mode: input.displayMode,
     created_by: createdBy,
   };
@@ -39,6 +54,7 @@ export async function createModule(input: unknown): Promise<{ id: string }> {
   if (!parsed.success) {
     throw new Error('Eingabe ungültig: ' + parsed.error.issues.map((i) => i.message).join('; '));
   }
+  assertPublishable(parsed.data);
   const svc = createServiceClient();
   const { data, error } = await svc
     .from('modules')
@@ -47,6 +63,8 @@ export async function createModule(input: unknown): Promise<{ id: string }> {
     .single();
   if (error) throw new Error('Modul konnte nicht angelegt werden: ' + error.message);
   revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
   return { id: data.id as string };
 }
 
@@ -56,6 +74,7 @@ export async function updateModule(id: string, input: unknown): Promise<void> {
   if (!parsed.success) {
     throw new Error('Eingabe ungültig: ' + parsed.error.issues.map((i) => i.message).join('; '));
   }
+  assertPublishable(parsed.data);
   const svc = createServiceClient();
   const { error } = await svc
     .from('modules')
@@ -63,7 +82,52 @@ export async function updateModule(id: string, input: unknown): Promise<void> {
     .eq('id', id);
   if (error) throw new Error('Modul konnte nicht aktualisiert werden: ' + error.message);
   revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
   revalidatePath(`/admin/module/${id}`);
+}
+
+// V4: Modul duplizieren — Kopie als Entwurf, ohne Themen-Zuordnung, mit
+// frischem sort_order. Sicherer Workflow für Module mit Bestand-Fortschritt
+// (siehe Warn-Banner im ModuleEditor): Original bleibt unangetastet, die
+// Kopie wird bearbeitet und später veröffentlicht/zugeordnet.
+export async function duplicateModule(id: string): Promise<{ id: string }> {
+  const user = await requireAdmin();
+  const svc = createServiceClient();
+  const { data: source, error: loadError } = await svc
+    .from('modules')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (loadError) throw new Error('Modul konnte nicht geladen werden: ' + loadError.message);
+  if (!source) throw new Error('Modul nicht gefunden.');
+  const row = source as Record<string, unknown>;
+  const { data, error } = await svc
+    .from('modules')
+    .insert({
+      title: `${row.title as string} (Kopie)`,
+      description: row.description,
+      schulstufe: row.schulstufe,
+      kompetenzbereich: row.kompetenzbereich,
+      topic: row.topic,
+      topic_id: null,
+      sort_order: 0,
+      content: row.content,
+      estimated_minutes: row.estimated_minutes,
+      is_published: false,
+      activity_kind: row.activity_kind,
+      display_mode: row.display_mode,
+      created_by: user.id,
+    })
+    .select('id')
+    .single();
+  if (error) throw new Error('Modul konnte nicht dupliziert werden: ' + error.message);
+  revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
+  revalidatePath('/admin/quizze');
+  revalidatePath('/admin/abschlusstests');
+  return { id: data.id as string };
 }
 
 export async function deleteModule(id: string): Promise<void> {
@@ -74,6 +138,8 @@ export async function deleteModule(id: string): Promise<void> {
   const { error } = await svc.from('modules').delete().eq('id', id);
   if (error) throw new Error('Modul konnte nicht gelöscht werden: ' + error.message);
   revalidatePath('/admin/module');
+  revalidatePath('/admin/lernmodule');
+  revalidatePath('/admin/praesentationen');
   revalidatePath('/admin/material');
   redirect('/admin/module');
 }

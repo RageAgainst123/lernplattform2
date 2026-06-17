@@ -1,16 +1,65 @@
 import { z } from 'zod';
+import {
+  slideBlockSchema,
+  livePollBlockSchema,
+  quizPollBlockSchema,
+  wordCloudBlockSchema,
+  scaleBlockSchema,
+  understandingBlockSchema,
+} from './blocks-live.ts';
+import { hotspotBlockSchema } from './blocks-hotspot.ts';
+import { refineModuleContent } from './blocks-refine.ts';
+import { scrambleBlockSchema } from './blocks-scramble.ts';
+import { hangmanBlockSchema } from './blocks-hangman.ts';
+import { labelImageBlockSchema } from './blocks-label-image.ts';
+import { memoryBlockSchema } from './blocks-memory.ts';
+import { crosswordBlockSchema } from './blocks-crossword.ts';
+import { wordSearchBlockSchema } from './blocks-word-search.ts';
+import {
+  blockId,
+  gradedBlockExtensions,
+  taxonomyExtension,
+  BLOCK_CATEGORIES,
+} from './blocks-shared.ts';
+import type { BlockCategory } from './blocks-shared.ts';
+
+export { HOTSPOT_SHAPES } from './blocks-hotspot.ts';
+// prettier-ignore
+export { hotspotBlockSchema, labelImageBlockSchema, memoryBlockSchema, crosswordBlockSchema, wordSearchBlockSchema, scrambleBlockSchema, hangmanBlockSchema };
+export { BLOCK_CATEGORIES };
+export type { BlockCategory };
+export type { HotspotShape } from './blocks-hotspot.ts';
+
+export {
+  slideBlockSchema,
+  livePollBlockSchema,
+  quizPollBlockSchema,
+  wordCloudBlockSchema,
+  scaleBlockSchema,
+  understandingBlockSchema,
+} from './blocks-live.ts';
+export type {
+  SlideBlock,
+  LivePollBlock,
+  QuizPollBlock,
+  WordCloudBlock,
+  ScaleBlock,
+  UnderstandingBlock,
+} from './blocks-live.ts';
 
 // Block-Schemas für die Modul-Engine (PLATTFORM_MANIFEST §4, Phase 1).
 // Zod ist die Single Source of Truth; die TS-Typen werden abgeleitet.
 // Geteilt zwischen Frontend (BlockRenderer) und Backend (Modul-Validierung).
-
-const blockId = z.string().min(1);
+// Geteilte Bausteine (blockId, BLOCK_CATEGORIES, gradedBlockExtensions,
+// taxonomyExtension) leben in blocks-shared.ts (kein Zirkel-Import mit
+// typ-spezifischen Dateien wie blocks-label-image.ts).
 
 export const textBlockSchema = z.object({
   id: blockId,
   type: z.literal('text'),
   content: z.string(),
   imageUrl: z.string().url().optional(),
+  ...taxonomyExtension,
 });
 
 export const infoboxBlockSchema = z.object({
@@ -18,6 +67,7 @@ export const infoboxBlockSchema = z.object({
   type: z.literal('infobox'),
   title: z.string().optional(),
   content: z.string(),
+  ...taxonomyExtension,
 });
 
 const choiceOptionSchema = z.object({
@@ -33,6 +83,7 @@ export const multipleChoiceBlockSchema = z.object({
   options: z.array(choiceOptionSchema).min(2),
   feedbackCorrect: z.string().optional(),
   feedbackWrong: z.string().optional(),
+  ...gradedBlockExtensions,
 });
 
 export const trueFalseBlockSchema = z.object({
@@ -42,6 +93,7 @@ export const trueFalseBlockSchema = z.object({
   answer: z.boolean(),
   feedbackCorrect: z.string().optional(),
   feedbackWrong: z.string().optional(),
+  ...gradedBlockExtensions,
 });
 
 export const fillBlankBlockSchema = z.object({
@@ -53,6 +105,14 @@ export const fillBlankBlockSchema = z.object({
   solutions: z.array(z.string()).min(1),
   // Zusätzliche Distraktoren für den Wortpool.
   distractors: z.array(z.string()).default([]),
+  // Tippfehlertoleranz: per Default werden Einzelbuchstaben-Vertipper bei
+  // Wörtern ≥ 4 Buchstaben akzeptiert (Levenshtein ≤ 1). `strict: true`
+  // schaltet das aus — sinnvoll für Fachbegriffe, deren Schreibweise exakt
+  // zählen muss (z. B. chemische Formeln, Eigennamen). Siehe
+  // docs/QUIZ-MODI-SPEZIFIKATION.md §9.
+  // Optional, weil falsy === aus (default-Verhalten).
+  strict: z.boolean().optional(),
+  ...gradedBlockExtensions,
 });
 
 const matchPairSchema = z.object({
@@ -66,13 +126,77 @@ export const matchBlockSchema = z.object({
   type: z.literal('match'),
   question: z.string().optional(),
   pairs: z.array(matchPairSchema).min(2),
+  ...gradedBlockExtensions,
 });
+
+// Kategorisieren (Bucket-Sort): Items in benannte Behälter einsortieren.
+// Anders als `match` sind Behälter EIGENE Objekte mit id+label (nicht im Item
+// inline) — das erlaubt mehrere Items pro Behälter sauber + Teilpunkte
+// (Anteil korrekt einsortierter Items). bucketId jedes Items zeigt auf die
+// korrekte Lösung.
+const categorizeBucketSchema = z.object({
+  id: z.string().min(1),
+  label: z.string(),
+});
+const categorizeItemSchema = z.object({
+  id: z.string().min(1),
+  text: z.string(),
+  bucketId: z.string().min(1), // korrekter Behälter (Lösung)
+});
+
+export const categorizeBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('categorize'),
+  question: z.string().optional(),
+  buckets: z.array(categorizeBucketSchema).min(2).max(4),
+  items: z.array(categorizeItemSchema).min(2),
+  ...gradedBlockExtensions,
+});
+
+// Markieren-im-Text: Schüler:in tippt im Text die Wörter an, die zu einem
+// Kriterium passen (z.B. „markiere alle persönlichen Daten"). `text` wird per
+// lib/blocks/tokenize.ts in Wort-Tokens zerlegt; `correctIndices` referenziert
+// die 0-basierten wordIndex der richtigen Wörter. Antwort = number[]. Teilpunkte.
+export const markWordsBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('mark_words'),
+  // Aufgabenstellung („Markiere alle …").
+  instruction: z.string(),
+  // Der zu markierende Fließtext.
+  text: z.string().min(1),
+  // 0-basierte wordIndex der richtig zu markierenden Wörter (≥ 1).
+  correctIndices: z.array(z.number().int().min(0)).min(1),
+  ...gradedBlockExtensions,
+});
+
+// Reihenfolge: Schüler:in bringt Items in die richtige Reihenfolge. `items`
+// sind in der KORREKTEN Reihenfolge angegeben (so wie der/die Autor:in sie
+// eingibt). Im Renderer werden sie gemischt angezeigt. Antwort = string[] der
+// itemIds in gewählter Reihenfolge. Teilpunkte via Anteil korrekter
+// Nachbarpaare (fairer als Positionsgleichheit — ein früher Fehler ruiniert
+// nicht alles).
+const orderItemSchema = z.object({ id: z.string().min(1), text: z.string() });
+export const orderBlockSchema = z.object({
+  id: blockId,
+  type: z.literal('order'),
+  instruction: z.string(),
+  items: z.array(orderItemSchema).min(2),
+  ...gradedBlockExtensions,
+});
+
+// Bild-Hotspots: Schema lebt in blocks-hotspot.ts (zusammen mit Zonen-/
+// Gruppen-Schema), importiert + re-exportiert oben.
+
+// Bild-Beschriften: Stellen im Bild den richtigen Begriffen zuordnen. Schema +
+// Doku in blocks-label-image.ts (eigene Datei, vermeidet Zirkel-Import).
+// Importiert + re-exportiert oben.
 
 export const reflectionBlockSchema = z.object({
   id: blockId,
   type: z.literal('reflection'),
   prompt: z.string(),
   placeholder: z.string().optional(),
+  ...taxonomyExtension,
 });
 
 export const blockSchema = z.discriminatedUnion('type', [
@@ -82,12 +206,36 @@ export const blockSchema = z.discriminatedUnion('type', [
   trueFalseBlockSchema,
   fillBlankBlockSchema,
   matchBlockSchema,
+  categorizeBlockSchema,
+  markWordsBlockSchema,
+  orderBlockSchema,
+  hotspotBlockSchema,
+  labelImageBlockSchema,
+  memoryBlockSchema,
+  crosswordBlockSchema,
+  wordSearchBlockSchema,
+  scrambleBlockSchema,
+  hangmanBlockSchema,
   reflectionBlockSchema,
+  slideBlockSchema,
+  livePollBlockSchema,
+  quizPollBlockSchema,
+  wordCloudBlockSchema,
+  scaleBlockSchema,
+  understandingBlockSchema,
 ]);
 
+// Strukturelles Schema — an LESE-Grenzen verwenden (student-modules,
+// progress-action, quiz, live-sessions): Bestands-Inhalte dürfen durch neue
+// fachliche Regeln nie unlesbar werden.
 export const moduleContentSchema = z.object({
   blocks: z.array(blockSchema),
 });
+
+// Strikte Variante für SCHREIB-Grenzen (Editor-Save, JSON-Import,
+// createModule/updateModule, validate-module.mjs): zusätzlich die fachlichen
+// IMMER-Regeln aus blocks-refine.ts (doppelte ids, MC ohne richtige Option, …).
+export const moduleContentStrictSchema = moduleContentSchema.superRefine(refineModuleContent);
 
 export type Block = z.infer<typeof blockSchema>;
 export type BlockType = Block['type'];
@@ -97,5 +245,15 @@ export type MultipleChoiceBlock = z.infer<typeof multipleChoiceBlockSchema>;
 export type TrueFalseBlock = z.infer<typeof trueFalseBlockSchema>;
 export type FillBlankBlock = z.infer<typeof fillBlankBlockSchema>;
 export type MatchBlock = z.infer<typeof matchBlockSchema>;
+export type CategorizeBlock = z.infer<typeof categorizeBlockSchema>;
+export type MarkWordsBlock = z.infer<typeof markWordsBlockSchema>;
+export type OrderBlock = z.infer<typeof orderBlockSchema>;
+export type HotspotBlock = z.infer<typeof hotspotBlockSchema>;
+export type LabelImageBlock = z.infer<typeof labelImageBlockSchema>;
+export type MemoryBlock = z.infer<typeof memoryBlockSchema>;
+export type CrosswordBlock = z.infer<typeof crosswordBlockSchema>;
+export type WordSearchBlock = z.infer<typeof wordSearchBlockSchema>;
+export type ScrambleBlock = z.infer<typeof scrambleBlockSchema>;
+export type HangmanBlock = z.infer<typeof hangmanBlockSchema>;
 export type ReflectionBlock = z.infer<typeof reflectionBlockSchema>;
 export type InfoboxBlock = z.infer<typeof infoboxBlockSchema>;

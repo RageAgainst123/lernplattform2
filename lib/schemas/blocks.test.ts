@@ -38,6 +38,70 @@ describe('blockSchema', () => {
   });
 });
 
+describe('blockSchema — neue Live-Block-Typen (Phase C)', () => {
+  it('accepts quiz_poll with correct-Flag pro Option', () => {
+    const result = blockSchema.safeParse({
+      id: 'q1',
+      type: 'quiz_poll',
+      question: 'Welches ist ein Eingabegerät?',
+      options: [
+        { id: 'a', text: 'Maus', correct: true },
+        { id: 'b', text: 'Drucker', correct: false },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts word_cloud (nur Frage, keine Optionen)', () => {
+    const result = blockSchema.safeParse({
+      id: 'w1',
+      type: 'word_cloud',
+      question: 'Was fällt euch ein?',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts scale mit min/max + Labels', () => {
+    const result = blockSchema.safeParse({
+      id: 's1',
+      type: 'scale',
+      question: 'Wie gut kennst du dich aus?',
+      min: 1,
+      max: 5,
+      minLabel: 'gar nicht',
+      maxLabel: 'sehr gut',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts scale ohne min/max (Defaults greifen)', () => {
+    const result = blockSchema.safeParse({
+      id: 's2',
+      type: 'scale',
+      question: 'Wie viel hast du verstanden?',
+    });
+    expect(result.success).toBe(true);
+    if (result.success && result.data.type === 'scale') {
+      expect(result.data.min).toBe(1);
+      expect(result.data.max).toBe(5);
+    }
+  });
+
+  it('accepts understanding ohne Frage', () => {
+    const result = blockSchema.safeParse({ id: 'u1', type: 'understanding' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts understanding mit optionaler Frage', () => {
+    const result = blockSchema.safeParse({
+      id: 'u2',
+      type: 'understanding',
+      question: 'Alles klar?',
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
 describe('moduleContentSchema', () => {
   it('accepts an empty block list', () => {
     expect(moduleContentSchema.safeParse({ blocks: [] }).success).toBe(true);
